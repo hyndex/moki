@@ -1,0 +1,37 @@
+{
+  "name": "@apps/platform-dev-console",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Developer harness for verifying the platform admin workbench, AI operator surfaces, and shell integrations.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bunx tsc -p tsconfig.build.json",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+    "lint": "bunx eslint .",
+    "test": "bun test tests/unit",
+    "test:unit": "bun test tests/unit",
+    "test:e2e": "bun run tests/e2e/run-shell-harness.ts"
+  },
+  "dependencies": {
+    "@platform/admin-shell-workbench": "workspace:*",
+    "@platform/kernel": "workspace:*",
+    "@platform/permissions": "workspace:*",
+    "@platform/plugin-solver": "workspace:*",
+    "@platform/ui-shell": "workspace:*",
+    "@plugins/ai-core": "workspace:*",
+    "@plugins/ai-evals": "workspace:*",
+    "@plugins/ai-rag": "workspace:*",
+    "@plugins/dashboard-core": "workspace:*",
+    "@plugins/page-builder-core": "workspace:*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}

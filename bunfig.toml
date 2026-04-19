@@ -1,0 +1,6 @@
+[install]
+saveTextLockfile = true
+exact = false
+
+[test]
+preload = ["./tooling/test/register-env.ts"]

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: platform-postgres
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_USER: platform_admin
+      POSTGRES_PASSWORD: platform_admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./platform-bootstrap.sql:/docker-entrypoint-initdb.d/10-platform-bootstrap.sql:ro
+volumes:
+  postgres-data:

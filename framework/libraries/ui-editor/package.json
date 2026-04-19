@@ -1,0 +1,27 @@
+{
+  "name": "@platform/ui-editor",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bunx tsc -p tsconfig.build.json",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+    "lint": "bunx eslint .",
+    "test": "bun test",
+    "test:unit": "bun test tests/unit"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.15.0",
+    "@tiptap/react": "^2.15.0",
+    "@tiptap/starter-kit": "^2.15.0",
+    "zod": "^4.0.0"
+  }
+}

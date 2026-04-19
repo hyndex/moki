@@ -1,0 +1,2817 @@
+{
+  "generatedAt": "2026-04-19T19:04:09.325Z",
+  "root": "/Users/chinmoybhuyan/Desktop/Personal/Framework",
+  "targets": [
+    {
+      "id": "@apps/docs",
+      "displayName": "Docs",
+      "description": "Documentation surface for framework concepts, guides, and reference material.",
+      "location": "apps/docs",
+      "targetType": "app",
+      "packageKind": "app",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "@apps/examples",
+      "displayName": "Examples",
+      "description": "Reference app for example compositions built on the framework package and plugin surfaces.",
+      "location": "apps/examples",
+      "targetType": "app",
+      "packageKind": "app",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "@apps/platform-dev-console",
+      "displayName": "Console",
+      "description": "Developer harness for verifying the platform admin workbench, AI operator surfaces, and shell integrations.",
+      "location": "apps/platform-dev-console",
+      "targetType": "app",
+      "packageKind": "app",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "@apps/playground",
+      "displayName": "Playground",
+      "description": "Sandbox app for interactive framework experiments and local feature prototyping.",
+      "location": "apps/playground",
+      "targetType": "app",
+      "packageKind": "app",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-shell-workbench",
+      "displayName": "Admin Shell Workbench",
+      "description": "Default universal admin desk plugin.",
+      "location": "framework/builtin-plugins/admin-shell-workbench",
+      "targetType": "package",
+      "packageKind": "ui-surface",
+      "dependsOn": [
+        "auth-core",
+        "dashboard-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "ui.admin.builders",
+        "ui.admin.pages",
+        "ui.admin.reports",
+        "ui.admin.widgets",
+        "ui.shell.admin"
+      ],
+      "requestedCapabilities": [
+        "data.read.settings",
+        "ui.mount:admin"
+      ],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-core",
+      "displayName": "AI Core",
+      "description": "Durable agent runtime, prompt governance, approval queues, and replay controls.",
+      "location": "framework/builtin-plugins/ai-core",
+      "targetType": "package",
+      "packageKind": "ai-pack",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "jobs-core",
+        "notifications-core",
+        "org-tenant-core",
+        "role-policy-core",
+        "workflow-core"
+      ],
+      "providesCapabilities": [
+        "ai.approvals",
+        "ai.prompts",
+        "ai.runtime"
+      ],
+      "requestedCapabilities": [
+        "ai.model.invoke",
+        "ai.tool.execute",
+        "api.rest.mount",
+        "data.write.ai",
+        "jobs.execute.ai",
+        "notifications.enqueue.ai",
+        "ui.register.admin",
+        "workflow.execute.ai"
+      ],
+      "resources": [
+        {
+          "id": "ai.agent-runs",
+          "description": "Durable execution record for a governed AI agent run.",
+          "businessPurpose": "Track agent lifecycle, status, budget use, and replay-safe execution history.",
+          "invariants": [
+            "Each run belongs to one tenant and one agent definition.",
+            "Run status changes must remain auditable."
+          ],
+          "lifecycleNotes": [
+            "Runs may pause for approval checkpoints before completion.",
+            "Replay-safe metadata must remain stable across investigations."
+          ],
+          "actors": [
+            "ai-operator",
+            "approver",
+            "platform-admin"
+          ],
+          "fields": [
+            {
+              "name": "agentId",
+              "label": "Agent",
+              "description": "Agent definition that owns the run.",
+              "businessMeaning": "Lets operators group runs by agent purpose and ownership."
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "modelId",
+              "label": "Model",
+              "description": "Model profile used for the run.",
+              "businessMeaning": "Helps audit routing, cost, and quality decisions."
+            },
+            {
+              "name": "startedAt",
+              "label": "Started",
+              "description": "Timestamp when the run started execution.",
+              "businessMeaning": "Supports queue analysis, latency tracking, and investigation timelines."
+            },
+            {
+              "name": "status",
+              "label": "Status",
+              "description": "Current lifecycle status of the agent run.",
+              "businessMeaning": "Shows whether a run is active, waiting for approval, finished, or failed."
+            },
+            {
+              "name": "stepCount",
+              "label": "Steps",
+              "description": "Number of persisted execution steps recorded for the run.",
+              "businessMeaning": "Indicates how much work the agent performed and how deep the execution went."
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        },
+        {
+          "id": "ai.approval-requests",
+          "description": "Approval checkpoint raised by an AI run before a sensitive tool step.",
+          "businessPurpose": "Make risky agent actions visible, reviewable, and explicitly resolvable by humans.",
+          "fields": [
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "requestedAt",
+              "label": "Requested",
+              "description": "Timestamp when human review became required."
+            },
+            {
+              "name": "runId",
+              "label": "Run",
+              "description": "Agent run that emitted the approval request."
+            },
+            {
+              "name": "state",
+              "label": "State",
+              "description": "Current decision state of the approval request."
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "toolId",
+              "label": "Tool",
+              "description": "Requested tool or action awaiting approval."
+            }
+          ]
+        },
+        {
+          "id": "ai.prompt-versions",
+          "description": "Versioned prompt artifact used for governed AI execution.",
+          "businessPurpose": "Keep prompt bodies diffable, reviewable, and replay-safe across releases.",
+          "fields": [
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "publishedAt",
+              "label": "Published",
+              "description": "Timestamp when the prompt version became available for governed execution."
+            },
+            {
+              "name": "status",
+              "label": "Status",
+              "description": "Publication status of the prompt version."
+            },
+            {
+              "name": "templateId",
+              "label": "Template",
+              "description": "Prompt template family that this version belongs to."
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "version",
+              "label": "Version",
+              "description": "Human-readable version label for the prompt body."
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "ai.agent-runs.submit",
+          "permission": "ai.runs.submit",
+          "description": "Submit a governed AI run against approved tools and prompt versions.",
+          "businessPurpose": "Start durable agent work without bypassing tenant, tool, prompt, or replay governance.",
+          "preconditions": [
+            "The tenant, actor, and agent identifiers must be valid.",
+            "At least one allowed tool id must be provided."
+          ],
+          "mandatorySteps": [
+            "Pin the prompt version before execution begins.",
+            "Record replay-safe inputs and tool permissions for the run."
+          ],
+          "sideEffects": [
+            "Creates a durable run record.",
+            "May create an approval checkpoint before completion."
+          ],
+          "postconditions": [
+            "A stable run id is returned.",
+            "The run status reflects whether approval is needed or execution completed."
+          ],
+          "failureModes": [
+            "Validation fails if the prompt version, actor, or tool inputs are incomplete."
+          ],
+          "forbiddenShortcuts": [
+            "Do not invoke undeclared tools outside the allowed tool list.",
+            "Do not run with an unpublished or untracked prompt version."
+          ]
+        },
+        {
+          "id": "ai.approvals.approve",
+          "permission": "ai.approvals.approve",
+          "description": "Resolve an AI approval checkpoint with an explicit human decision.",
+          "businessPurpose": "Allow sensitive AI steps to continue only after accountable human review.",
+          "preconditions": [
+            "The checkpoint must belong to the supplied run and tenant.",
+            "The acting user must hold ai.approvals.approve permission."
+          ],
+          "mandatorySteps": [
+            "Record whether the checkpoint was approved or rejected.",
+            "Preserve the reviewer note whenever one is supplied."
+          ],
+          "sideEffects": [
+            "Resumes or terminates the associated run based on the decision."
+          ],
+          "forbiddenShortcuts": [
+            "Agents must not self-approve their own checkpoints."
+          ]
+        },
+        {
+          "id": "ai.prompts.publish",
+          "permission": "ai.prompts.publish",
+          "description": "Publish a reviewed prompt version for governed use.",
+          "businessPurpose": "Move prompt changes into an auditable, replay-safe published state before agents depend on them.",
+          "preconditions": [
+            "The prompt body must pass validation and review before publication."
+          ],
+          "mandatorySteps": [
+            "Publish prompt versions with a changelog when behavior changes.",
+            "Keep prompt versions diffable for later replay and incident review."
+          ],
+          "sideEffects": [
+            "Creates a published prompt version record."
+          ],
+          "forbiddenShortcuts": [
+            "Do not overwrite an existing published prompt body in place."
+          ]
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "ai-evals",
+      "displayName": "AI Evals",
+      "description": "Eval datasets, judges, regression baselines, and release-grade AI review.",
+      "location": "framework/builtin-plugins/ai-evals",
+      "targetType": "package",
+      "packageKind": "ai-pack",
+      "dependsOn": [
+        "ai-core",
+        "audit-core",
+        "jobs-core"
+      ],
+      "providesCapabilities": [
+        "ai.evals",
+        "ai.release-gates"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.ai",
+        "jobs.execute.ai",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "ai.eval-datasets",
+          "fields": [
+            {
+              "name": "caseCount",
+              "label": "Cases"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Dataset"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated"
+            }
+          ]
+        },
+        {
+          "id": "ai.eval-runs",
+          "fields": [
+            {
+              "name": "averageScore",
+              "label": "Average score"
+            },
+            {
+              "name": "completedAt",
+              "label": "Completed"
+            },
+            {
+              "name": "datasetId",
+              "label": "Dataset"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "passRate",
+              "label": "Pass rate"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "ai.evals.compare",
+          "permission": "ai.evals.read"
+        },
+        {
+          "id": "ai.evals.run",
+          "permission": "ai.evals.run"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "ai-rag",
+      "displayName": "AI RAG",
+      "description": "Tenant-safe memory collections, retrieval diagnostics, and grounded knowledge pipelines.",
+      "location": "framework/builtin-plugins/ai-rag",
+      "targetType": "package",
+      "packageKind": "ai-pack",
+      "dependsOn": [
+        "ai-core",
+        "jobs-core",
+        "knowledge-core"
+      ],
+      "providesCapabilities": [
+        "ai.memory",
+        "ai.retrieval"
+      ],
+      "requestedCapabilities": [
+        "ai.tool.execute",
+        "api.rest.mount",
+        "data.write.ai",
+        "jobs.execute.ai",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "ai.memory-collections",
+          "fields": [
+            {
+              "name": "classification",
+              "label": "Classification"
+            },
+            {
+              "name": "documentCount",
+              "label": "Documents"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "sourcePlugin",
+              "label": "Source"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated"
+            }
+          ]
+        },
+        {
+          "id": "ai.memory-documents",
+          "fields": [
+            {
+              "name": "classification",
+              "label": "Classification"
+            },
+            {
+              "name": "collectionId",
+              "label": "Collection Id"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "sourceKind",
+              "label": "Source kind"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "title",
+              "label": "Title"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "ai.memory.ingest",
+          "permission": "ai.memory.ingest"
+        },
+        {
+          "id": "ai.memory.reindex",
+          "permission": "ai.memory.reindex"
+        },
+        {
+          "id": "ai.memory.retrieve",
+          "permission": "ai.memory.read"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "audit-core",
+      "displayName": "Audit Core",
+      "description": "Canonical audit trail and sensitive action history.",
+      "location": "framework/builtin-plugins/audit-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "auth-core",
+        "org-tenant-core"
+      ],
+      "providesCapabilities": [
+        "audit.events"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.audit",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "audit.events",
+          "fields": [
+            {
+              "name": "actionId",
+              "label": "Action"
+            },
+            {
+              "name": "actorId",
+              "label": "Actor"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "severity",
+              "label": "Severity"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "targetId",
+              "label": "Target Id"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "audit.events.record",
+          "permission": "audit.events.record"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "auth-core",
+      "displayName": "Auth Core",
+      "description": "Canonical identity and session backbone.",
+      "location": "framework/builtin-plugins/auth-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [],
+      "providesCapabilities": [
+        "auth.identities"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.auth",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "auth.identities",
+          "fields": [
+            {
+              "name": "authProvider",
+              "label": "Provider"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "displayName",
+              "label": "Display Name"
+            },
+            {
+              "name": "email",
+              "label": "Email"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "lastAuthenticatedAt",
+              "label": "Last Authenticated At"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "auth.identities.provision",
+          "permission": "auth.identities.provision"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "community-core",
+      "displayName": "Community Core",
+      "description": "Community, groups, and membership backbone.",
+      "location": "framework/builtin-plugins/community-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "community.memberships"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.community",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "community.memberships",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "community.memberships.enroll",
+          "permission": "community.memberships.enroll"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "content-core",
+      "displayName": "Content Core",
+      "description": "Pages, posts, and content type backbone.",
+      "location": "framework/builtin-plugins/content-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "content.entries"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.content",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "content.entries",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "content.entries.publish",
+          "permission": "content.entries.publish"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "dashboard-core",
+      "displayName": "Dashboard Core",
+      "description": "Dashboard, widget, and saved view backbone.",
+      "location": "framework/builtin-plugins/dashboard-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "dashboard.views"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.dashboard",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "dashboard.views",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "dashboard.views.publish",
+          "permission": "dashboard.views.publish"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "document-core",
+      "displayName": "Document Core",
+      "description": "Document lifecycle and generated document backbone.",
+      "location": "framework/builtin-plugins/document-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "document.records"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.document",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "document.records",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "document.records.finalize",
+          "permission": "document.records.finalize"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "files-core",
+      "displayName": "Files Core",
+      "description": "File references and storage abstractions.",
+      "location": "framework/builtin-plugins/files-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "files.assets"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.files",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "files.assets",
+          "fields": [
+            {
+              "name": "bytes",
+              "label": "Bytes"
+            },
+            {
+              "name": "checksum",
+              "label": "Checksum"
+            },
+            {
+              "name": "contentType",
+              "label": "Content Type"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "fileName",
+              "label": "File Name"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "malwareStatus",
+              "label": "Malware"
+            },
+            {
+              "name": "objectKey",
+              "label": "Object Key"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "storageAdapter",
+              "label": "Storage Adapter"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "visibility",
+              "label": "Visibility"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "files.assets.register",
+          "permission": "files.assets.register"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "forms-core",
+      "displayName": "Forms Core",
+      "description": "Dynamic forms and submissions backbone.",
+      "location": "framework/builtin-plugins/forms-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "forms.submissions"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.forms",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "forms.submissions",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "forms.submissions.submit",
+          "permission": "forms.submissions.submit"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "jobs-core",
+      "displayName": "Jobs Core",
+      "description": "Background jobs, schedules, and execution metadata.",
+      "location": "framework/builtin-plugins/jobs-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "jobs.executions"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.jobs",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "jobs.executions",
+          "fields": [
+            {
+              "name": "concurrency",
+              "label": "Concurrency"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "jobKey",
+              "label": "Job"
+            },
+            {
+              "name": "lastError",
+              "label": "Last Error"
+            },
+            {
+              "name": "queue",
+              "label": "Queue"
+            },
+            {
+              "name": "retries",
+              "label": "Retries"
+            },
+            {
+              "name": "schedule",
+              "label": "Schedule"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "timeoutMs",
+              "label": "Timeout Ms"
+            },
+            {
+              "name": "visibleAt",
+              "label": "Visible At"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "jobs.executions.schedule",
+          "permission": "jobs.executions.schedule"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "knowledge-core",
+      "displayName": "Knowledge Core",
+      "description": "Knowledge base, docs, and article tree backbone.",
+      "location": "framework/builtin-plugins/knowledge-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "knowledge.articles"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.knowledge",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "knowledge.articles",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "knowledge.articles.publish",
+          "permission": "knowledge.articles.publish"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "notifications-core",
+      "displayName": "Notifications Core",
+      "description": "Outbound and in-app notifications.",
+      "location": "framework/builtin-plugins/notifications-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "notifications.messages"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.notifications",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "notifications.messages",
+          "fields": [
+            {
+              "name": "channel",
+              "label": "Channel"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "deliveryMode",
+              "label": "Delivery"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "priority",
+              "label": "Priority"
+            },
+            {
+              "name": "providerRoute",
+              "label": "Provider"
+            },
+            {
+              "name": "recipientRef",
+              "label": "Recipient Ref"
+            },
+            {
+              "name": "sendAt",
+              "label": "Send At"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "templateKey",
+              "label": "Template"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "notifications.messages.queue",
+          "permission": "notifications.messages.queue"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "org-tenant-core",
+      "displayName": "Org Tenant Core",
+      "description": "Tenant and organization graph management.",
+      "location": "framework/builtin-plugins/org-tenant-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "auth-core"
+      ],
+      "providesCapabilities": [
+        "org.tenants"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.org",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "org.tenants",
+          "fields": [
+            {
+              "name": "billingPlan",
+              "label": "Billing Plan"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "displayName",
+              "label": "Display Name"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "slug",
+              "label": "Slug"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "org.tenants.activate",
+          "permission": "org.tenants.activate"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "page-builder-core",
+      "displayName": "Page Builder Core",
+      "description": "Layout, block, and builder canvas backbone.",
+      "location": "framework/builtin-plugins/page-builder-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "page-builder.layouts"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.page-builder",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "page-builder.layouts",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "page-builder.layouts.compose",
+          "permission": "page-builder.layouts.compose"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "portal-core",
+      "displayName": "Portal Core",
+      "description": "Portal shell and self-service entrypoint backbone.",
+      "location": "framework/builtin-plugins/portal-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "portal.accounts"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.portal",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "portal.accounts",
+          "fields": [
+            {
+              "name": "accountType",
+              "label": "Account Type"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "homeRoute",
+              "label": "Home"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "lastSeenAt",
+              "label": "Last Seen At"
+            },
+            {
+              "name": "membershipStatus",
+              "label": "Membership"
+            },
+            {
+              "name": "primaryIdentityId",
+              "label": "Primary Identity Id"
+            },
+            {
+              "name": "selfServiceFeatures",
+              "label": "Self Service Features"
+            },
+            {
+              "name": "subjectId",
+              "label": "Subject"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "portal.accounts.enable",
+          "permission": "portal.accounts.enable"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "role-policy-core",
+      "displayName": "Role Policy Core",
+      "description": "RBAC and ABAC policy management backbone.",
+      "location": "framework/builtin-plugins/role-policy-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "auth-core",
+        "org-tenant-core"
+      ],
+      "providesCapabilities": [
+        "roles.grants"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.roles",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "roles.grants",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "effect",
+              "label": "Effect"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "permission",
+              "label": "Permission"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "subjectId",
+              "label": "Subject Id"
+            },
+            {
+              "name": "subjectType",
+              "label": "Subject Type"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "roles.grants.assign",
+          "permission": "roles.grants.assign"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "search-core",
+      "displayName": "Search Core",
+      "description": "Typed search indexing and query abstractions.",
+      "location": "framework/builtin-plugins/search-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "search.documents"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.search",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "search.documents",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "search.documents.index",
+          "permission": "search.documents.index"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "template-core",
+      "displayName": "Template Core",
+      "description": "Reusable templates for content, messages, and workflows.",
+      "location": "framework/builtin-plugins/template-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "template.records"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.template",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "template.records",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "template.records.version",
+          "permission": "template.records.version"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "user-directory",
+      "displayName": "User Directory",
+      "description": "Internal person and directory backbone.",
+      "location": "framework/builtin-plugins/user-directory",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "directory.people"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.directory",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "directory.people",
+          "fields": [
+            {
+              "name": "createdAt",
+              "label": "Created"
+            },
+            {
+              "name": "email",
+              "label": "Email"
+            },
+            {
+              "name": "employmentType",
+              "label": "Employment Type"
+            },
+            {
+              "name": "fullName",
+              "label": "Full Name"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "directory.people.register",
+          "permission": "directory.people.register"
+        }
+      ],
+      "workflows": []
+    },
+    {
+      "id": "workflow-core",
+      "displayName": "Workflow Core",
+      "description": "Explicit workflows and approval state machines.",
+      "location": "framework/builtin-plugins/workflow-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "workflow.instances"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.workflow",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "workflow.instances",
+          "description": "Durable workflow instance record used to track approval and publication processes across the platform.",
+          "businessPurpose": "Give operators and automation a single governed view of every active or historical workflow instance.",
+          "invariants": [
+            "Each workflow instance belongs to one tenant and one workflow definition.",
+            "State transitions must remain auditable and replayable."
+          ],
+          "lifecycleNotes": [
+            "Instances move between explicit states only through declared transitions.",
+            "Approval status and due dates drive operator queues and reminders."
+          ],
+          "actors": [
+            "requester",
+            "approver",
+            "admin"
+          ],
+          "fields": [
+            {
+              "name": "approvalStatus",
+              "label": "Approval",
+              "description": "Current approval posture for the workflow instance.",
+              "businessMeaning": "Tells operators whether the instance is waiting on review or already resolved."
+            },
+            {
+              "name": "assignedRole",
+              "label": "Assigned Role"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created",
+              "description": "Creation timestamp for the workflow instance.",
+              "businessMeaning": "Used for queue ordering, SLA measurement, and audit trails."
+            },
+            {
+              "name": "currentState",
+              "label": "State",
+              "description": "Current workflow state for the instance.",
+              "businessMeaning": "Determines the next allowed transitions and visible operator actions.",
+              "requiredForFlows": [
+                "workflow-review",
+                "workflow-escalation"
+              ]
+            },
+            {
+              "name": "definitionKey",
+              "label": "Workflow",
+              "description": "Workflow template that governs the instance.",
+              "businessMeaning": "Identifies which state machine and policy rules apply."
+            },
+            {
+              "name": "dueAt",
+              "label": "Due",
+              "description": "Optional due date for the current review or approval step.",
+              "businessMeaning": "Supports escalation, reminders, and queue prioritization."
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "lastTransitionAt",
+              "label": "Last Transition At"
+            },
+            {
+              "name": "subjectId",
+              "label": "Subject Id"
+            },
+            {
+              "name": "subjectType",
+              "label": "Subject Type",
+              "description": "Domain object type that the workflow instance governs.",
+              "businessMeaning": "Helps operators understand whether the workflow is for content, invoices, or access requests."
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "workflow.instances.transition",
+          "permission": "workflow.instances.transition",
+          "description": "Apply a governed transition to a workflow instance.",
+          "businessPurpose": "Move workflows forward in a safe, auditable way while preserving approval and notification side effects.",
+          "preconditions": [
+            "The supplied current state must match the persisted workflow state.",
+            "The acting role must be allowed to perform the requested transition."
+          ],
+          "mandatorySteps": [
+            "Evaluate the workflow definition before applying the transition.",
+            "Emit audit metadata and workflow side effects after each successful transition."
+          ],
+          "sideEffects": [
+            "Returns notification and follow-up instructions for downstream systems.",
+            "Produces an audit event type tied to the transition."
+          ],
+          "postconditions": [
+            "The returned next state is always valid for the workflow definition.",
+            "Approval status reflects the new workflow state."
+          ],
+          "failureModes": [
+            "Transition fails if the current state and requested transition are incompatible."
+          ],
+          "forbiddenShortcuts": [
+            "Do not patch workflow state directly in storage.",
+            "Do not skip approval-driven transitions just because an admin initiated the request."
+          ]
+        }
+      ],
+      "workflows": [
+        {
+          "id": "access-review",
+          "initialState": "draft",
+          "description": "Review and grant sensitive access only after security review.",
+          "businessPurpose": "Protect privileged access changes with explicit security approval and revocation paths.",
+          "actors": [
+            "requester",
+            "security-reviewer",
+            "admin"
+          ],
+          "invariants": [
+            "Access cannot be granted without a security review.",
+            "Granted access must remain revocable."
+          ],
+          "mandatorySteps": [
+            "Every access request starts in draft and must be submitted for review before approval.",
+            "Revocation must remain available after a grant."
+          ],
+          "stateDescriptions": {
+            "draft": {
+              "description": "The access request is being prepared by the requester."
+            },
+            "security_review": {
+              "description": "Security is evaluating the request and its risk posture."
+            },
+            "granted": {
+              "description": "Access has been granted and is actively in force."
+            },
+            "rejected": {
+              "description": "The request was denied and may be reopened for correction."
+            },
+            "revoked": {
+              "description": "Previously granted access has been removed."
+            }
+          },
+          "transitionDescriptions": {
+            "draft.submit": "Sends the request into security review.",
+            "security_review.approve": "Grants the access after review.",
+            "security_review.reject": "Rejects the request and closes the review cycle.",
+            "granted.revoke": "Removes access after it has been granted.",
+            "rejected.reopen": "Returns the request to draft for correction and resubmission."
+          },
+          "states": {
+            "draft": {
+              "on": {
+                "submit": "security_review"
+              }
+            },
+            "security_review": {
+              "on": {
+                "approve": "granted",
+                "reject": "rejected"
+              }
+            },
+            "granted": {
+              "on": {
+                "revoke": "revoked"
+              }
+            },
+            "rejected": {
+              "on": {
+                "reopen": "draft"
+              }
+            },
+            "revoked": {}
+          }
+        },
+        {
+          "id": "content-publication",
+          "initialState": "draft",
+          "description": "Editorial review and publication workflow for governed content.",
+          "businessPurpose": "Prevent content from reaching publication without editorial review and scheduled release control.",
+          "actors": [
+            "author",
+            "editor",
+            "publisher"
+          ],
+          "invariants": [
+            "Published content must pass through editor review.",
+            "Archived content cannot be republished without reopening."
+          ],
+          "mandatorySteps": [
+            "Draft content must be submitted for editor review.",
+            "Scheduled content must pass through publish before becoming live."
+          ],
+          "stateDescriptions": {
+            "draft": {
+              "description": "Content is being prepared by the author."
+            },
+            "editor_review": {
+              "description": "Editors are checking readiness, accuracy, and compliance."
+            },
+            "scheduled": {
+              "description": "Content is approved and waiting for publication."
+            },
+            "published": {
+              "description": "Content is live and visible to the intended audience."
+            },
+            "rejected": {
+              "description": "Editorial review failed and the content must be revised."
+            },
+            "archived": {
+              "description": "Content is no longer active but remains in history."
+            }
+          },
+          "transitionDescriptions": {
+            "draft.submit": "Moves the draft into editorial review.",
+            "editor_review.approve": "Approves content for scheduling.",
+            "editor_review.reject": "Rejects content for revision.",
+            "scheduled.publish": "Publishes approved content.",
+            "published.archive": "Archives live content.",
+            "rejected.reopen": "Returns rejected content to draft."
+          },
+          "states": {
+            "draft": {
+              "on": {
+                "submit": "editor_review"
+              }
+            },
+            "editor_review": {
+              "on": {
+                "approve": "scheduled",
+                "reject": "rejected"
+              }
+            },
+            "scheduled": {
+              "on": {
+                "publish": "published"
+              }
+            },
+            "published": {
+              "on": {
+                "archive": "archived"
+              }
+            },
+            "rejected": {
+              "on": {
+                "reopen": "draft"
+              }
+            },
+            "archived": {}
+          }
+        },
+        {
+          "id": "invoice-approval",
+          "initialState": "draft",
+          "description": "Finance approval flow for invoices before they are finalized.",
+          "businessPurpose": "Ensure invoices are reviewed before final approval and archival.",
+          "actors": [
+            "requester",
+            "approver",
+            "finance-admin"
+          ],
+          "invariants": [
+            "Invoices cannot move to approved without a pending approval state.",
+            "Rejected invoices must reopen before resubmission."
+          ],
+          "mandatorySteps": [
+            "Invoice drafts must be submitted before approvers can act.",
+            "Only approved invoices may be archived."
+          ],
+          "stateDescriptions": {
+            "draft": {
+              "description": "Invoice is being prepared and has not yet entered approval."
+            },
+            "pending_approval": {
+              "description": "Invoice is waiting for finance approval."
+            },
+            "approved": {
+              "description": "Invoice has been approved and is ready for finalization."
+            },
+            "rejected": {
+              "description": "Invoice was rejected and must be corrected."
+            },
+            "archived": {
+              "description": "Invoice has been finalized and archived."
+            }
+          },
+          "transitionDescriptions": {
+            "draft.submit": "Queues the invoice for approval.",
+            "pending_approval.approve": "Approves the invoice for finalization.",
+            "pending_approval.reject": "Rejects the invoice for correction.",
+            "approved.archive": "Archives the approved invoice.",
+            "rejected.reopen": "Returns the invoice to draft."
+          },
+          "states": {
+            "draft": {
+              "on": {
+                "submit": "pending_approval"
+              }
+            },
+            "pending_approval": {
+              "on": {
+                "approve": "approved",
+                "reject": "rejected"
+              }
+            },
+            "approved": {
+              "on": {
+                "archive": "archived"
+              }
+            },
+            "rejected": {
+              "on": {
+                "reopen": "draft"
+              }
+            },
+            "archived": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent-understanding",
+      "displayName": "Agent Understanding",
+      "description": "Semantic metadata, documentation pack templates, and validation helpers for AI-readable system understanding.",
+      "location": "framework/core/agent-understanding",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "api-graphql",
+      "displayName": "API GraphQL",
+      "description": "Optional GraphQL Yoga adapter over the platform graph.",
+      "location": "framework/core/api-graphql",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "api-rest",
+      "displayName": "API Rest",
+      "description": "REST route generation from resource and action metadata.",
+      "location": "framework/core/api-rest",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "auth",
+      "displayName": "Auth",
+      "description": "Better Auth wrapper and platform auth contracts.",
+      "location": "framework/core/auth",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "auth-admin",
+      "displayName": "Auth Admin",
+      "description": "Administrative auth operations wrappers.",
+      "location": "framework/core/auth-admin",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "cli",
+      "displayName": "CLI",
+      "description": "Terminal command surface for platform scaffolding, AI operations, registry workflows, and system understanding tools.",
+      "location": "framework/core/cli",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "config",
+      "displayName": "Config",
+      "description": "Typed platform configuration loaders.",
+      "location": "framework/core/config",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "db-drizzle",
+      "displayName": "DB Drizzle",
+      "description": "Drizzle-first database contracts and role-aware context.",
+      "location": "framework/core/db-drizzle",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "events",
+      "displayName": "Events",
+      "description": "Typed domain events and outbox contracts.",
+      "location": "framework/core/events",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "http",
+      "displayName": "HTTP",
+      "description": "Bun-native HTTP gateway and request context helpers.",
+      "location": "framework/core/http",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "jobs",
+      "displayName": "Jobs",
+      "description": "Queue-agnostic jobs and workflow execution contracts.",
+      "location": "framework/core/jobs",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "jobs-bullmq",
+      "displayName": "Jobs BullMQ",
+      "description": "BullMQ adapter for platform jobs.",
+      "location": "framework/core/jobs-bullmq",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "kernel",
+      "displayName": "Kernel",
+      "description": "Platform kernel, manifest DSLs, registries, validation, and package contracts.",
+      "location": "framework/core/kernel",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "logger",
+      "displayName": "Logger",
+      "description": "Structured Pino logging wrapper.",
+      "location": "framework/core/logger",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "migrate",
+      "displayName": "Migrate",
+      "description": "Ordered migration planning and execution support.",
+      "location": "framework/core/migrate",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "observability",
+      "displayName": "Observability",
+      "description": "OpenTelemetry wrapper and telemetry helpers.",
+      "location": "framework/core/observability",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "permissions",
+      "displayName": "Permissions",
+      "description": "Permission evaluation, install review planning, capability diffs, and policy enforcement helpers.",
+      "location": "framework/core/permissions",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "plugin-solver",
+      "displayName": "Plugin Solver",
+      "description": "Dependency resolution, activation ordering, ownership conflict detection, and rollback planning for package graphs.",
+      "location": "framework/core/plugin-solver",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "runtime-bun",
+      "displayName": "Runtime Bun",
+      "description": "Bun runtime wrapper utilities and environment helpers.",
+      "location": "framework/core/runtime-bun",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "schema",
+      "displayName": "Schema",
+      "description": "Resource, action, and contract DSLs with semantic metadata for runtime and agent understanding.",
+      "location": "framework/core/schema",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-builders",
+      "displayName": "Admin Builders",
+      "description": "Builder host contracts, publish helpers, and multi-panel editor primitives.",
+      "location": "framework/libraries/admin-builders",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-contracts",
+      "displayName": "Admin Contracts",
+      "description": "Governed admin-desk contracts, registries, access helpers, and legacy adapters.",
+      "location": "framework/libraries/admin-contracts",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-formview",
+      "displayName": "Admin Form View",
+      "description": "Form/detail DSLs and resource-derived admin form helpers.",
+      "location": "framework/libraries/admin-formview",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-listview",
+      "displayName": "Admin List View",
+      "description": "List view DSLs, saved views, and resource-derived admin table helpers.",
+      "location": "framework/libraries/admin-listview",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-reporting",
+      "displayName": "Admin Reporting",
+      "description": "Report contracts, filter validation, and semantic execution requests.",
+      "location": "framework/libraries/admin-reporting",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-shell-workbench",
+      "displayName": "Admin Shell Workbench",
+      "description": "Universal admin desk layered on the shared ui-shell substrate.",
+      "location": "framework/libraries/admin-shell-workbench",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "admin-widgets",
+      "displayName": "Admin Widgets",
+      "description": "Dashboard DSLs, saved questions, and widget primitives for the admin desk.",
+      "location": "framework/libraries/admin-widgets",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai",
+      "displayName": "AI",
+      "description": "AI provider contract helpers and tool orchestration types.",
+      "location": "framework/libraries/ai",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-evals",
+      "displayName": "AI Evals",
+      "description": "Eval datasets, judges, regression comparison, and release gates for AI runs.",
+      "location": "framework/libraries/ai-evals",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-guardrails",
+      "displayName": "AI Guardrails",
+      "description": "Prompt sanitization, tool risk checks, PII redaction, and output moderation.",
+      "location": "framework/libraries/ai-guardrails",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-mcp",
+      "displayName": "AI MCP",
+      "description": "MCP descriptors and connectors derived from framework actions, resources, and prompts.",
+      "location": "framework/libraries/ai-mcp",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-memory",
+      "displayName": "AI Memory",
+      "description": "Tenant-safe memory collections, chunking, retrieval, and citation contracts.",
+      "location": "framework/libraries/ai-memory",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ai-runtime",
+      "displayName": "AI Runtime",
+      "description": "Durable agent runtime contracts, checkpoints, replay, and budget enforcement.",
+      "location": "framework/libraries/ai-runtime",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "analytics",
+      "displayName": "Analytics",
+      "description": "Metrics, marts, and analytics helper layer.",
+      "location": "framework/libraries/analytics",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "chart",
+      "displayName": "Chart",
+      "description": "Canonical ECharts-backed chart presets and rendering contracts.",
+      "location": "framework/libraries/chart",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "command-palette",
+      "displayName": "Command Palette",
+      "description": "cmdk-backed command palette primitives for governed admin actions.",
+      "location": "framework/libraries/command-palette",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "contracts",
+      "displayName": "Contracts",
+      "description": "Canonical public contract surface for admin plugins.",
+      "location": "framework/libraries/contracts",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "data-table",
+      "displayName": "Data Table",
+      "description": "Canonical data-table wrapper with TanStack Table and Virtual helpers.",
+      "location": "framework/libraries/data-table",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "@platform/editor",
+      "displayName": "Editor",
+      "description": "Document what the app at framework/libraries/editor exists to demonstrate or operate.",
+      "location": "framework/libraries/editor",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "email-templates",
+      "displayName": "Email Templates",
+      "description": "React Email wrapper and template helpers.",
+      "location": "framework/libraries/email-templates",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "form",
+      "displayName": "Form",
+      "description": "Canonical form wrapper with field access, autosave, and relation helpers.",
+      "location": "framework/libraries/form",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "geo",
+      "displayName": "Geo",
+      "description": "Geo abstraction and provider contracts.",
+      "location": "framework/libraries/geo",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "layout",
+      "displayName": "Layout",
+      "description": "Canonical layout primitives for workspace shells, dashboards, and builder splits.",
+      "location": "framework/libraries/layout",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "query",
+      "displayName": "Query",
+      "description": "Canonical TanStack Query wrapper with unified keys and optimistic helpers.",
+      "location": "framework/libraries/query",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "router",
+      "displayName": "Router",
+      "description": "Canonical router wrapper with admin guards and safe zone links.",
+      "location": "framework/libraries/router",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "search",
+      "displayName": "Search",
+      "description": "Search abstraction layer.",
+      "location": "framework/libraries/search",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "telemetry-ui",
+      "displayName": "Telemetry UI",
+      "description": "UI telemetry helpers for page views, actions, widgets, and command palette flows.",
+      "location": "framework/libraries/telemetry-ui",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui",
+      "displayName": "UI",
+      "description": "Canonical admin UI wrapper surface over shared shell primitives.",
+      "location": "framework/libraries/ui",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-editor",
+      "displayName": "UI Editor",
+      "description": "Tiptap wrapper APIs.",
+      "location": "framework/libraries/ui-editor",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-form",
+      "displayName": "UI Form",
+      "description": "React Hook Form wrapper APIs.",
+      "location": "framework/libraries/ui-form",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-kit",
+      "displayName": "UI Kit",
+      "description": "Shared Radix and shell primitives.",
+      "location": "framework/libraries/ui-kit",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-query",
+      "displayName": "UI Query",
+      "description": "TanStack Query wrapper APIs.",
+      "location": "framework/libraries/ui-query",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-router",
+      "displayName": "UI Router",
+      "description": "TanStack Router wrapper APIs.",
+      "location": "framework/libraries/ui-router",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-shell",
+      "displayName": "UI Shell",
+      "description": "Shared shell registry, navigation, provider, and telemetry contracts.",
+      "location": "framework/libraries/ui-shell",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-table",
+      "displayName": "UI Table",
+      "description": "TanStack Table wrapper APIs.",
+      "location": "framework/libraries/ui-table",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-zone-next",
+      "displayName": "UI Zone Next",
+      "description": "Next.js product zone adapter.",
+      "location": "framework/libraries/ui-zone-next",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "ui-zone-static",
+      "displayName": "UI Zone Static",
+      "description": "Static React zone adapter.",
+      "location": "framework/libraries/ui-zone-static",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    }
+  ]
+}

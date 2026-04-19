@@ -1,0 +1,523 @@
+# STATUS
+
+## Repository State
+
+- Repository contents at start: `Goal.md`, `Developer_DeepDive.md`
+- Git state at start: not a git repository
+- Bun availability at start: `bun` not found on PATH
+- Current implementation mode: docs-first, plan-first, implementation-second, verification-third
+
+## Current Phase
+
+- `Phase 16 - framework-only distribution cleanup and documentation reconciliation in progress`
+- `Admin Desk Program - Stage A6 complete`
+- `Admin UI Stack Alignment - Stage S5 complete`
+- `Ecosystem Program - Stage E1 partially complete`
+- `Native AI-Agent Platform Program - Stage AI3 complete, Stage AI4 partial`
+- `Agent Understanding Program - Stage U3 complete, Stage U4 partial`
+
+## Execution Plan
+
+1. Phase 0 - read specs, create root control docs, record environment baseline.
+2. Phase 1 - bootstrap Bun workspace, strict TypeScript, root scripts, shared configs.
+3. Phase 2 - implement kernel contracts, schema DSLs, registries, and graph solver.
+4. Phase 3 - implement security, trust, permissions, restricted mode, and governance contracts.
+5. Phase 4 - implement DB layer, migration framework, role model, and DB security helpers.
+6. Phase 5 - implement auth, tenancy, role policy, actor context, and audit foundations.
+7. Phase 6 - implement REST/OpenAPI, GraphQL adapter, webhooks, and AI tool contracts.
+8. Phase 7 - implement admin, portal, and site shells plus UI surface/zone registration.
+9. Phase 8 - implement foundational base plugins.
+10. Phase 9 - keep optional store plugins out of the shipped framework repository.
+11. Phase 10 - harden tests.
+12. Phase 11 - add CI/CD and release gates.
+13. Phase 12 - reconcile docs, results, and residual risks.
+
+## Completed Milestones
+
+- Read `Goal.md` fully.
+- Read `Developer_DeepDive.md` fully.
+- Extracted mandatory architectural, security, database, API, UI, and package-system requirements.
+- Created mandatory tracking documents at repo root.
+- Installed Bun locally at `~/.bun/bin/bun`.
+- Added root workspace configuration:
+  - `package.json`
+  - `bunfig.toml`
+  - `tsconfig.base.json`
+  - `tsconfig.json`
+  - `eslint.config.mjs`
+  - `prettier.config.mjs`
+  - env templates
+  - workspace task runner
+- Generated the monorepo tree for:
+  - apps
+  - platform packages
+  - built-in plugins
+  - framework verification tooling
+- Installed and locked external dependencies with Bun.
+- Added `docs/` mirror entries and a root `README.md` runbook.
+- Documented the next ecosystem layer in `docs/ecosystem-cli-and-registries.md`:
+  - one `platform` CLI
+  - separate plugin store and library registry
+  - vendored vs cached install modes
+  - lockfile/project metadata direction
+  - clean install destinations that do not mutate framework source
+- Removed the checked-in optional plugin catalog from the framework repository plan so the Git baseline stays focused on:
+  - framework core
+  - framework libraries
+  - built-in plugins
+  - verification apps and tooling
+- Implemented core platform packages:
+  - `@platform/kernel`
+  - `@platform/schema`
+  - `@platform/permissions`
+  - `@platform/plugin-solver`
+- Implemented DB/auth/API/UI wrapper packages:
+  - `@platform/db-drizzle`
+  - `@platform/migrate`
+  - `@platform/auth`
+  - `@platform/auth-admin`
+  - `@platform/api-rest`
+  - `@platform/api-graphql`
+  - `@platform/ui-router`
+  - `@platform/ui-query`
+  - `@platform/ui-form`
+  - `@platform/ui-table`
+  - `@platform/ui-kit`
+  - `@platform/ui-editor`
+  - `@platform/ui-zone-next`
+  - `@platform/ui-zone-static`
+- Added unit and contract coverage for the implemented platform packages.
+- Added workspace-backed bundle resolution smoke tests using real bundle and plugin manifests.
+- Fixed generated plugin self-dependencies and normalized the foundation dependency graph to remove solver cycles.
+- Hardened the first ten foundation plugins with domain-specific resources, actions, service logic, and tests:
+  - `auth-core`
+  - `org-tenant-core`
+  - `role-policy-core`
+  - `audit-core`
+  - `user-directory`
+  - `workflow-core`
+  - `jobs-core`
+  - `files-core`
+  - `notifications-core`
+  - `portal-core`
+- Added explicit workflow catalogs, queue job catalogs, file-quarantine rules, provider-routed notifications, and portal shell surfaces to those foundations.
+- Completed a prior optional-plugin hardening wave for representative scheduling, booking, CRM, and growth surfaces before the framework repo was narrowed back down to built-in distribution only.
+- Added Postgres security/bootstrap assets and live DB verification:
+  - generated `ops/postgres/platform-bootstrap.sql`
+  - generated `ops/postgres/transaction-context.sql`
+  - generated `ops/postgres/compose.yaml`
+  - live Postgres integration tests proving role creation, curated `api` grants, and tenant RLS behavior in `@platform/db-drizzle`
+- Hardened the commerce/catalog/pricing/payments slice with:
+  - sellable catalog contracts and merchandising keys in `catalog-core`
+  - quote/evaluation helpers and activation snapshots in `pricing-core`
+  - order confirmation and payable-order derivation in `commerce-core`
+  - capture/settlement and checkout integration flow coverage in `payments-core`
+- Upgraded workspace quality-gate behavior:
+  - `tooling/scripts/workspace-task.mjs` now auto-discovers conventional `tests/unit`, `tests/integration`, `tests/contracts`, `tests/migrations`, and `tests/e2e` directories for phase-specific root test commands
+  - added `.github/workflows/ci.yml`
+  - added `.github/workflows/release-readiness.yml`
+  - added [docs/release-pipeline.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/release-pipeline.md)
+  - aligned `.env.example` and `.env.test.example` with the generated Postgres bootstrap defaults
+- Completed the remaining unchecked core-framework contract work:
+  - `@platform/ui-shell` shared providers, navigation contracts, telemetry hooks, audit sinks, and command/notification buses
+  - `@platform/plugin-solver` rollback checkpoint planning and dangerous-capability acknowledgement warnings
+  - `@platform/permissions` dormant dangerous-grant reset metadata and evaluation helpers
+  - `@platform/db-drizzle` explicit query convention helpers and tests
+  - `@plugins/audit-core` explicit audit emission metadata for downstream sinks
+- Hardened the release and supply-chain path:
+  - upgraded `drizzle-orm` to `^0.45.2`
+  - removed the direct `drizzle-kit` root dependency
+  - added `coverage:report`, `package:release`, `sbom:generate`, `provenance:generate`, `sign:artifacts`, and `security:audit` root scripts
+  - added generated release artifacts under `artifacts/`
+  - added CI/release attestation steps for provenance and SBOM
+- Verified the new quality-gate path end to end:
+  - `bun install`
+  - `bun run security:audit`
+  - `bun run package:release`
+  - `bun run sbom:generate`
+  - `bun run provenance:generate`
+  - `bun run sign:artifacts`
+  - `bun run coverage:report`
+  - `bun run lint`
+  - `bun run test:integration`
+  - `bun run test:contracts`
+  - `bun run test:migrations`
+- Closed the remaining framework/package quality gaps:
+  - hardened `@platform/runtime-bun`, `@platform/http`, `@platform/config`, `@platform/events`, `@platform/jobs`, `@platform/jobs-bullmq`, `@platform/logger`, `@platform/observability`, `@platform/search`, `@platform/geo`, `@platform/analytics`, `@platform/email-templates`, and `@platform/ai`
+  - added live HTTP bridge coverage for `@platform/api-rest` and `@platform/api-graphql`
+  - added session refresh/header/job propagation coverage to `@platform/auth`
+  - added explicit admin audit-event emission coverage to `@platform/auth-admin`
+  - added shared-provider/navigation/telemetry shell hardening and browser E2E coverage through `@apps/platform-dev-console`
+- Removed the remaining framework audit allowlist and replaced it with reachable-release-graph auditing.
+- Added a real signing path:
+  - local verification signs with the checked-in dev test key
+  - CI release verification requires env-backed signing material
+  - `bun run verify:artifacts-signature` now verifies the generated provenance signature
+- Expanded the root `ci:check` gate so it now runs:
+  - build
+  - typecheck
+  - lint
+  - test
+  - test:integration
+  - test:contracts
+  - test:migrations
+  - test:e2e
+- Re-ran the exact clean-shell root gate with live Postgres wiring and it passed.
+- Re-ran coverage, release packaging, SBOM, provenance, signing, and signature verification against the final code state and all commands passed.
+- Closed the remaining framework governance/security edge gaps:
+  - added install-review and update-review contracts plus optimistic concurrent grant-update protection to `@platform/permissions`
+  - added an explicit restricted-preview activation path for unknown plugins in `@platform/plugin-solver`
+  - added duplicate-activation, partial-bundle, simultaneous-permission-update, and reentrant-job regression coverage
+  - extended `@apps/platform-dev-console` browser E2E to prove unknown-plugin restricted preview strips privileged hosts/capabilities and stays access-controlled
+- Re-ran the clean-shell root gate after the governance hardening and it passed again.
+- Re-ran `bun run security:audit` after the governance hardening and it remained green.
+- Implemented the admin desk package family on top of `@platform/ui-shell`:
+  - `@platform/admin-contracts`
+  - `@platform/admin-listview`
+  - `@platform/admin-formview`
+  - `@platform/admin-widgets`
+  - `@platform/admin-reporting`
+  - `@platform/admin-builders`
+  - `@platform/admin-shell-workbench`
+- Added the default admin shell plugin `@plugins/admin-shell-workbench`.
+- Sanitized the shipped admin-desk naming surface so external reference-product names no longer appear in package ids, plugin ids, shell ids, labels, tests, comments, or regenerated build outputs outside `ref/dashboard/`.
+- Added deterministic admin contribution validation plus legacy `defineUiSurface` adaptation so existing admin pages/widgets/zones can mount inside the desk.
+- Expanded `@platform/ui-kit`, `@platform/ui-table`, `@platform/ui-form`, `@platform/ui-query`, and `@platform/ui-router` with the admin primitives required by the desk DSLs.
+- Migrated representative plugin/admin surfaces into the desk contribution model:
+  - `dashboard-core`
+  - `ai-core`
+  - `page-builder-core`
+- Reworked `@apps/platform-dev-console` into the admin desk verification harness with workspace navigation, search, reports, builders, healthy/degraded zones, forbidden routes, impersonation, and restricted-preview coverage.
+- Upgraded the default admin workbench UX so the shell now owns its visual system instead of relying on bare utility-class markup:
+  - shell-owned theme tokens and CSS variables
+  - denser workspace/sidebar/topbar composition
+  - breadcrumbs, inbox cards, tenant chips, user-menu hooks, help links, and utility links
+  - richer workspace home, report, builder, and zone presentation
+- Upgraded representative proving surfaces to match the workbench UX language:
+  - `dashboard-core`
+  - `ai-core`
+  - `page-builder-core`
+- Closed the remaining admin-desk guide gaps with first-class operator surfaces:
+  - operations inbox
+  - export center report surface
+  - report builder
+  - chart studio
+  - background job monitor
+  - plugin health panel
+- Added query-preserving desk links/forms plus appearance presets so search, command palette, tenant/profile context, and shell skin state remain coherent across admin routes.
+- Extended the workbench customization surface with:
+  - appearance presets
+  - keyboard shortcut hints
+  - richer utility-link metadata
+  - custom report rendering through report contribution components
+- Replaced the flaky `bun test` Playwright path in `@apps/platform-dev-console` with a direct Bun + Playwright E2E runner that is stable in this environment.
+- Re-ran targeted builds, unit tests, browser E2E, workspace `test:e2e`, and fresh repo-wide lint after the workbench UX wave.
+- Re-ran the exact clean-shell root `ci:check` gate after the final admin-desk/operator-surface wave and it passed.
+- Cloned the requested comparison references into `ref/dashboard/`.
+- Implemented the canonical admin-plugin wrapper taxonomy:
+  - `@platform/ui`
+  - `@platform/router`
+  - `@platform/query`
+  - `@platform/data-table`
+  - `@platform/form`
+  - `@platform/chart`
+  - `@platform/editor`
+  - `@platform/layout`
+  - `@platform/contracts`
+  - `@platform/telemetry-ui`
+  - `@platform/command-palette`
+- Locked the shared admin-plugin stack on React, TanStack Router/Query/Table/Virtual, React Hook Form, Zod, Radix/shadcn-style wrappers, Lucide, Sonner, cmdk, date-fns, ECharts, Tiptap, and React Email through platform wrappers instead of raw plugin imports.
+- Added wrapper-backed capabilities across the canonical alias packages:
+  - virtualization helpers in `@platform/data-table`
+  - icon/toast/date helpers in `@platform/ui`
+  - cmdk-backed palette primitives in `@platform/command-palette`
+  - ECharts presets in `@platform/chart`
+  - split-panel workspace/layout helpers in `@platform/layout`
+  - readonly/editor preset helpers in `@platform/editor`
+  - shell telemetry helpers in `@platform/telemetry-ui`
+- Migrated the admin workbench and representative admin plugin surfaces to consume the canonical wrappers instead of raw stack imports.
+- Added repo-level enforcement so admin-registered plugins cannot import the raw admin stack directly:
+  - `eslint.config.mjs`
+  - `packages/contracts/tests/contracts/admin-plugin-imports.test.ts`
+- Added [docs/admin-ui-stack.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/admin-ui-stack.md) and linked it from the repository readmes.
+- Rewrote the root `README.md` into a full platform handbook covering:
+  - purpose and positioning
+  - AI-first developer experience
+  - architecture and flows
+  - package and plugin taxonomy
+  - admin workbench model
+  - canonical admin frontend stack
+  - plugin/package/app authoring guides
+  - connector, migration-pack, and bundle authoring
+  - security posture
+  - testing and release guidance
+  - operational edge cases and decision rules
+- Restructured the monorepo taxonomy for framework distribution:
+  - moved engine/runtime packages under `framework/core/`
+  - moved shared libraries and admin/UI wrappers under `framework/libraries/`
+  - moved shipped default plugins under `framework/builtin-plugins/`
+  - kept optional/business extensions under `plugins/`
+  - kept `@platform/*` and `@plugins/*` package identities stable while changing filesystem layout only
+  - updated root workspaces, TypeScript aliases, workspace utilities, the Postgres asset renderer, and the scaffolder for the new layout
+- Initialized the root Git repository and ignored the cloned external reference repos under `ref/dashboard/*` so they do not become accidental embedded submodules in the framework repo.
+- Re-ran the exact clean-shell root `ci:check` gate after the repository restructure and it passed.
+- Re-ran the exact clean-shell root gate after the admin stack alignment wave and it passed.
+- Implemented the native AI-agent framework layer:
+  - `@platform/ai-runtime`
+  - `@platform/ai-memory`
+  - `@platform/ai-guardrails`
+  - `@platform/ai-evals`
+  - `@platform/ai-mcp`
+- Extended `@platform/schema` and `@platform/ai` so actions/resources can declare:
+  - AI-facing tool metadata
+  - approval requirements
+  - output redaction policy
+  - grounding inputs
+  - replay metadata
+- Added AI install-review governance in `@platform/permissions` for:
+  - runtime model/tool execution capability review
+  - memory export review
+- Shipped the first built-in AI packs under `framework/builtin-plugins/`:
+  - `ai-core`
+  - `ai-rag`
+  - `ai-evals`
+- Added AI operator surfaces to the admin workbench:
+  - runs dashboard
+  - prompt registry
+  - approval queue
+  - replay console
+  - memory collections
+  - retrieval diagnostics
+  - eval runs
+  - AI reports/widgets/commands/search
+- Added the first `@platform/cli` implementation with AI-native commands:
+  - `platform agent run`
+  - `platform agent replay`
+  - `platform agent approve`
+  - `platform prompt validate`
+  - `platform prompt diff`
+  - `platform memory ingest`
+  - `platform memory reindex`
+  - `platform eval run`
+  - `platform eval compare`
+  - `platform mcp inspect`
+  - `platform mcp serve`
+  - `platform make ai-pack`
+- Added a repo-native developer entrypoint for the CLI via `bun run platform -- ...` so local workspace use does not depend on package publication.
+- Verified the AI platform wave with:
+  - targeted typechecks for the new AI libraries, built-in AI packs, CLI, and admin harness
+  - targeted unit and contract tests for permissions, AI packages, AI packs, and CLI scaffolding
+  - browser E2E in `apps/platform-dev-console` covering AI routes, reports, and permission denials
+- Implemented the agent-understanding framework layer:
+  - `@platform/agent-understanding`
+  - resource-level semantic metadata in `@platform/schema`
+  - action-level semantic metadata in `@platform/schema`
+  - workflow-level semantic metadata in `@platform/jobs`
+- Added understanding CLI workflows to `@platform/cli`:
+  - `platform docs scaffold`
+  - `platform docs index`
+  - `platform docs validate`
+- Added root workspace shortcuts:
+  - `bun run docs:scaffold`
+  - `bun run docs:index`
+  - `bun run docs:validate`
+- Added the generated repository understanding map:
+  - `docs/agent-understanding.index.json`
+- Generated the required doc pack across apps, framework packages, libraries, and built-in plugins.
+- Updated representative package exemplars with rich semantic metadata:
+  - `dashboard-core`
+  - `workflow-core`
+  - `ai-core`
+- Updated the workspace scaffolder so newly generated apps, packages, and built-in plugins start with:
+  - package descriptions
+  - doc-pack files
+  - richer resource/action semantic templates
+- Added docs validation into the root `ci:check` gate so system understanding is part of delivery quality.
+
+## In Progress
+
+- None inside the implemented AI/framework scope.
+
+## Current Blockers
+
+- None for the framework core and `framework/*` acceptance scope.
+- Environment note: this shell still needs `export PATH="$HOME/.bun/bin:$PATH"` for Bun commands.
+- Environment note: the root framework workspace is now a git repository, but the cloned external references remain ignored under `ref/dashboard/*`.
+- Environment note: Docker is installed but the daemon is not running here, so local Postgres verification currently uses the resident server path instead of `docker compose`.
+- Deferred-by-plan note: the remaining domain, feature-pack, and vertical plugin hardening work is intentionally out of scope for the framework-first completion milestone.
+- AI note: the built-in AI packs currently use deterministic service fixtures for operator/demo behavior rather than a fully persisted control plane.
+- AI note: `platform mcp serve` currently emits governed MCP server descriptors over stdout; a long-running transport server is still a follow-on task.
+- AI note: eval datasets, baselines, and regression gates exist, but threshold enforcement is not yet wired into the root CI/release gate.
+- Understanding note: docs validation is green for required doc-pack coverage, but the repo still emits warning-level findings for legacy packages whose inline resource/action/field semantics have not yet been deeply backfilled.
+
+## Next Actions
+
+1. Reduce the remaining understanding warnings by backfilling inline semantic metadata across older legacy packages and plugins.
+2. Expand `@platform/cli` beyond AI-native flows into the full workspace/runtime orchestration surface.
+3. Move the AI control plane from fixture-backed built-in services into persistent workflow/job-backed runtime state.
+4. Add full MCP transport serving, external MCP connector governance, and eval-threshold release gating.
+5. Then resume the deferred plugin/business wave on top of the governed AI and ecosystem tooling.
+
+## Latest Test Summary
+
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- --help`
+  - exit code: `0`
+  - result: the repo-native CLI runner exposes the AI command surface from the framework root
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- mcp inspect --tool ai.memory.retrieve`
+  - exit code: `0`
+  - result: MCP-safe descriptor inspection works through the local `platform` runner
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- agent run --goal "Summarize open escalations with grounded next steps."`
+  - exit code: `0`
+  - result: the repo-native CLI returns a completed AI run payload with a generated `runId`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs scaffold --all`
+  - exit code: `0`
+  - result: the standard understanding doc pack was generated across the repository topology
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs index --all --out docs/agent-understanding.index.json`
+  - exit code: `0`
+  - result: the machine-readable repository understanding index was regenerated successfully
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs validate --all`
+  - exit code: `0`
+  - result: required doc-pack coverage passed across the repo; remaining semantic gaps are surfaced as warnings instead of hard failures
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
+  - exit code: `0`
+  - result: fresh repo-wide lint passed after the AI CLI and AI package cleanup; remaining `react-refresh/only-export-components` output is warning-only in multi-export UI entrypoints
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: the exact clean-shell root gate passed after the AI platform wave, including build, typecheck, lint, test, integration, contract, migration, and browser e2e phases
+- `export PATH="$HOME/.bun/bin:$PATH" && bun install`
+  - exit code: `0`
+  - result: workspace install refreshed successfully against the new `framework/core`, `framework/libraries`, and `framework/builtin-plugins` workspaces
+- `export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: the exact clean-shell root gate passed after the repository topology move, covering build, typecheck, lint, test, integration, contract, migration, and browser e2e phases
+
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test packages/admin-contracts/tests/unit/package.test.ts packages/admin-listview/tests/unit/package.test.ts packages/admin-formview/tests/unit/package.test.ts packages/admin-widgets/tests/unit/package.test.tsx packages/admin-reporting/tests/unit/package.test.ts packages/admin-builders/tests/unit/package.test.tsx packages/admin-shell-workbench/tests/unit/package.test.tsx`
+  - result: all new admin package unit suites passed
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/builtin-plugins/dashboard-core/tests/contracts/admin-contributions.test.ts framework/builtin-plugins/ai-core/tests/contracts/admin-contributions.test.ts framework/builtin-plugins/page-builder-core/tests/contracts/admin-contributions.test.ts`
+  - result: representative built-in admin-contribution contract tests passed
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e` in `apps/platform-dev-console`
+  - exit code: `0`
+  - result: direct Bun + Playwright browser E2E passed for workspace navigation, global search, command palette query preservation, export center, report builder, job monitor, healthy/degraded zones, forbidden routes, impersonation, and restricted-preview security details
+- `export PATH="$HOME/.bun/bin:$PATH" && bunx tsc -p plugins/foundations/dashboard-core/tsconfig.json --noEmit`
+  - exit code: `0`
+  - result: `dashboard-core` typecheck passed after adding the export center, inbox, report/chart builders, job monitor, and plugin health surfaces
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run typecheck` in:
+  - `framework/libraries/admin-shell-workbench`
+  - `framework/libraries/admin-widgets`
+  - `framework/libraries/admin-builders`
+  - `framework/libraries/admin-listview`
+  - `framework/builtin-plugins/dashboard-core`
+  - `framework/builtin-plugins/ai-core`
+  - `framework/builtin-plugins/page-builder-core`
+  - `apps/platform-dev-console`
+  - result: targeted admin-desk package/app typechecks passed
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run security:audit`
+  - exit code: `0`
+  - result: no advisories at or above `moderate` after the admin-desk dependency changes
+- `export PATH="$HOME/.bun/bin:$PATH" && bunx tsc -p packages/admin-shell-workbench/tsconfig.json --noEmit`
+  - exit code: `0`
+  - result: workbench shell typecheck passed after the UX/customization pass
+- `export PATH="$HOME/.bun/bin:$PATH" && bunx tsc -p apps/platform-dev-console/tsconfig.json --noEmit`
+  - exit code: `0`
+  - result: admin harness typecheck passed after the shell/harness refactor
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test packages/admin-shell-workbench/tests/unit/package.test.tsx`
+  - exit code: `0`
+  - result: workbench unit coverage remained green after the UX/customization pass
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test plugins/foundations/dashboard-core/tests/contracts/admin-contributions.test.ts`
+  - exit code: `0`
+  - result: dashboard-core contract coverage passed after registering the remaining operator surfaces and builders
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test packages/ui-kit/tests/unit/package.test.ts packages/admin-widgets/tests/unit/package.test.tsx packages/admin-builders/tests/unit/package.test.tsx`
+  - exit code: `0`
+  - result: shared admin primitives remained green after the visual-system pass
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run build` in:
+  - `framework/libraries/admin-shell-workbench`
+  - `framework/builtin-plugins/dashboard-core`
+  - `framework/builtin-plugins/page-builder-core`
+  - `framework/builtin-plugins/ai-core`
+  - `apps/platform-dev-console`
+  - exit code: `0`
+  - result: touched workbench and proving surfaces rebuilt successfully
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test` in:
+  - `apps/platform-dev-console`
+  - exit code: `0`
+  - result: app unit suite remained green after moving browser verification into the direct Playwright runner
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e` in:
+  - `apps/platform-dev-console`
+  - exit code: `0`
+  - result: direct Bun + Playwright harness passed for workspace navigation, search, reports, builders, healthy/degraded zones, permission denials, impersonation, and restricted preview
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e`
+  - exit code: `0`
+  - result: root workspace E2E runner passed through `workspace-task`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
+  - exit code: `0`
+  - result: fresh repo-wide lint passed after the workbench UX wave and the new direct browser runner
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
+  - exit code: `0`
+  - result: fresh repo-wide lint passed after fixing the remaining `packages/ui-form/tests/unit/package.test.ts` `require-await` tail
+- `export PATH="$HOME/.bun/bin:$PATH" && bun install`
+  - exit code: `0`
+  - result: refreshed `bun.lock` after renaming the shipped admin shell package/plugin to the neutral workbench identifiers
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run typecheck && bun test && bun run build` in:
+  - `packages/admin-shell-workbench`
+  - `plugins/foundations/admin-shell-workbench`
+  - result: renamed shell package and plugin wrapper typechecked, tested, and rebuilt successfully
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run typecheck && bun run test:e2e && bun run build` in:
+  - `apps/platform-dev-console`
+  - result: browser harness typechecked, passed the admin desk E2E suite, and rebuilt successfully with the neutral workbench identifiers
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test packages/admin-builders/tests/unit/package.test.tsx`
+  - exit code: `0`
+  - result: updated multi-panel builder wording remained green
+- workspace reference-name leak scan across source, docs, manifests, and rebuilt outputs
+  - result: no remaining reference-product naming leaks outside `ref/dashboard/admin_ui_deepdive.md`
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: clean-shell root gate passed with build, typecheck, lint, test, integration, contracts, migrations, and browser E2E
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: clean-shell root gate passed again after the final admin-desk operator-surface and customization wave
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e`
+  - exit code: `0`
+  - result: `@apps/platform-dev-console` browser E2E passed for shell bootstrap, deep links, permission-aware hiding, and shared-session wiring
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run coverage:report`
+  - exit code: `0`
+  - result: workspace coverage manifests and per-package LCOV outputs regenerated under `coverage/`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run security:audit`
+  - exit code: `0`
+  - result: no vulnerability advisories at or above `moderate`
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: clean-shell root gate passed again after the governance/restricted-preview hardening wave
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test packages/ui/tests/unit/package.test.tsx packages/command-palette/tests/unit/package.test.tsx packages/chart/tests/unit/package.test.tsx packages/data-table/tests/unit/package.test.ts packages/form/tests/unit/package.test.ts packages/router/tests/unit/package.test.ts packages/query/tests/unit/package.test.ts packages/editor/tests/unit/package.test.tsx packages/layout/tests/unit/package.test.tsx packages/contracts/tests/unit/package.test.ts packages/contracts/tests/contracts/admin-plugin-imports.test.ts packages/telemetry-ui/tests/unit/package.test.ts packages/admin-builders/tests/unit/package.test.tsx packages/admin-widgets/tests/unit/package.test.tsx`
+  - exit code: `0`
+  - result: canonical wrapper package suites and the admin-plugin raw-import policy scan passed
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e` in `apps/platform-dev-console`
+  - exit code: `0`
+  - result: the harness passed with wrapper-backed workspace navigation, search, builders, zone recovery, toast rendering, permission denials, and restricted preview flows
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
+  - exit code: `0`
+  - result: repo-wide lint passed after the canonical wrapper migration; remaining `react-refresh/only-export-components` output is warning-only in multi-export package entrypoints
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: clean-shell root gate passed after the canonical admin-stack alignment wave
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run package:release`
+  - exit code: `0`
+  - produced:
+    - `artifacts/release/platform-core-framework.tgz`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run sbom:generate`
+  - exit code: `0`
+  - produced:
+    - `artifacts/sbom/platform-sbom.cdx.json`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run provenance:generate && bun run sign:artifacts && bun run verify:artifacts-signature`
+  - exit code: `0`
+  - produced and verified:
+    - `artifacts/provenance/build-provenance.json`
+    - `artifacts/provenance/release-signature.json`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run docs:validate`
+  - exit code: `0`
+  - result: required understanding doc-pack coverage is green across the repository; remaining inline semantic gaps are reported as warnings
+- `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/core/cli/tests/unit/package.test.ts`
+  - exit code: `0`
+  - result: the CLI understanding test now passes from both repo-root and package-local execution contexts
+- `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
+  - exit code: `0`
+  - result: clean-shell root gate passed after the understanding-layer docs, README, and CLI cwd fix
