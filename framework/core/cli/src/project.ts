@@ -20,17 +20,30 @@ export type InitWorkspaceResult = {
   nextSteps: string[];
 };
 
-const frameworkDistributionEntries = ["framework", "tooling", "README.md"] as const;
+const frameworkDistributionEntries = [
+  "framework",
+  "tooling",
+  "docs",
+  "README.md",
+  "Goal.md",
+  "Developer_DeepDive.md",
+  "package.json",
+  "tsconfig.base.json",
+  "tsconfig.json",
+  "bunfig.toml",
+  "eslint.config.mjs",
+  "prettier.config.mjs"
+] as const;
 
-export function initMokiWorkspace(cwd: string, options: InitWorkspaceOptions): InitWorkspaceResult {
+export function initGutuWorkspace(cwd: string, options: InitWorkspaceOptions): InitWorkspaceResult {
   const projectRoot = resolve(cwd, options.target);
-  const frameworkSource = resolve(options.frameworkSource ?? resolve(import.meta.dir, "../../../../"));
+  const frameworkSource = resolve(options.frameworkSource ?? detectFrameworkSourceRoot());
   const frameworkMode = options.frameworkMode ?? "symlink";
 
   prepareTargetDirectory(projectRoot, options.force ?? false);
   ensureFrameworkSource(frameworkSource);
 
-  const projectName = slugifyName(projectRoot.split("/").filter(Boolean).at(-1) ?? "moki-project");
+  const projectName = slugifyName(projectRoot.split("/").filter(Boolean).at(-1) ?? "gutu-project");
   const starterPluginId = `${projectName}-core`;
   const starterAppId = `${projectName}-studio`;
 
@@ -67,6 +80,24 @@ export function initMokiWorkspace(cwd: string, options: InitWorkspaceOptions): I
       "bun run ci:check"
     ]
   };
+}
+
+function detectFrameworkSourceRoot(): string {
+  let cursor = resolve(import.meta.dir);
+
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (frameworkDistributionEntries.every((entry) => existsSync(join(cursor, entry)))) {
+      return cursor;
+    }
+
+    const parent = dirname(cursor);
+    if (parent === cursor) {
+      break;
+    }
+    cursor = parent;
+  }
+
+  return resolve(import.meta.dir, "../../../../");
 }
 
 function prepareTargetDirectory(projectRoot: string, force: boolean) {
@@ -111,12 +142,12 @@ function writeProjectFiles(
     "bunfig.toml": createProjectBunfig(),
     "tsconfig.json": createProjectTsconfig(),
     "tsconfig.base.json": createProjectTsconfigBase(),
-    "moki.project.json": createProjectManifestJson(input.projectName, input.frameworkMode),
+    "gutu.project.json": createProjectManifestJson(input.projectName, input.frameworkMode),
     "docs/README.md": createProjectDocsReadme(input.projectName),
     "vendor/plugins/.gitkeep": "",
     "vendor/libraries/.gitkeep": "",
-    ".moki/state/.gitkeep": "",
-    ".moki/cache/.gitkeep": ""
+    ".gutu/state/.gitkeep": "",
+    ".gutu/cache/.gitkeep": ""
   };
 
   for (const [relativePath, contents] of Object.entries(files)) {
@@ -125,7 +156,7 @@ function writeProjectFiles(
 }
 
 function vendorFrameworkDistribution(projectRoot: string, frameworkSource: string, mode: "symlink" | "copy") {
-  const vendorRoot = join(projectRoot, "vendor", "framework", "moki");
+  const vendorRoot = join(projectRoot, "vendor", "framework", "gutu");
   mkdirSync(vendorRoot, { recursive: true });
 
   for (const entry of frameworkDistributionEntries) {
@@ -295,19 +326,19 @@ function writeProjectMetadata(
 }
 
 function createProjectPackageJson(projectName: string): string {
-  return `{\n  "name": "@workspace/${projectName}",\n  "private": true,\n  "type": "module",\n  "packageManager": "bun@1.3.12",\n  "workspaces": [\n    "apps/*",\n    "libraries/*",\n    "plugins/*",\n    "vendor/plugins/*",\n    "vendor/libraries/*",\n    "vendor/framework/moki/framework/core/*",\n    "vendor/framework/moki/framework/libraries/*",\n    "vendor/framework/moki/framework/builtin-plugins/*"\n  ],\n  "scripts": {\n    "moki": "bun run vendor/framework/moki/framework/core/cli/src/bin.ts",\n    "platform": "bun run vendor/framework/moki/framework/core/cli/src/bin.ts",\n    "build": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs build",\n    "typecheck": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs typecheck",\n    "lint": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs lint",\n    "test": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test",\n    "test:unit": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test:unit",\n    "test:integration": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test:integration",\n    "test:e2e": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test:e2e",\n    "test:contracts": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test:contracts",\n    "test:migrations": "bun run vendor/framework/moki/tooling/scripts/workspace-task.mjs test:migrations",\n    "coverage:report": "bun run vendor/framework/moki/tooling/scripts/workspace-coverage.mjs",\n    "docs:scaffold": "bun run moki -- docs scaffold --all",\n    "docs:index": "bun run moki -- docs index --all --out docs/agent-understanding.index.json",\n    "docs:validate": "bun run moki -- docs validate --all",\n    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e"\n  }\n}\n`;
+  return `{\n  "name": "@workspace/${projectName}",\n  "private": true,\n  "type": "module",\n  "packageManager": "bun@1.3.12",\n  "workspaces": [\n    "apps/*",\n    "libraries/*",\n    "plugins/*",\n    "vendor/plugins/*",\n    "vendor/libraries/*",\n    "vendor/framework/gutu/framework/core/*",\n    "vendor/framework/gutu/framework/libraries/*",\n    "vendor/framework/gutu/framework/builtin-plugins/*"\n  ],\n  "scripts": {\n    "gutu": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "platform": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "build": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs build",\n    "typecheck": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs typecheck",\n    "lint": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs lint",\n    "test": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test",\n    "test:unit": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:unit",\n    "test:integration": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:integration",\n    "test:e2e": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:e2e",\n    "test:contracts": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:contracts",\n    "test:migrations": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:migrations",\n    "coverage:report": "bun run vendor/framework/gutu/tooling/scripts/workspace-coverage.mjs",\n    "docs:scaffold": "bun run gutu -- docs scaffold --all",\n    "docs:index": "bun run gutu -- docs index --all --out docs/agent-understanding.index.json",\n    "docs:validate": "bun run gutu -- docs validate --all",\n    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e"\n  }\n}\n`;
 }
 
 function createProjectBunfig(): string {
-  return `[install]\nsaveTextLockfile = true\nexact = false\n\n[test]\npreload = ["./vendor/framework/moki/tooling/test/register-env.ts"]\n`;
+  return `[install]\nsaveTextLockfile = true\nexact = false\n\n[test]\npreload = ["./vendor/framework/gutu/tooling/test/register-env.ts"]\n`;
 }
 
 function createProjectTsconfig(): string {
-  return `{\n  "extends": "./tsconfig.base.json",\n  "compilerOptions": {\n    "noEmit": true\n  },\n  "include": [\n    "apps/**/*.ts",\n    "apps/**/*.tsx",\n    "libraries/**/*.ts",\n    "libraries/**/*.tsx",\n    "plugins/**/*.ts",\n    "plugins/**/*.tsx",\n    "vendor/plugins/**/*.ts",\n    "vendor/plugins/**/*.tsx",\n    "vendor/libraries/**/*.ts",\n    "vendor/libraries/**/*.tsx"\n  ],\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".moki"\n  ]\n}\n`;
+  return `{\n  "extends": "./tsconfig.base.json",\n  "compilerOptions": {\n    "noEmit": true\n  },\n  "include": [\n    "apps/**/*.ts",\n    "apps/**/*.tsx",\n    "libraries/**/*.ts",\n    "libraries/**/*.tsx",\n    "plugins/**/*.ts",\n    "plugins/**/*.tsx",\n    "vendor/plugins/**/*.ts",\n    "vendor/plugins/**/*.tsx",\n    "vendor/libraries/**/*.ts",\n    "vendor/libraries/**/*.tsx"\n  ],\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".gutu"\n  ]\n}\n`;
 }
 
 function createProjectTsconfigBase(): string {
-  return `{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "moduleDetection": "force",\n    "lib": ["ES2023", "DOM", "DOM.Iterable"],\n    "jsx": "react-jsx",\n    "strict": true,\n    "noImplicitAny": true,\n    "noUncheckedIndexedAccess": true,\n    "noImplicitOverride": true,\n    "useUnknownInCatchVariables": true,\n    "exactOptionalPropertyTypes": true,\n    "forceConsistentCasingInFileNames": true,\n    "skipLibCheck": true,\n    "verbatimModuleSyntax": true,\n    "resolveJsonModule": true,\n    "allowSyntheticDefaultImports": true,\n    "esModuleInterop": true,\n    "declaration": true,\n    "declarationMap": true,\n    "sourceMap": true,\n    "incremental": true,\n    "types": ["bun-types", "node", "react", "react-dom"],\n    "baseUrl": ".",\n    "paths": {\n      "@platform/*": [\n        "vendor/framework/moki/framework/core/*/src/index.ts",\n        "vendor/framework/moki/framework/core/*/src/index.tsx",\n        "vendor/framework/moki/framework/libraries/*/src/index.ts",\n        "vendor/framework/moki/framework/libraries/*/src/index.tsx"\n      ],\n      "@plugins/*": [\n        "plugins/*/src/index.ts",\n        "plugins/*/src/index.tsx",\n        "vendor/plugins/*/src/index.ts",\n        "vendor/plugins/*/src/index.tsx",\n        "vendor/framework/moki/framework/builtin-plugins/*/src/index.ts",\n        "vendor/framework/moki/framework/builtin-plugins/*/src/index.tsx"\n      ],\n      "@apps/*": [\n        "apps/*/src/index.ts",\n        "apps/*/src/index.tsx"\n      ]\n    }\n  },\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".moki"\n  ]\n}\n`;
+  return `{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "moduleDetection": "force",\n    "lib": ["ES2023", "DOM", "DOM.Iterable"],\n    "jsx": "react-jsx",\n    "strict": true,\n    "noImplicitAny": true,\n    "noUncheckedIndexedAccess": true,\n    "noImplicitOverride": true,\n    "useUnknownInCatchVariables": true,\n    "exactOptionalPropertyTypes": true,\n    "forceConsistentCasingInFileNames": true,\n    "skipLibCheck": true,\n    "verbatimModuleSyntax": true,\n    "resolveJsonModule": true,\n    "allowSyntheticDefaultImports": true,\n    "esModuleInterop": true,\n    "declaration": true,\n    "declarationMap": true,\n    "sourceMap": true,\n    "incremental": true,\n    "types": ["bun-types", "node", "react", "react-dom"],\n    "baseUrl": ".",\n    "paths": {\n      "@platform/*": [\n        "vendor/framework/gutu/framework/core/*/src/index.ts",\n        "vendor/framework/gutu/framework/core/*/src/index.tsx",\n        "vendor/framework/gutu/framework/libraries/*/src/index.ts",\n        "vendor/framework/gutu/framework/libraries/*/src/index.tsx"\n      ],\n      "@plugins/*": [\n        "plugins/*/src/index.ts",\n        "plugins/*/src/index.tsx",\n        "vendor/plugins/*/src/index.ts",\n        "vendor/plugins/*/src/index.tsx",\n        "vendor/framework/gutu/framework/builtin-plugins/*/src/index.ts",\n        "vendor/framework/gutu/framework/builtin-plugins/*/src/index.tsx"\n      ],\n      "@apps/*": [\n        "apps/*/src/index.ts",\n        "apps/*/src/index.tsx"\n      ]\n    }\n  },\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".gutu"\n  ]\n}\n`;
 }
 
 function createProjectManifestJson(projectName: string, frameworkMode: "symlink" | "copy"): string {
@@ -315,8 +346,8 @@ function createProjectManifestJson(projectName: string, frameworkMode: "symlink"
     {
       name: projectName,
       framework: {
-        name: "moki",
-        vendorPath: "vendor/framework/moki",
+        name: "gutu",
+        vendorPath: "vendor/framework/gutu",
         mode: frameworkMode
       },
       workspace: {
@@ -336,12 +367,12 @@ function createProjectManifestJson(projectName: string, frameworkMode: "symlink"
 }
 
 function createGitignore(): string {
-  return `node_modules/\ndist/\ncoverage/\nartifacts/\nplaywright-report/\ntest-results/\n.moki/cache/\n.moki/state/\n*.tsbuildinfo\n.DS_Store\n`;
+  return `node_modules/\ndist/\ncoverage/\nartifacts/\nplaywright-report/\ntest-results/\n.gutu/cache/\n.gutu/state/\n*.tsbuildinfo\n.DS_Store\n`;
 }
 
 function createProjectReadme(projectName: string, starterPluginId: string, starterAppId: string): string {
   const displayName = toDisplayName(projectName);
-  return `# ${displayName}\n\nThis is a clean Moki project workspace.\n\n## Layout\n\n- \`apps/*\` for runnable hosts and verification apps\n- \`plugins/*\` for project-specific business modules\n- \`libraries/*\` for local shared code if you need it later\n- \`vendor/framework/moki\` for the vendored framework distribution\n- \`vendor/plugins/*\` and \`vendor/libraries/*\` for future store-installed extensions\n- \`docs/*\` for project context and agent understanding material\n\n## Starter content\n\n- app host: \`${starterAppId}\`\n- business plugin: \`${starterPluginId}\`\n\n## First steps\n\n\`\`\`bash\nbun install\nbun run docs:scaffold\nbun run docs:index\nbun run ci:check\n\`\`\`\n\n## Useful commands\n\n- \`bun run moki -- --help\`\n- \`bun run moki -- docs validate --all\`\n- \`bun run moki -- init ../another-project\`\n- \`bun run build\`\n- \`bun run ci:check\`\n`;
+  return `# ${displayName}\n\nThis is a clean Gutu project workspace.\n\n## Layout\n\n- \`apps/*\` for runnable hosts and verification apps\n- \`plugins/*\` for project-specific business modules\n- \`libraries/*\` for local shared code if you need it later\n- \`vendor/framework/gutu\` for the vendored framework distribution\n- \`vendor/plugins/*\` and \`vendor/libraries/*\` for future store-installed extensions\n- \`docs/*\` for project context and agent understanding material\n\n## Starter content\n\n- app host: \`${starterAppId}\`\n- business plugin: \`${starterPluginId}\`\n\n## First steps\n\n\`\`\`bash\nbun install\nbun run docs:scaffold\nbun run docs:index\nbun run ci:check\n\`\`\`\n\n## Useful commands\n\n- \`bun run gutu -- --help\`\n- \`bun run gutu -- docs validate --all\`\n- \`bun run gutu -- init ../another-project\`\n- \`bun run build\`\n- \`bun run ci:check\`\n`;
 }
 
 function createProjectDocsReadme(projectName: string): string {
@@ -359,7 +390,7 @@ function slugifyName(input: string): string {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "moki-project";
+    .replace(/^-+|-+$/g, "") || "gutu-project";
 }
 
 function toDisplayName(slug: string): string {

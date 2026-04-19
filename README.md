@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./docs/assets/moki-hero.svg" alt="Moki mascot hero" width="100%" />
+  <img src="./docs/assetsgutu-hero.svg" alt="Gutu mascot hero" width="100%" />
 </p>
 
-<h1 align="center">Moki</h1>
+<h1 align="center">Gutu</h1>
 
 <p align="center">
   <strong>Cute on the outside. Serious about shipping.</strong>
 </p>
 
 <p align="center">
-  Moki is a Bun-native, AI-first application platform for building secure, multi-tenant, plugin-driven products with a governed admin workbench, explicit contracts, and production-grade delivery gates.
+  Gutu is a Bun-native, AI-first application platform for building secure, multi-tenant, plugin-driven products with a governed admin workbench, explicit contracts, and production-grade delivery gates.
 </p>
 
 <p align="center">
@@ -24,9 +24,9 @@
 
 ---
 
-## Moki At A Glance
+## Gutu At A Glance
 
-Moki is for teams that want more than a web framework and less chaos than a pile of ad hoc app code.
+Gutu is for teams that want more than a web framework and less chaos than a pile of ad hoc app code.
 
 It gives you:
 
@@ -104,10 +104,10 @@ Optional domain plugins, connectors, migration packs, verticals, and tested dist
 ## What This Is
 
 <p align="center">
-  <img src="./docs/assets/moki-overview.svg" alt="Overview of the Moki platform flow" width="100%" />
+  <img src="./docs/assetsgutu-overview.svg" alt="Overview of the Gutu platform flow" width="100%" />
 </p>
 
-If the short version helps: Moki is the part most product teams eventually end up building for themselves anyway, except here it already arrives with names, contracts, tests, and a personality.
+If the short version helps: Gutu is the part most product teams eventually end up building for themselves anyway, except here it already arrives with names, contracts, tests, and a personality.
 
 This repository is a **full-stack platform baseline** for building applications out of explicit packages and installable plugins.
 
@@ -137,7 +137,7 @@ This is not a thin starter kit. It is a structured platform intended to support:
 
 ## Why This Exists
 
-Moki exists because the boring platform work turns out to be the important work: the rules, the shell, the releases, the permissions, the docs, and the consistency that keep a growing product from becoming a maze.
+Gutu exists because the boring platform work turns out to be the important work: the rules, the shell, the releases, the permissions, the docs, and the consistency that keep a growing product from becoming a maze.
 
 Most teams end up re-building the same missing platform layers:
 
@@ -165,7 +165,7 @@ This platform exists to give you:
 
 ## Core Principles
 
-These principles are the reason Moki can stay expressive without becoming mushy.
+These principles are the reason Gutu can stay expressive without becoming mushy.
 
 ### 1. Explicit metadata over hidden magic
 
@@ -252,7 +252,7 @@ This keeps the platform coherent and dramatically reduces AI/tooling confusion.
 
 ## How This Differs From Other Approaches
 
-Moki is happiest in the space between a tiny framework and an all-knowing product builder.
+Gutu is happiest in the space between a tiny framework and an all-knowing product builder.
 
 ### Comparison by category
 
@@ -304,10 +304,10 @@ This framework wins when you need:
 ## AI-First Developer Experience
 
 <p align="center">
-  <img src="./docs/assets/moki-ai-loop.svg" alt="Human, Moki, and AI agent collaboration loop" width="100%" />
+  <img src="./docs/assetsgutu-ai-loop.svg" alt="Human, Gutu, and AI agent collaboration loop" width="100%" />
 </p>
 
-Moki is designed so an AI agent can understand the system before it starts changing it. That sounds simple, but it changes everything about package layout, docs, contracts, and wrappers.
+Gutu is designed so an AI agent can understand the system before it starts changing it. That sounds simple, but it changes everything about package layout, docs, contracts, and wrappers.
 
 This repository is intentionally structured so AI agents can build on top of it with minimal code and low ambiguity.
 
@@ -454,17 +454,17 @@ The repository now ships the first `platform` CLI surface through `@platform/cli
 Inside this monorepo, use the repo-native runner:
 
 ```bash
-bun run platform -- agent run --tenant tenant-platform --actor actor-admin --agent ops-triage-agent --goal "Summarize open escalations with grounded next steps."
-bun run platform -- prompt diff --left prompt-version:ops-triage:v3 --right prompt-version:ops-triage:v4
-bun run platform -- memory ingest --collection memory-collection:ops --title "Shift handoff"
-bun run platform -- eval run --dataset eval-dataset:ops-safety --label candidate
-bun run platform -- mcp inspect --tool ai.memory.retrieve
-bun run platform -- make ai-pack --id assistant-pack
+bun run gutu -- agent run --tenant tenant-platform --actor actor-admin --agent ops-triage-agent --goal "Summarize open escalations with grounded next steps."
+bun run gutu -- prompt diff --left prompt-version:ops-triage:v3 --right prompt-version:ops-triage:v4
+bun run gutu -- memory ingest --collection memory-collection:ops --title "Shift handoff"
+bun run gutu -- eval run --dataset eval-dataset:ops-safety --label candidate
+bun run gutu -- mcp inspect --tool ai.memory.retrieve
+bun run gutu -- make ai-pack --id assistant-pack
 ```
 
 Current note:
 
-- the repo-local developer entrypoint is `bun run platform -- ...`
+- the repo-local developer entrypoint is `bun run gutu -- ...`
 - once `@platform/cli` is published/installed as a package, the direct `platform ...` binary is the intended experience
 - `platform mcp serve` currently emits governed MCP server descriptors in a stdio-shaped format.
 - A full long-running transport server is a follow-on milestone.
@@ -532,9 +532,9 @@ flowchart TD
 ### CLI commands
 
 ```bash
-bun run platform -- docs scaffold --all
-bun run platform -- docs index --all --out docs/agent-understanding.index.json
-bun run platform -- docs validate --all
+bun run gutu -- docs scaffold --all
+bun run gutu -- docs index --all --out docs/agent-understanding.index.json
+bun run gutu -- docs validate --all
 ```
 
 The root workspace also exposes:
@@ -1003,60 +1003,64 @@ See [docs/admin-ui-stack.md](./docs/admin-ui-stack.md) for the policy details.
 ## Getting Started
 
 <p align="center">
-  <img src="./docs/assets/moki-journey.svg" alt="Typical Moki project journey" width="100%" />
+  <img src="./docs/assetsgutu-journey.svg" alt="Typical Gutu project journey" width="100%" />
 </p>
 
 The easiest mental model is: start with the framework baseline, keep the built-ins, then grow your product by adding explicit packages and plugins instead of hiding important behavior in random folders.
 
 ### Current installation model
 
-Today, the cleanest way to start a Moki product is:
+Today, the cleanest way to start a Gutu product is:
 
-1. clone the framework repo once,
-2. use the CLI to generate a **separate clean project workspace**,
+1. run the published Gutu CLI once,
+2. generate a **separate clean project workspace**,
 3. keep your product code in that new workspace,
-4. keep the framework vendored under `vendor/framework/moki`.
+4. keep the framework vendored under `vendor/framework/gutu`.
 
 That means your actual developer project stays tidy:
 
 - `apps/*` for your runnable hosts,
 - `plugins/*` for your business modules,
 - `libraries/*` for local shared code if you need it,
-- `vendor/framework/moki` for the vendored framework distribution,
+- `vendor/framework/gutu` for the vendored framework distribution,
 - `vendor/plugins/*` and `vendor/libraries/*` for future external installs.
 
 Recommended flow:
 
 ```bash
-git clone https://github.com/hyndex/moki.git
-cd moki
-bun install
-bun run moki -- init ../my-product
-cd ../my-product
+bunx gutu init ./my-product
+cd ./my-product
 bun install
 ```
 
-By default, `moki init` creates a clean consumer workspace and links the framework in a separated vendor directory. If you want a detached local copy instead of symlinks:
+By default, `gutu init` creates a clean consumer workspace and links the framework in a separated vendor directory. If you want a detached local copy instead of symlinks:
 
 ```bash
-bun run moki -- init ../my-product --framework-mode copy
+bunx gutu init ./my-product --framework-mode copy
+```
+
+If you prefer a global install:
+
+```bash
+bun add -g gutu
+gutu init ./my-product
 ```
 
 ### What is not the main path yet
 
-Right now, Moki is **not yet** a polished public experience like:
+Right now, Gutu is **not yet** a polished public experience like:
 
 ```bash
-npx moki new my-product
-moki make plugin crm
-moki plugin install billing-suite
+npx gutu new my-product
+gutu make plugin crm
+gutu plugin install billing-suite
 ```
 
-That ecosystem and registry model is planned, and the design is already documented in [docs/ecosystem-cli-and-registries.md](./docs/ecosystem-cli-and-registries.md), but the shipped repo today is still best used as a cloned baseline.
+That ecosystem and registry model is planned, and the design is already documented in [docs/ecosystem-cli-and-registries.md](./docs/ecosystem-cli-and-registries.md). For most product teams, the main public path is now the published CLI package. Cloning the framework repo is mainly for framework contributors and deep source-level customization.
 
 ### Practical rule of thumb
 
-- If you want to **start a real Moki product today**, generate a clean workspace with `moki init`.
+- If you want to **start a real Gutu product today**, generate a clean workspace with `gutu init`.
 - If you want to **consume individual framework packages later**, that becomes realistic once the package and registry publishing flow is formalized.
 
 ### Prerequisites
@@ -1124,9 +1128,10 @@ TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/
 
 | Command | Purpose |
 | --- | --- |
-| `bun run moki -- init <target>` | create a clean consumer workspace with the framework vendored under `vendor/framework/moki` |
+| `bunx gutu init <target>` | create a clean consumer workspace with the framework vendored under `vendor/framework/gutu` |
+| `bun run gutu -- init <target>` | run the same generator from a local framework checkout |
 | `bun run scaffold` | regenerate the baseline workspace structure |
-| `bun run moki -- --help` | show the public Moki CLI command surface |
+| `bun run gutu -- --help` | show the public Gutu CLI command surface |
 | `bun run build` | build all workspaces |
 | `bun run typecheck` | typecheck all workspaces |
 | `bun run lint` | lint all workspaces |
@@ -1148,12 +1153,12 @@ TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/
 | `bun run sign:artifacts` | sign release artifacts |
 | `bun run verify:artifacts-signature` | verify generated signature |
 | `bun run ci:check` | full local CI gate |
-| `bun run platform -- agent run ...` | run a governed AI agent scenario through the workspace CLI |
-| `bun run platform -- prompt diff ...` | diff prompt versions |
-| `bun run platform -- memory ingest ...` | ingest knowledge into an AI collection |
-| `bun run platform -- eval run ...` | execute an eval dataset candidate run |
-| `bun run platform -- mcp inspect ...` | inspect derived MCP-safe descriptors |
-| `bun run platform -- make ai-pack --id <slug>` | scaffold a new AI pack |
+| `bun run gutu -- agent run ...` | run a governed AI agent scenario through the workspace CLI |
+| `bun run gutu -- prompt diff ...` | diff prompt versions |
+| `bun run gutu -- memory ingest ...` | ingest knowledge into an AI collection |
+| `bun run gutu -- eval run ...` | execute an eval dataset candidate run |
+| `bun run gutu -- mcp inspect ...` | inspect derived MCP-safe descriptors |
+| `bun run gutu -- make ai-pack --id <slug>` | scaffold a new AI pack |
 
 ### Verification harnesses
 
@@ -1215,7 +1220,7 @@ Use this rule-of-thumb:
 
 ## Authoring Guides
 
-The main README is the public front door. The deeper “how to build on Moki” guides now live in dedicated docs so plugin authors and library developers do not have to mine one giant handbook.
+The main README is the public front door. The deeper “how to build on Gutu” guides now live in dedicated docs so plugin authors and library developers do not have to mine one giant handbook.
 
 ### For plugin authors
 
@@ -1663,7 +1668,7 @@ The repository supports:
 ## Final Notes
 
 <p align="center">
-  <img src="./docs/assets/moki-footer.svg" alt="Moki footer mascot" width="100%" />
+  <img src="./docs/assetsgutu-footer.svg" alt="Gutu footer mascot" width="100%" />
 </p>
 
 If you are building on this repository, the most important working rules are:

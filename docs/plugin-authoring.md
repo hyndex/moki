@@ -1,9 +1,9 @@
 # Plugin Authoring Guide
 
-This guide is for people building **Moki plugins**:
+This guide is for people building **Gutu plugins**:
 
 - built-in plugins that ship with the framework,
-- project-local business plugins inside a Moki workspace,
+- project-local business plugins inside a Gutu workspace,
 - future store-distributed plugins,
 - and optional installable modules that register routes, data, actions, admin surfaces, or zones.
 
@@ -124,7 +124,7 @@ Manifest rules:
 ## Step 2: scaffold the understanding docs
 
 ```bash
-bun run moki -- docs scaffold --target framework/builtin-plugins/dashboard-core
+bun run gutu -- docs scaffold --target framework/builtin-plugins/dashboard-core
 ```
 
 At minimum, fill in:

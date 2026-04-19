@@ -355,14 +355,14 @@
   - [ ] move existing build/test/doctor/graph/status entrypoints behind the CLI
 - [ ] Stage E2 - Implement project/bootstrap/scaffolding commands.
   - [ ] `platform new`
-  - [ ] `platform init`
+  - [ ] `gutu init`
   - [ ] `platform make plugin`
   - [ ] `platform make library`
   - [ ] `platform make app`
   - [ ] `platform make connector`
   - [ ] `platform make migration-pack`
   - [ ] `platform make bundle`
-  - [x] `platform make ai-pack`
+  - [x] `gutu make ai-pack`
 - [ ] Stage E3 - Implement local registry and lockfile workflows.
   - [ ] local file-backed registry index
   - [ ] `platform plugin install ./path`

@@ -214,25 +214,25 @@ List:
 ### Scaffold the doc pack
 
 ```bash
-bun run platform -- docs scaffold --all
+bun run gutu -- docs scaffold --all
 ```
 
 Target one package if needed:
 
 ```bash
-bun run platform -- docs scaffold --target framework/builtin-plugins/dashboard-core
+bun run gutu -- docs scaffold --target framework/builtin-plugins/dashboard-core
 ```
 
 ### Build the understanding index
 
 ```bash
-bun run platform -- docs index --all --out docs/agent-understanding.index.json
+bun run gutu -- docs index --all --out docs/agent-understanding.index.json
 ```
 
 ### Validate the doc pack
 
 ```bash
-bun run platform -- docs validate --all
+bun run gutu -- docs validate --all
 ```
 
 The root workspace also exposes:
@@ -279,7 +279,7 @@ That reduces hallucinated shortcuts and domain-breaking changes.
 Run:
 
 ```bash
-bun run platform -- docs scaffold --target <path>
+bun run gutu -- docs scaffold --target <path>
 ```
 
 ### Package was renamed or moved
@@ -287,7 +287,7 @@ bun run platform -- docs scaffold --target <path>
 Re-run:
 
 ```bash
-bun run platform -- docs index --all --out docs/agent-understanding.index.json
+bun run gutu -- docs index --all --out docs/agent-understanding.index.json
 ```
 
 ### Inline semantics are still thin

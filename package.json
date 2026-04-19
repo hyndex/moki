@@ -1,8 +1,58 @@
 {
-  "name": "@repo/moki",
-  "private": true,
+  "name": "gutu",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Gutu is a Bun-native, AI-first application platform with a governed admin workbench, explicit contracts, and a clean project workspace generator.",
+  "license": "MIT",
   "type": "module",
   "packageManager": "bun@1.3.12",
+  "bin": {
+    "gutu": "./dist/gutu.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyndex/Gutu.git"
+  },
+  "homepage": "https://github.com/hyndex/Gutu",
+  "bugs": {
+    "url": "https://github.com/hyndex/Gutu/issues"
+  },
+  "keywords": [
+    "gutu",
+    "bun",
+    "framework",
+    "plugin-system",
+    "admin-workbench",
+    "ai-first"
+  ],
+  "files": [
+    "dist/gutu.js",
+    "framework/**/*",
+    "!framework/**/dist",
+    "!framework/**/dist/**",
+    "!framework/**/*.tsbuildinfo",
+    "!framework/**/coverage",
+    "!framework/**/coverage/**",
+    "!framework/**/artifacts",
+    "!framework/**/artifacts/**",
+    "!framework/**/node_modules",
+    "!framework/**/node_modules/**",
+    "tooling/scripts/**/*",
+    "tooling/test/**/*",
+    "docs/**/*",
+    "README.md",
+    "LICENSE",
+    "Goal.md",
+    "Developer_DeepDive.md",
+    "bunfig.toml",
+    "tsconfig.base.json",
+    "tsconfig.json",
+    "eslint.config.mjs",
+    "prettier.config.mjs"
+  ],
   "workspaces": [
     "apps/*",
     "framework/core/*",
@@ -12,8 +62,9 @@
   ],
   "scripts": {
     "scaffold": "bun run tooling/scripts/scaffold-workspace.mjs",
-    "moki": "bun run framework/core/cli/src/bin.ts",
+    "gutu": "bun run framework/core/cli/src/bin.ts",
     "platform": "bun run framework/core/cli/src/bin.ts",
+    "build:npm:cli": "bun run tooling/scripts/build-gutu-npm-cli.mjs",
     "build": "bun run tooling/scripts/workspace-task.mjs build",
     "typecheck": "bun run tooling/scripts/workspace-task.mjs typecheck",
     "lint": "bun run tooling/scripts/workspace-task.mjs lint",
@@ -31,10 +82,11 @@
     "sign:artifacts": "bun run tooling/scripts/sign-release-artifacts.mjs",
     "verify:artifacts-signature": "bun run tooling/scripts/verify-release-signature.mjs",
     "security:audit": "bun run tooling/scripts/run-vulnerability-audit.mjs",
-    "docs:scaffold": "bun run platform -- docs scaffold --all",
-    "docs:index": "bun run platform -- docs index --all --out docs/agent-understanding.index.json",
-    "docs:validate": "bun run platform -- docs validate --all",
-    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e"
+    "docs:scaffold": "bun run gutu -- docs scaffold --all",
+    "docs:index": "bun run gutu -- docs index --all --out docs/agent-understanding.index.json",
+    "docs:validate": "bun run gutu -- docs validate --all",
+    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e",
+    "prepublishOnly": "bun run build:npm:cli"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",

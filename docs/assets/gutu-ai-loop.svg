@@ -6,7 +6,7 @@
     </linearGradient>
   </defs>
   <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
-  <text x="600" y="56" text-anchor="middle" fill="#68402A" font-family="Verdana, sans-serif" font-size="30" font-weight="700">Humans, agents, and Moki work in a loop</text>
+  <text x="600" y="56" text-anchor="middle" fill="#68402A" font-family="Verdana, sans-serif" font-size="30" font-weight="700">Humans, agents, and Gutu work in a loop</text>
   <text x="600" y="88" text-anchor="middle" fill="#89614A" font-family="Verdana, sans-serif" font-size="18">The framework does not replace judgment. It gives everyone the same map.</text>
 
   <rect x="84" y="126" width="240" height="170" rx="24" fill="#FFFFFF"/>
@@ -18,7 +18,7 @@
   <text x="204" y="226" text-anchor="middle" fill="#8C624A" font-family="Verdana, sans-serif" font-size="16">intent, approvals, and</text>
   <text x="204" y="248" text-anchor="middle" fill="#8C624A" font-family="Verdana, sans-serif" font-size="16">what “correct” means.</text>
 
-  <text x="600" y="164" text-anchor="middle" fill="#6B432D" font-family="Verdana, sans-serif" font-size="26" font-weight="700">Moki understanding layer</text>
+  <text x="600" y="164" text-anchor="middle" fill="#6B432D" font-family="Verdana, sans-serif" font-size="26" font-weight="700">Gutu understanding layer</text>
   <text x="600" y="198" text-anchor="middle" fill="#8C624A" font-family="Verdana, sans-serif" font-size="16">Contracts, docs, invariants, permissions, tests,</text>
   <text x="600" y="220" text-anchor="middle" fill="#8C624A" font-family="Verdana, sans-serif" font-size="16">admin wrappers, and AI-safe execution boundaries.</text>
   <text x="600" y="260" text-anchor="middle" fill="#A16E52" font-family="Verdana, sans-serif" font-size="15">This is the shared mental model.</text>

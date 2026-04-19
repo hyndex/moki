@@ -1,0 +1,16 @@
+framework/**/dist/
+framework/**/*.tsbuildinfo
+framework/**/coverage/
+framework/**/artifacts/
+framework/**/node_modules/
+tooling/**/dist/
+tooling/**/*.tsbuildinfo
+tooling/**/coverage/
+tooling/**/artifacts/
+tooling/**/node_modules/
+apps/**/dist/
+apps/**/*.tsbuildinfo
+apps/**/coverage/
+apps/**/artifacts/
+apps/**/node_modules/
+**/.DS_Store

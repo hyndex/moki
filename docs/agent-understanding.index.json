@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T19:04:09.325Z",
+  "generatedAt": "2026-04-19T21:30:03.550Z",
   "root": "/Users/chinmoybhuyan/Desktop/Personal/Framework",
   "targets": [
     {
@@ -2088,7 +2088,7 @@
     {
       "id": "cli",
       "displayName": "CLI",
-      "description": "Terminal command surface for platform scaffolding, AI operations, registry workflows, and system understanding tools.",
+      "description": "Terminal command surface for Gutu scaffolding, AI operations, registry workflows, and system understanding tools.",
       "location": "framework/core/cli",
       "targetType": "package",
       "packageKind": "framework-core",

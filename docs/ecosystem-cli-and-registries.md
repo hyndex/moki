@@ -133,7 +133,7 @@ but specialized to this framework’s governed package model.
 
 ```txt
 platform new
-platform init
+gutu init
 platform doctor
 platform dev
 platform build
@@ -451,7 +451,7 @@ framework/core/cli/src/
 ### Phase E2 - Scaffolding
 
 - implement `platform new`
-- implement `platform init`
+- implement `gutu init`
 - implement `platform make plugin`
 - implement `platform make library`
 - implement `platform make app`

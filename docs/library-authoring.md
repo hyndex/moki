@@ -1,12 +1,12 @@
 # Library Authoring Guide
 
-This guide is for people building **framework packages and shared libraries** in Moki.
+This guide is for people building **framework packages and shared libraries** in Gutu.
 
 Use it when you are working inside:
 
 - `framework/core/*`
 - `framework/libraries/*`
-- or a future reusable local library in a clean Moki workspace
+- or a future reusable local library in a clean Gutu workspace
 
 If you are building an installable business module instead, use [plugin-authoring.md](./plugin-authoring.md).
 
@@ -118,7 +118,7 @@ Things to avoid:
 
 ## Wrapper-first philosophy
 
-Moki intentionally chooses framework wrappers over direct third-party imports in business code.
+Gutu intentionally chooses framework wrappers over direct third-party imports in business code.
 
 That means a library often exists to:
 

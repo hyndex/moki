@@ -1,6 +1,6 @@
 <svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="1200" height="360" rx="28" fill="#FFF7EE"/>
-  <text x="600" y="54" text-anchor="middle" fill="#68412B" font-family="Verdana, sans-serif" font-size="30" font-weight="700">A typical Moki project journey</text>
+  <text x="600" y="54" text-anchor="middle" fill="#68412B" font-family="Verdana, sans-serif" font-size="30" font-weight="700">A typical Gutu project journey</text>
   <text x="600" y="86" text-anchor="middle" fill="#8B6149" font-family="Verdana, sans-serif" font-size="18">From blank idea to a governed product baseline.</text>
 
   <path d="M116 228C234 150 360 148 482 222C602 294 724 294 846 222C957 157 1048 160 1110 204" stroke="#E2A16F" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 22"/>

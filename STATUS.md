@@ -9,6 +9,8 @@
 
 ## Current Phase
 
+- `Phase 19 - Gutu rename and public package transition complete`
+- `Phase 18 - first public npm distribution live`
 - `Phase 17 - clean installable consumer workspace flow complete`
 - `Phase 16 - framework-only distribution cleanup and documentation reconciliation in progress`
 - `Admin Desk Program - Stage A6 complete`
@@ -35,16 +37,40 @@
 
 ## Completed Milestones
 
-- Added a clean consumer-project initialization flow through `moki init` / `platform init`.
+- Renamed the public framework brand from `Moki` to `Gutu` across the CLI, generated workspace layout, docs, package metadata, and mascot assets.
+- Switched the Git remote to `https://github.com/hyndex/Gutu.git`.
+- Published the renamed CLI package to npm as `gutu`.
+- Deprecated `@dikibhuyan/moki@0.1.0` so existing users are redirected to the renamed package.
+- Verified the renamed release path by:
+  - `bun run build:npm:cli`
+  - `bun test framework/core/cli/tests/unit/package.test.ts`
+  - `bun run gutu -- --help`
+  - `bun run docs:index`
+  - `bun run docs:validate`
+  - `npm view gutu version`
+  - `npm view @dikibhuyan/moki deprecated`
+  - `bunx gutu --help`
+  - local tarball install + `gutu init` scaffold smoke test
+- Published the first public Gutu CLI package to npm as `gutu`.
+- Updated the install story to support:
+  - `bunx gutu init ./my-product`
+  - `bun add -g gutu`
+  - `gutu init ./my-product`
+- Tightened the npm publish surface so the tarball ships the framework source distribution, docs, configs, and CLI entrypoint without nested build artifacts.
+- Verified the public package by:
+  - `npm view gutu version`
+  - `bunx gutu --help`
+  - local tarball install + `gutu init` scaffold smoke test
+- Added a clean consumer-project initialization flow through `gutu init` / `platform init`.
 - Added a separate developer-workspace shape for product teams:
   - `apps/*`
   - `plugins/*`
   - `libraries/*`
-  - `vendor/framework/moki`
+  - `vendor/framework/gutu`
   - `vendor/plugins/*`
   - `vendor/libraries/*`
 - Updated workspace discovery tooling to respect the active root `package.json` workspaces instead of relying on hardcoded roots only.
-- Added the root `moki` script alias and published CLI alias so the framework name now appears directly in the terminal flow.
+- Added the root `gutu` script alias and published CLI alias so the framework name now appears directly in the terminal flow.
 - Updated the root README to recommend generating a clean consumer workspace instead of coding directly inside the framework source repo.
 - Split plugin authoring and library/framework package guidance out of the root README into dedicated docs:
   - `docs/plugin-authoring.md`
@@ -318,8 +344,8 @@
   - `platform eval compare`
   - `platform mcp inspect`
   - `platform mcp serve`
-  - `platform make ai-pack`
-- Added a repo-native developer entrypoint for the CLI via `bun run platform -- ...` so local workspace use does not depend on package publication.
+  - `gutu make ai-pack`
+- Added a repo-native developer entrypoint for the CLI via `bun run gutu -- ...` so local workspace use does not depend on package publication.
 - Verified the AI platform wave with:
   - targeted typechecks for the new AI libraries, built-in AI packs, CLI, and admin harness
   - targeted unit and contract tests for permissions, AI packages, AI packs, and CLI scaffolding
@@ -376,22 +402,22 @@
 
 ## Latest Test Summary
 
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- --help`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- --help`
   - exit code: `0`
   - result: the repo-native CLI runner exposes the AI command surface from the framework root
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- mcp inspect --tool ai.memory.retrieve`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- mcp inspect --tool ai.memory.retrieve`
   - exit code: `0`
   - result: MCP-safe descriptor inspection works through the local `platform` runner
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- agent run --goal "Summarize open escalations with grounded next steps."`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- agent run --goal "Summarize open escalations with grounded next steps."`
   - exit code: `0`
   - result: the repo-native CLI returns a completed AI run payload with a generated `runId`
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs scaffold --all`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs scaffold --all`
   - exit code: `0`
   - result: the standard understanding doc pack was generated across the repository topology
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs index --all --out docs/agent-understanding.index.json`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs index --all --out docs/agent-understanding.index.json`
   - exit code: `0`
   - result: the machine-readable repository understanding index was regenerated successfully
-- `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs validate --all`
+- `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs validate --all`
   - exit code: `0`
   - result: required doc-pack coverage passed across the repo; remaining semantic gaps are surfaced as warnings instead of hard failures
 - `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`

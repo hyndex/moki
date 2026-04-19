@@ -5,17 +5,17 @@ Historical entries may reference optional plugin packages that were part of earl
 ## 2026-04-20 20:05:00 IST - Clean installable consumer workspace flow
 
 - Added a new clean-project generator in `@platform/cli`:
-  - `moki init [target]`
-  - `platform init [target]`
+  - `gutu init [target]`
+  - `gutu init [target]`
 - The new init flow generates a separate product workspace with:
   - `apps/*`
   - `plugins/*`
   - `libraries/*`
-  - `vendor/framework/moki`
+  - `vendor/framework/gutu`
   - `vendor/plugins/*`
   - `vendor/libraries/*`
-  - `.moki/*`
-  - `moki.project.json`
+  - `.gutu/*`
+  - `gutu.project.json`
 - Implemented two vendoring modes:
   - `--framework-mode symlink`
   - `--framework-mode copy`
@@ -25,7 +25,7 @@ Historical entries may reference optional plugin packages that were part of earl
   - one generated understanding doc pack
   - one project-level context doc
 - Updated workspace discovery tooling so task runners now read workspace patterns from the current root `package.json`, which lets generated consumer workspaces use vendored framework packages cleanly.
-- Added a public `moki` script alias at the repo root and a `moki` bin alias in `@platform/cli`.
+- Added a public `gutu` script alias at the repo root and a `gutu` bin alias in `@platform/cli`.
 - Updated the README install story to recommend creating a separate clean workspace rather than coding directly in the framework source repository.
 - Split the long plugin/framework authoring content out of the root README into dedicated docs:
   - `docs/plugin-authoring.md`
@@ -33,9 +33,9 @@ Historical entries may reference optional plugin packages that were part of earl
 - Updated `docs/README.md` and the root README reading list to point to the new authoring guides.
 - Commands run during this wave:
   - `bun test framework/core/cli/tests/unit/package.test.ts`
-  - `bun run moki -- --help`
-  - `bun run moki -- init /tmp/... --framework-mode symlink`
-  - `bun run moki -- init /tmp/... --framework-mode copy`
+  - `bun run gutu -- --help`
+  - `bun run gutu -- init /tmp/... --framework-mode symlink`
+  - `bun run gutu -- init /tmp/... --framework-mode copy`
   - `bun run typecheck` in `framework/core/cli`
   - `bun run lint`
 - Verification result:
@@ -102,9 +102,9 @@ Historical entries may reference optional plugin packages that were part of earl
   - `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/core/schema/tests/unit/schema.test.ts`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/core/jobs/tests/unit/package.test.ts`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/core/cli/tests/unit/package.test.ts`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs scaffold --all`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs index --all --out docs/agent-understanding.index.json`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- docs validate --all`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs scaffold --all`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs index --all --out docs/agent-understanding.index.json`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- docs validate --all`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
   - `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
 - Verification result:
@@ -153,9 +153,9 @@ Historical entries may reference optional plugin packages that were part of earl
   - `platform eval compare`
   - `platform mcp inspect`
   - `platform mcp serve`
-  - `platform make ai-pack`
+  - `gutu make ai-pack`
 - Added the repo-native developer runner:
-  - `bun run platform -- ...`
+  - `bun run gutu -- ...`
 - Wired the AI batteries into `apps/platform-dev-console` so the browser harness now covers AI routes, widgets, reports, and viewer-denial behavior.
 - Commands run during the AI wave:
   - `export PATH="$HOME/.bun/bin:$PATH" && bunx tsc -p framework/libraries/ai-runtime/tsconfig.json --noEmit`
@@ -170,9 +170,9 @@ Historical entries may reference optional plugin packages that were part of earl
   - `export PATH="$HOME/.bun/bin:$PATH" && bunx tsc -p apps/platform-dev-console/tsconfig.json --noEmit`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun test framework/core/permissions/tests/unit/permissions.test.ts framework/libraries/ai/tests/unit/package.test.ts framework/libraries/ai-runtime/tests/unit/package.test.ts framework/libraries/ai-memory/tests/unit/package.test.ts framework/libraries/ai-guardrails/tests/unit/package.test.ts framework/libraries/ai-evals/tests/unit/package.test.ts framework/libraries/ai-mcp/tests/unit/package.test.ts framework/builtin-plugins/ai-core/tests/unit/package.test.ts framework/builtin-plugins/ai-core/tests/contracts/ui-surface.test.ts framework/builtin-plugins/ai-rag/tests/unit/package.test.ts framework/builtin-plugins/ai-rag/tests/contracts/ui-surface.test.ts framework/builtin-plugins/ai-evals/tests/unit/package.test.ts framework/builtin-plugins/ai-evals/tests/contracts/ui-surface.test.ts framework/core/cli/tests/unit/package.test.ts`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun run test:e2e` in `apps/platform-dev-console`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- --help`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- mcp inspect --tool ai.memory.retrieve`
-  - `export PATH="$HOME/.bun/bin:$PATH" && bun run platform -- agent run --goal "Summarize open escalations with grounded next steps."`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- --help`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- mcp inspect --tool ai.memory.retrieve`
+  - `export PATH="$HOME/.bun/bin:$PATH" && bun run gutu -- agent run --goal "Summarize open escalations with grounded next steps."`
   - `export PATH="$HOME/.bun/bin:$PATH" && bun run lint`
   - `dropdb --if-exists framework_platform_test && createdb framework_platform_test && export PATH="$HOME/.bun/bin:$PATH" && TEST_POSTGRES_URL='postgresql:///framework_platform_test' bun run ci:check`
 - Verification result:
@@ -943,3 +943,57 @@ Historical entries may reference optional plugin packages that were part of earl
   - `jq '{name,bin,scripts,workspaces}' package.json`
   - `find framework -maxdepth 2 -mindepth 2 -type d | sort | sed 's#^./##' | head -250`
   - `date '+%Y-%m-%d %H:%M:%S %Z'`
+
+## 2026-04-20 02:58:00 IST - First public npm package published
+
+- Context:
+  - Gutu had a working clean-workspace generator, but the public onboarding path still depended on cloning the framework repo first.
+  - The goal was to ship a real npm-distributed CLI so product teams can start with `bunx` or a global install instead of a source checkout.
+- Changes made:
+  - converted the root package into a publishable CLI distribution named `gutu`
+  - added MIT licensing and publish metadata in [package.json](/Users/chinmoybhuyan/Desktop/Personal/Framework/package.json) and [LICENSE](/Users/chinmoybhuyan/Desktop/Personal/Framework/LICENSE)
+  - added [tooling/scripts/build-gutu-npm-cli.mjs](/Users/chinmoybhuyan/Desktop/Personal/Framework/tooling/scripts/build-gutu-npm-cli.mjs) to bundle the public `gutu` binary into `dist/gutu.js`
+  - updated [framework/core/cli/src/project.ts](/Users/chinmoybhuyan/Desktop/Personal/Framework/framework/core/cli/src/project.ts) so npm-installed copies can still detect and vendor the packaged framework distribution reliably
+  - tightened the publish surface with `.npmignore` and negative `files` patterns so nested `dist/`, coverage, artifact, node_modules, and `*.tsbuildinfo` files are excluded from the tarball
+  - updated [README.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/README.md) to make the public install flow `bunx gutu init ./my-product`
+- Verification:
+  - `bun run build:npm:cli`
+  - `npm pack --dry-run`
+  - local tarball smoke test:
+    - install generated tarball into a clean temp folder
+    - run `./node_modules/.bin/gutu --help`
+    - run `./node_modules/.bin/gutu init ./sample --framework-mode copy`
+    - verify generated `sample/gutu.project.json` and vendored framework files exist
+  - live registry verification:
+    - `npm view gutu version`
+    - `bunx gutu --help`
+- Outcome:
+  - first public npm package is live as `gutu@0.1.0`
+  - developers can now start Gutu without cloning the framework source repo first
+
+## 2026-04-20 03:26:00 IST - Public rename from Moki to Gutu completed
+
+- Context:
+  - the framework brand changed from `Moki` to `Gutu`
+  - the GitHub repository moved to `https://github.com/hyndex/Gutu`
+  - the public npm package target was later finalized as direct unscoped `gutu`
+- Changes made:
+  - renamed the public docs, CLI help text, generated workspace metadata, vendored framework path, and mascot asset names from `Moki` to `Gutu`
+  - updated generated workspace artifacts from:
+    - `vendor/framework/moki` -> `vendor/framework/gutu`
+    - `.moki/*` -> `.gutu/*`
+    - `moki.project.json` -> `gutu.project.json`
+  - switched the root package and bundled CLI from `@dikibhuyan/moki` / `moki` to the `gutu` public brand and CLI surface
+  - updated the Git remote to `https://github.com/hyndex/Gutu.git`
+  - deprecated the old `@dikibhuyan/moki@0.1.0` package with a redirect message
+- Verification:
+  - `bun run build:npm:cli`
+  - `bun test framework/core/cli/tests/unit/package.test.ts`
+  - `bun run gutu -- --help`
+  - `bun run docs:index`
+  - `bun run docs:validate`
+  - `npm pack --dry-run`
+  - local tarball install + `./node_modules/.bin/gutu init ./sample --framework-mode copy`
+  - `npm view gutu version`
+  - `npm view @dikibhuyan/moki deprecated`
+  - `bunx gutu --help`

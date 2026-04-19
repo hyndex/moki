@@ -78,8 +78,8 @@ describe("platform cli", () => {
     expect(readFileSync(join(target, "docs", "AGENT_CONTEXT.md"), "utf8")).toContain("Assistant Pack");
   });
 
-  it("initializes a clean Moki project workspace", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "moki-workspace-init-"));
+  it("initializes a clean Gutu project workspace", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "gutu-workspace-init-"));
     const target = join(cwd, "sample-product");
     const io = createMemoryIo(repoRoot);
 
@@ -87,11 +87,11 @@ describe("platform cli", () => {
 
     expect(exitCode).toBe(0);
     expect(readFileSync(join(target, "package.json"), "utf8")).toContain('"name": "@workspace/sample-product"');
-    expect(readFileSync(join(target, "package.json"), "utf8")).toContain('"moki": "bun run vendor/framework/moki/framework/core/cli/src/bin.ts"');
+    expect(readFileSync(join(target, "package.json"), "utf8")).toContain('"gutu": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts"');
     expect(readFileSync(join(target, "plugins", "sample-product-core", "package.ts"), "utf8")).toContain('id: "sample-product-core"');
     expect(readFileSync(join(target, "apps", "sample-product-studio", "package.json"), "utf8")).toContain('"name": "@apps/sample-product-studio"');
-    expect(readFileSync(join(target, "moki.project.json"), "utf8")).toContain('"name": "sample-product"');
-    expect(lstatSync(join(target, "vendor", "framework", "moki", "framework")).isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(target, "gutu.project.json"), "utf8")).toContain('"name": "sample-product"');
+    expect(lstatSync(join(target, "vendor", "framework", "gutu", "framework")).isSymbolicLink()).toBe(true);
     expect(io.readStdout()).toContain('"starterPluginId": "sample-product-core"');
   });
 
