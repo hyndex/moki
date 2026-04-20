@@ -76,7 +76,7 @@ jobs:
         run: bun run verify:artifacts-signature
 
       - name: Attest release bundle provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ github.workspace }}/artifacts/release/gutu-framework-release.tgz
 
