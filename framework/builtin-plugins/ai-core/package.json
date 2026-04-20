@@ -39,6 +39,6 @@
     "@plugins/workflow-core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "react": "^19.1.0",
-    "zod": "^4.0.0"
+    "zod": "^4.3.6"
   }
 }

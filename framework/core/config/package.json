@@ -19,6 +19,6 @@
     "test:unit": "bun test tests/unit"
   },
   "dependencies": {
-    "zod": "^4.0.0"
+    "zod": "^4.3.6"
   }
 }
