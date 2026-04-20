@@ -19,7 +19,7 @@
     "test:unit": "bun test tests/unit"
   },
   "dependencies": {
-    "@react-email/render": "^1.1.4",
+    "@react-email/render": "^2.0.7",
     "react": "^19.1.0"
   }
 }
