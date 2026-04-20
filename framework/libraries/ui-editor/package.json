@@ -19,7 +19,7 @@
     "test:unit": "bun test tests/unit"
   },
   "dependencies": {
-    "@tiptap/core": "^2.15.0",
+    "@tiptap/core": "^3.22.4",
     "@tiptap/react": "^2.15.0",
     "@tiptap/starter-kit": "^2.15.0",
     "zod": "^4.0.0"
