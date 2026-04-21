@@ -1,5 +1,181 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "1970-01-01T00:00:00.000Z",
-  "packages": []
+  "generatedAt": "2026-04-21T18:13:51.296Z",
+  "packages": [
+    {
+      "id": "@plugins/admin-shell-workbench",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-admin-shell-workbench",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/ai-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-ai-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/ai-evals",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-ai-evals",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/ai-rag",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-ai-rag",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/audit-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-audit-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/auth-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-auth-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/booking-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-booking-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/community-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-community-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/content-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-content-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/dashboard-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-dashboard-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/document-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-document-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/files-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-files-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/forms-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-forms-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/jobs-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-jobs-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/knowledge-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-knowledge-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/notifications-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-notifications-core",
+      "version": "0.1.0",
+      "channel": "stable",
+      "artifact": {
+        "uri": "https://github.com/gutula/gutu-plugin-notifications-core/releases/download/v0.1.0/plugins-notifications-core-0.1.0.tgz",
+        "format": "tgz",
+        "sha256": "ebcf5b88eebd43cfa41d1f20a734c86b2bfb3fcab6c0f3b1003f18a88c9e9f2c",
+        "signature": "HfTybIUjJmiQaHTjqhISA3RRa5CdqO1MSUcoatO7z49kTniaV92wZXC61ULW/up+H4ILJzqz2a1oZ0A1IeXsAg==",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAexuSkN+unzBKhRPyW54aCkHfx457CDrGZ8bOFNSylkU=\n-----END PUBLIC KEY-----\n"
+      }
+    },
+    {
+      "id": "@plugins/org-tenant-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-org-tenant-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/page-builder-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-page-builder-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/portal-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-portal-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/role-policy-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-role-policy-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/search-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-search-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/template-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-template-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/user-directory",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-user-directory",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@plugins/workflow-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-workflow-core",
+      "version": "0.1.0",
+      "channel": "stable"
+    }
+  ]
 }

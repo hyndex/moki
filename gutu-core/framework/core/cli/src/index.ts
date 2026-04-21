@@ -4,11 +4,13 @@ import { join, resolve } from "node:path";
 import {
   doctorCoreRepository,
   type FrameworkInstallMode,
+  publishPackageRelease,
   promoteReleaseArtifact,
   provisionGitHubRepositories,
   scaffoldExternalRepository,
   scaffoldRolloutRepositories,
   scaffoldWorkspace,
+  syncCatalogRepositories,
   syncWorkspaceVendor
 } from "@gutu/ecosystem";
 import { prepareReleaseBundle, signReleaseManifestFile, verifyReleaseManifestFileSignature } from "@gutu/release";
@@ -140,12 +142,60 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     return 0;
   }
 
+  if (command === "rollout" && rest[0] === "sync-catalogs") {
+    const workspaceRoot = readFlag(rest, "--workspace-root");
+    const result = syncCatalogRepositories(io.cwd, workspaceRoot ? { workspaceRoot: resolve(io.cwd, workspaceRoot) } : {});
+    io.stdout.write(JSON.stringify(result, null, 2) + "\n");
+    return 0;
+  }
+
+  if (command === "rollout" && rest[0] === "publish-package") {
+    const target = readFlag(rest, "--target") ?? rest.find((entry, index) => index > 0 && !entry.startsWith("--"));
+    const kind = readFlag(rest, "--kind");
+    const workspaceRoot = readFlag(rest, "--workspace-root");
+    const channel = readFlag(rest, "--channel");
+    const tag = readFlag(rest, "--tag");
+    const releaseToken = process.env.GUTU_RELEASE_TOKEN ?? process.env.GITHUB_TOKEN;
+    const signingPrivateKeyPem =
+      process.env.GUTU_SIGNING_PRIVATE_KEY ??
+      (readFlag(rest, "--private-key") ? readFileSync(resolve(io.cwd, readFlag(rest, "--private-key") as string), "utf8") : undefined);
+    const publicKeyPem =
+      process.env.GUTU_SIGNING_PUBLIC_KEY ??
+      (readFlag(rest, "--public-key") ? readFileSync(resolve(io.cwd, readFlag(rest, "--public-key") as string), "utf8") : undefined);
+
+    if (!target || (kind && kind !== "plugin" && kind !== "library")) {
+      io.stderr.write("Missing or invalid flags for `gutu rollout publish-package`.\n");
+      return 1;
+    }
+    if (!releaseToken) {
+      io.stderr.write("Missing GUTU_RELEASE_TOKEN or GITHUB_TOKEN for `gutu rollout publish-package`.\n");
+      return 1;
+    }
+    if (!signingPrivateKeyPem) {
+      io.stderr.write("Missing GUTU_SIGNING_PRIVATE_KEY or --private-key for `gutu rollout publish-package`.\n");
+      return 1;
+    }
+
+    const result = await publishPackageRelease(io.cwd, {
+      target,
+      ...(kind === "plugin" || kind === "library" ? { kind } : {}),
+      ...(workspaceRoot ? { workspaceRoot: resolve(io.cwd, workspaceRoot) } : {}),
+      ...(channel ? { channel } : {}),
+      ...(tag ? { tag } : {}),
+      releaseToken,
+      signingPrivateKeyPem,
+      ...(publicKeyPem ? { publicKeyPem } : {})
+    });
+    io.stdout.write(JSON.stringify(result, null, 2) + "\n");
+    return 0;
+  }
+
   if (command === "rollout" && rest[0] === "provision-github") {
     const owner = readFlag(rest, "--owner");
     const manifestPath = readFlag(rest, "--manifest");
-    const token = process.env.GITHUB_TOKEN;
+    const token = process.env.GUTU_RELEASE_TOKEN ?? process.env.GITHUB_TOKEN;
     if (!token) {
-      io.stderr.write("Missing GITHUB_TOKEN for `gutu rollout provision-github`.\n");
+      io.stderr.write("Missing GUTU_RELEASE_TOKEN or GITHUB_TOKEN for `gutu rollout provision-github`.\n");
       return 1;
     }
 
@@ -220,7 +270,9 @@ function helpText(): string {
     "  gutu vendor sync [workspaceRoot]",
     "  gutu scaffold repo --kind <plugin|library|integration> --name <repo-name> [--out <dir>]",
     "  gutu rollout scaffold --out <dir> [--manifest <path>]",
+    "  gutu rollout sync-catalogs [--workspace-root <path>]",
     "  gutu rollout promote --package-id <id> --kind <plugin|library> --repo <repo> --manifest <path> --uri-base <url>",
+    "  gutu rollout publish-package --target <repo|package|path> [--kind <plugin|library>] [--workspace-root <path>]",
     "  gutu rollout provision-github [--owner <org>] [--manifest <path>]",
     "  gutu release prepare [--out <dir>] [--name <artifact-name>]",
     "  gutu release sign [--manifest <path>] [--private-key <path>] [--out <signature-path>]",

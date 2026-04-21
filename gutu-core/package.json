@@ -16,6 +16,7 @@
     "doctor": "bun run gutu -- doctor",
     "vendor:sync": "bun run gutu -- vendor sync",
     "rollout:scaffold": "bun run gutu -- rollout scaffold --out ../gutula-rollout",
+    "rollout:sync-catalogs": "bun run gutu -- rollout sync-catalogs",
     "build": "bun build framework/core/cli/src/bin.ts --outfile dist/gutu.js --target bun",
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "lint": "bunx eslint . --ext .ts",

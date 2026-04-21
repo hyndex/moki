@@ -7,7 +7,9 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "bun:test";
 
 import {
+  preparePackageReleaseBundle,
   type ReleaseManifest,
+  publishGitHubRelease,
   prepareReleaseBundle,
   signReleaseManifest,
   verifyReleaseManifestSignature
@@ -69,5 +71,97 @@ describe("@gutu/release", () => {
         publicKey.export({ type: "spki", format: "pem" }).toString()
       )
     ).toBe(false);
+  });
+
+  it("prepares a package release bundle with a publishable tarball filename", () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-package-release-"));
+    try {
+      mkdirSync(join(root, "packages", "demo"), { recursive: true });
+      writeFileSync(
+        join(root, "packages", "demo", "package.json"),
+        JSON.stringify(
+          {
+            name: "@demo/pkg",
+            version: "1.2.3",
+            type: "module"
+          },
+          null,
+          2
+        ) + "\n",
+        "utf8"
+      );
+      writeFileSync(join(root, "packages", "demo", "index.js"), "export const demo = true;\n", "utf8");
+
+      const result = preparePackageReleaseBundle(root, {
+        packageRoot: "packages/demo",
+        outDir: "artifacts/release"
+      });
+
+      expect(existsSync(result.artifactPath)).toBe(true);
+      expect(result.manifest.package).toBe("@demo/pkg");
+      expect(result.manifest.artifact.path.endsWith(".tgz")).toBe(true);
+      expect(result.manifest.artifact.path.includes("/")).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("creates a GitHub release and uploads bundle assets", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-release-upload-"));
+    try {
+      const artifactPath = join(root, "demo.tgz");
+      const manifestPath = join(root, "demo.json");
+      writeFileSync(artifactPath, "artifact", "utf8");
+      writeFileSync(manifestPath, "{\"ok\":true}\n", "utf8");
+
+      const calls: Array<{ url: string; method: string }> = [];
+      const result = await publishGitHubRelease({
+        repo: "gutula/gutu-demo",
+        tag: "v1.2.3",
+        token: "token",
+        assets: [{ path: artifactPath }, { path: manifestPath }],
+        fetchImpl: async (input, init) => {
+          const url = String(input);
+          const method = String(init?.method ?? "GET");
+          calls.push({ url, method });
+
+          if (url.endsWith("/releases/tags/v1.2.3")) {
+            return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+          }
+
+          if (url.endsWith("/releases") && method === "POST") {
+            return new Response(
+              JSON.stringify({
+                id: 7,
+                html_url: "https://github.com/gutula/gutu-demo/releases/tag/v1.2.3",
+                upload_url: "https://uploads.github.com/repos/gutula/gutu-demo/releases/7/assets{?name,label}",
+                assets: []
+              }),
+              { status: 201 }
+            );
+          }
+
+          if (url.startsWith("https://uploads.github.com/")) {
+            const assetName = new URL(url).searchParams.get("name");
+            return new Response(
+              JSON.stringify({
+                id: calls.length,
+                name: assetName,
+                browser_download_url: `https://github.com/gutula/gutu-demo/releases/download/v1.2.3/${assetName}`
+              }),
+              { status: 201 }
+            );
+          }
+
+          throw new Error(`Unexpected request: ${method} ${url}`);
+        }
+      });
+
+      expect(result.created).toBe(true);
+      expect(result.assets).toHaveLength(2);
+      expect(calls.some((entry) => entry.url.endsWith("/releases") && entry.method === "POST")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

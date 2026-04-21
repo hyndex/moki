@@ -1,7 +1,8 @@
 # Consumer Smoke
 
-Generated: 2026-04-20T21:35:14.865Z
+Generated: 2026-04-21T18:35:32.593Z
 
+- Source mode: live
 - Example root: `/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer`
 - Certification workspace install: pass
 - Init: pass
@@ -14,5 +15,5 @@ Generated: 2026-04-20T21:35:14.865Z
 
 ## Packaged Artifacts
 
-- `/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace/libraries/gutu-lib-communication/framework/libraries/communication/platform-communication-0.1.0.tgz`
-- `/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace/plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/plugins-notifications-core-0.1.0.tgz`
+- `https://github.com/gutula/gutu-lib-communication/releases/download/v0.1.0/platform-communication-0.1.0.tgz`
+- `https://github.com/gutula/gutu-plugin-notifications-core/releases/download/v0.1.0/plugins-notifications-core-0.1.0.tgz`

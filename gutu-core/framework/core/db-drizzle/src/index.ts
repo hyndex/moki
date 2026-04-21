@@ -13,7 +13,7 @@ export function createDbClient(input: {
   role?: string | undefined;
 }): PlatformDatabaseClient {
   if (input.engine !== "postgres") {
-    throw new Error("Only postgres is supported by the integration shim.");
+    throw new Error("Only postgres is supported by @platform/db-drizzle.");
   }
 
   const sql = postgres(input.connectionString, {

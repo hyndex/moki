@@ -19,40 +19,6 @@
         "zod": "^3.24.3",
       },
     },
-    "compat/platform-db-drizzle": {
-      "name": "@platform/db-drizzle",
-      "version": "0.0.0-integration",
-      "dependencies": {
-        "postgres": "^3.4.7",
-      },
-    },
-    "compat/platform-events": {
-      "name": "@platform/events",
-      "version": "0.0.0-integration",
-    },
-    "compat/platform-jobs": {
-      "name": "@platform/jobs",
-      "version": "0.0.0-integration",
-    },
-    "compat/platform-kernel": {
-      "name": "@platform/kernel",
-      "version": "0.0.0-integration",
-    },
-    "compat/platform-permissions": {
-      "name": "@platform/permissions",
-      "version": "0.0.0-integration",
-    },
-    "compat/platform-plugin-solver": {
-      "name": "@platform/plugin-solver",
-      "version": "0.0.0-integration",
-    },
-    "compat/platform-schema": {
-      "name": "@platform/schema",
-      "version": "0.0.0-integration",
-      "dependencies": {
-        "zod": "^3.24.3",
-      },
-    },
   },
   "packages": {
     "@eslint-community/eslint-utils": ["@eslint-community/eslint-utils@4.9.1", "", { "dependencies": { "eslint-visitor-keys": "^3.4.3" }, "peerDependencies": { "eslint": "^6.0.0 || ^7.0.0 || >=8.0.0" } }, "sha512-phrYmNiYppR7znFEdqgfWHXR6NCkZEK7hwWDHZUjit/2/U0r6XvkDl0SYnoM51Hq7FhCGdLDT6zxCCOY1hexsQ=="],
@@ -82,20 +48,6 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
-
-    "@platform/db-drizzle": ["@platform/db-drizzle@workspace:compat/platform-db-drizzle"],
-
-    "@platform/events": ["@platform/events@workspace:compat/platform-events"],
-
-    "@platform/jobs": ["@platform/jobs@workspace:compat/platform-jobs"],
-
-    "@platform/kernel": ["@platform/kernel@workspace:compat/platform-kernel"],
-
-    "@platform/permissions": ["@platform/permissions@workspace:compat/platform-permissions"],
-
-    "@platform/plugin-solver": ["@platform/plugin-solver@workspace:compat/platform-plugin-solver"],
-
-    "@platform/schema": ["@platform/schema@workspace:compat/platform-schema"],
 
     "@types/estree": ["@types/estree@1.0.8", "", {}, "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="],
 
@@ -254,8 +206,6 @@
     "playwright": ["playwright@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw=="],
 
     "playwright-core": ["playwright-core@1.59.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg=="],
-
-    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
 
     "prelude-ls": ["prelude-ls@1.2.1", "", {}, "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="],
 

@@ -25,6 +25,22 @@
         "@gutu/release": "workspace:*",
       },
     },
+    "framework/core/commands": {
+      "name": "@platform/commands",
+      "version": "0.0.1",
+      "dependencies": {
+        "@platform/events": "workspace:*",
+        "@platform/jobs": "workspace:*",
+        "@platform/schema": "workspace:*",
+      },
+    },
+    "framework/core/db-drizzle": {
+      "name": "@platform/db-drizzle",
+      "version": "0.0.1",
+      "dependencies": {
+        "postgres": "^3.4.7",
+      },
+    },
     "framework/core/ecosystem": {
       "name": "@gutu/ecosystem",
       "version": "0.0.1",
@@ -34,6 +50,21 @@
         "zod": "^3.24.3",
       },
     },
+    "framework/core/events": {
+      "name": "@platform/events",
+      "version": "0.0.1",
+      "dependencies": {
+        "@platform/jobs": "workspace:*",
+        "@platform/schema": "workspace:*",
+      },
+    },
+    "framework/core/jobs": {
+      "name": "@platform/jobs",
+      "version": "0.0.1",
+      "dependencies": {
+        "@platform/schema": "workspace:*",
+      },
+    },
     "framework/core/kernel": {
       "name": "@gutu/kernel",
       "version": "0.0.1",
@@ -41,8 +72,27 @@
         "zod": "^3.24.3",
       },
     },
+    "framework/core/permissions": {
+      "name": "@platform/permissions",
+      "version": "0.0.1",
+    },
+    "framework/core/platform-kernel": {
+      "name": "@platform/kernel",
+      "version": "0.0.1",
+      "dependencies": {
+        "zod": "^3.24.3",
+      },
+    },
+    "framework/core/plugin-solver": {
+      "name": "@platform/plugin-solver",
+      "version": "0.0.1",
+    },
     "framework/core/release": {
       "name": "@gutu/release",
+      "version": "0.0.1",
+    },
+    "framework/core/schema": {
+      "name": "@platform/schema",
       "version": "0.0.1",
     },
   },
@@ -82,6 +132,22 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@platform/commands": ["@platform/commands@workspace:framework/core/commands"],
+
+    "@platform/db-drizzle": ["@platform/db-drizzle@workspace:framework/core/db-drizzle"],
+
+    "@platform/events": ["@platform/events@workspace:framework/core/events"],
+
+    "@platform/jobs": ["@platform/jobs@workspace:framework/core/jobs"],
+
+    "@platform/kernel": ["@platform/kernel@workspace:framework/core/platform-kernel"],
+
+    "@platform/permissions": ["@platform/permissions@workspace:framework/core/permissions"],
+
+    "@platform/plugin-solver": ["@platform/plugin-solver@workspace:framework/core/plugin-solver"],
+
+    "@platform/schema": ["@platform/schema@workspace:framework/core/schema"],
 
     "@types/estree": ["@types/estree@1.0.8", "", {}, "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="],
 
@@ -228,6 +294,8 @@
     "path-key": ["path-key@3.1.1", "", {}, "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q=="],
 
     "picomatch": ["picomatch@4.0.4", "", {}, "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A=="],
+
+    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
 
     "prelude-ls": ["prelude-ls@1.2.1", "", {}, "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="],
 

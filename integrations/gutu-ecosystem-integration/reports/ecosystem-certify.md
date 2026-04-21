@@ -1,11 +1,12 @@
 # Ecosystem Certification
 
-Generated: 2026-04-20T21:35:11.911Z
+Generated: 2026-04-21T18:32:40.562Z
 
+- Source mode: live
 - Certification workspace: `/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace`
 - Workspace install: pass
-- Packages checked: 66
-- Commands executed: 326
+- Packages checked: 62
+- Commands executed: 310
 - Failed commands: 0
 
 ## Failures
@@ -13,30 +14,6 @@ Generated: 2026-04-20T21:35:11.911Z
 - none
 
 ## Package Results
-
-### @apps/docs
-- pass `bun run lint` (0)
-- pass `bun run build` (0)
-- pass `bun run typecheck` (0)
-- pass `bun run test` (0)
-
-### @apps/examples
-- pass `bun run lint` (0)
-- pass `bun run build` (0)
-- pass `bun run typecheck` (0)
-- pass `bun run test` (0)
-
-### @apps/platform-dev-console
-- pass `bun run lint` (0)
-- pass `bun run build` (0)
-- pass `bun run typecheck` (0)
-- pass `bun run test` (0)
-
-### @apps/playground
-- pass `bun run lint` (0)
-- pass `bun run build` (0)
-- pass `bun run typecheck` (0)
-- pass `bun run test` (0)
 
 ### @platform/admin-builders
 - pass `bun run lint` (0)

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "stable",
+  "packages": [
+    {
+      "id": "@plugins/notifications-core",
+      "kind": "plugin",
+      "repo": "gutula/gutu-plugin-notifications-core",
+      "version": "0.1.0",
+      "channel": "stable",
+      "artifact": {
+        "uri": "https://github.com/gutula/gutu-plugin-notifications-core/releases/download/v0.1.0/plugins-notifications-core-0.1.0.tgz",
+        "format": "tgz",
+        "sha256": "ebcf5b88eebd43cfa41d1f20a734c86b2bfb3fcab6c0f3b1003f18a88c9e9f2c",
+        "signature": "HfTybIUjJmiQaHTjqhISA3RRa5CdqO1MSUcoatO7z49kTniaV92wZXC61ULW/up+H4ILJzqz2a1oZ0A1IeXsAg==",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAexuSkN+unzBKhRPyW54aCkHfx457CDrGZ8bOFNSylkU=\n-----END PUBLIC KEY-----\n"
+      }
+    }
+  ]
+}

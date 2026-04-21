@@ -46,6 +46,49 @@ function hasDirectorySymlinkSupport(root: string): boolean {
   }
 }
 
+function createSplitWorkspaceFixture(root: string) {
+  mkdirSync(join(root, "gutu-core"), { recursive: true });
+  writeFileSync(join(root, "gutu-core", "package.json"), "{\"name\":\"gutu-core\"}\n", "utf8");
+  mkdirSync(join(root, "integrations"), { recursive: true });
+
+  mkdirSync(join(root, "catalogs", "gutu-libraries", "catalog"), { recursive: true });
+  mkdirSync(join(root, "catalogs", "gutu-plugins", "catalog"), { recursive: true });
+  writeFileSync(
+    join(root, "catalogs", "gutu-libraries", "catalog", "index.json"),
+    JSON.stringify({ schemaVersion: 1, generatedAt: new Date(0).toISOString(), packages: [] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "catalogs", "gutu-plugins", "catalog", "index.json"),
+    JSON.stringify({ schemaVersion: 1, generatedAt: new Date(0).toISOString(), packages: [] }, null, 2) + "\n",
+    "utf8"
+  );
+
+  mkdirSync(join(root, "libraries", "gutu-lib-demo", "framework", "libraries", "demo"), { recursive: true });
+  writeFileSync(
+    join(root, "libraries", "gutu-lib-demo", "package.json"),
+    JSON.stringify({ name: "gutu-lib-demo", private: true, workspaces: ["framework/libraries/*"] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "libraries", "gutu-lib-demo", "framework", "libraries", "demo", "package.json"),
+    JSON.stringify({ name: "@platform/demo", version: "1.2.3", private: false }, null, 2) + "\n",
+    "utf8"
+  );
+
+  mkdirSync(join(root, "plugins", "gutu-plugin-demo", "framework", "builtin-plugins", "demo"), { recursive: true });
+  writeFileSync(
+    join(root, "plugins", "gutu-plugin-demo", "package.json"),
+    JSON.stringify({ name: "gutu-plugin-demo", private: true, workspaces: ["framework/builtin-plugins/*"] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "plugins", "gutu-plugin-demo", "framework", "builtin-plugins", "demo", "package.json"),
+    JSON.stringify({ name: "@plugins/demo", version: "4.5.6", private: false }, null, 2) + "\n",
+    "utf8"
+  );
+}
+
 describe("@gutu/cli", () => {
   it("prints help by default", async () => {
     const root = mkdtempSync(join(tmpdir(), "gutu-cli-help-"));
@@ -324,6 +367,32 @@ describe("@gutu/cli", () => {
       );
       expect(code).toBe(0);
       expect(harness.read().stdout).toContain("@gutula/plugin-demo");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("syncs standalone catalog indexes from the CLI", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-cli-sync-catalogs-"));
+    try {
+      createSplitWorkspaceFixture(root);
+      const harness = createIo(root);
+      const code = await runCli(["rollout", "sync-catalogs"], harness.io);
+      expect(code).toBe(0);
+      expect(harness.read().stdout).toContain("\"libraries\": 1");
+      expect(existsSync(join(root, "catalogs", "gutu-plugins", "channels", "stable.json"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails package publish cleanly without release credentials", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-cli-publish-"));
+    try {
+      const harness = createIo(root);
+      const code = await runCli(["rollout", "publish-package", "--target", "@platform/demo"], harness.io);
+      expect(code).toBe(1);
+      expect(harness.read().stderr).toContain("GUTU_RELEASE_TOKEN");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

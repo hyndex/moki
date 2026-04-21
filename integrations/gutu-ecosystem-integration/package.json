@@ -3,15 +3,16 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "workspaces": [
-    "compat/*"
-  ],
   "scripts": {
     "audit": "bun run scripts/ecosystem-ci.ts audit",
     "certify": "bun run scripts/ecosystem-ci.ts certify",
     "consumer:smoke": "bun run scripts/ecosystem-ci.ts consumer-smoke",
+    "audit:local": "GUTU_ECOSYSTEM_MODE=local bun run scripts/ecosystem-ci.ts audit",
+    "certify:local": "GUTU_ECOSYSTEM_MODE=local bun run scripts/ecosystem-ci.ts certify",
+    "consumer:smoke:local": "GUTU_ECOSYSTEM_MODE=local bun run scripts/ecosystem-ci.ts consumer-smoke",
     "test": "bun run audit",
-    "ci": "bun run audit && bun run certify && bun run consumer:smoke"
+    "ci": "bun run audit && bun run certify && bun run consumer:smoke",
+    "ci:local": "bun run audit:local && bun run certify:local && bun run consumer:smoke:local"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",

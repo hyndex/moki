@@ -14,7 +14,8 @@ import {
   resolveFrameworkInstallMode,
   resolveFrameworkSourceRootFromModulePath,
   scaffoldRolloutRepositories,
-  scaffoldWorkspace
+  scaffoldWorkspace,
+  syncCatalogRepositories
 } from "../../src";
 
 function createFrameworkSourceFixture(root: string): string {
@@ -54,6 +55,50 @@ function hasDirectorySymlinkSupport(root: string): boolean {
     rmSync(target, { recursive: true, force: true });
     rmSync(source, { recursive: true, force: true });
   }
+}
+
+function createSplitWorkspaceFixture(root: string) {
+  mkdirSync(join(root, "gutu-core"), { recursive: true });
+  writeFileSync(join(root, "gutu-core", "package.json"), "{\"name\":\"gutu-core\"}\n", "utf8");
+  mkdirSync(join(root, "integrations"), { recursive: true });
+
+  mkdirSync(join(root, "catalogs", "gutu-libraries", "catalog"), { recursive: true });
+  mkdirSync(join(root, "catalogs", "gutu-plugins", "catalog"), { recursive: true });
+
+  writeFileSync(
+    join(root, "catalogs", "gutu-libraries", "catalog", "index.json"),
+    JSON.stringify({ schemaVersion: 1, generatedAt: new Date(0).toISOString(), packages: [] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "catalogs", "gutu-plugins", "catalog", "index.json"),
+    JSON.stringify({ schemaVersion: 1, generatedAt: new Date(0).toISOString(), packages: [] }, null, 2) + "\n",
+    "utf8"
+  );
+
+  mkdirSync(join(root, "libraries", "gutu-lib-demo", "framework", "libraries", "demo"), { recursive: true });
+  writeFileSync(
+    join(root, "libraries", "gutu-lib-demo", "package.json"),
+    JSON.stringify({ name: "gutu-lib-demo", private: true, workspaces: ["framework/libraries/*"] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "libraries", "gutu-lib-demo", "framework", "libraries", "demo", "package.json"),
+    JSON.stringify({ name: "@platform/demo", version: "1.2.3", private: false }, null, 2) + "\n",
+    "utf8"
+  );
+
+  mkdirSync(join(root, "plugins", "gutu-plugin-demo", "framework", "builtin-plugins", "demo"), { recursive: true });
+  writeFileSync(
+    join(root, "plugins", "gutu-plugin-demo", "package.json"),
+    JSON.stringify({ name: "gutu-plugin-demo", private: true, workspaces: ["framework/builtin-plugins/*"] }, null, 2) + "\n",
+    "utf8"
+  );
+  writeFileSync(
+    join(root, "plugins", "gutu-plugin-demo", "framework", "builtin-plugins", "demo", "package.json"),
+    JSON.stringify({ name: "@plugins/demo", version: "4.5.6", private: false }, null, 2) + "\n",
+    "utf8"
+  );
 }
 
 describe("@gutu/ecosystem", () => {
@@ -234,6 +279,25 @@ describe("@gutu/ecosystem", () => {
     }
   });
 
+  it("syncs standalone catalog indexes from the checked-out plugin and library repos", () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-rollout-sync-"));
+    try {
+      createSplitWorkspaceFixture(root);
+
+      const result = syncCatalogRepositories(root);
+      expect(result.ok).toBe(true);
+
+      const librariesCatalog = JSON.parse(readFileSync(result.librariesCatalogPath, "utf8")) as { packages: Array<{ id: string }> };
+      const pluginsCatalog = JSON.parse(readFileSync(result.pluginsCatalogPath, "utf8")) as { packages: Array<{ id: string }> };
+      expect(librariesCatalog.packages[0]?.id).toBe("@platform/demo");
+      expect(pluginsCatalog.packages[0]?.id).toBe("@plugins/demo");
+      expect(existsSync(join(root, "catalogs", "gutu-libraries", "channels", "stable.json"))).toBe(true);
+      expect(existsSync(join(root, "catalogs", "gutu-plugins", "channels", "next.json"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("promotes a signed release artifact into catalog and channel metadata", () => {
     const root = mkdtempSync(join(tmpdir(), "gutu-rollout-promote-"));
     try {
@@ -280,6 +344,47 @@ describe("@gutu/ecosystem", () => {
       const channel = JSON.parse(readFileSync(result.channelPath, "utf8")) as { packages: Array<{ id: string }> };
       expect(catalog.packages[0]?.id).toBe("@gutula/demo-plugin");
       expect(channel.packages[0]?.id).toBe("@gutula/demo-plugin");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers standalone catalog repo roots when they are checked out in the workspace", () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-rollout-promote-standalone-"));
+    try {
+      createSplitWorkspaceFixture(root);
+      mkdirSync(join(root, "artifacts", "release"), { recursive: true });
+
+      writeFileSync(
+        join(root, "artifacts", "release", "demo-release-manifest.json"),
+        JSON.stringify(
+          {
+            schemaVersion: 1,
+            package: "demo",
+            version: "1.2.3",
+            createdAt: new Date(0).toISOString(),
+            artifact: {
+              path: "demo-1.2.3.tgz",
+              sha256: "c".repeat(64),
+              sizeBytes: 123
+            }
+          },
+          null,
+          2
+        ) + "\n",
+        "utf8"
+      );
+
+      const result = promoteReleaseArtifact(root, {
+        packageId: "@plugins/demo",
+        kind: "plugin",
+        repo: "gutula/gutu-plugin-demo",
+        manifestPath: "artifacts/release/demo-release-manifest.json",
+        uriBase: "https://github.com/gutula/gutu-plugin-demo/releases/download/v1.2.3"
+      });
+
+      expect(result.catalogPath).toBe(join(root, "catalogs", "gutu-plugins", "catalog", "index.json"));
+      expect(result.channelPath).toBe(join(root, "catalogs", "gutu-plugins", "channels", "stable.json"));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -1,0 +1,8 @@
+{
+  "name": "gutu-libraries",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-catalog.mjs"
+  }
+}

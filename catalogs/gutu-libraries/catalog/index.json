@@ -1,5 +1,279 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "1970-01-01T00:00:00.000Z",
-  "packages": []
+  "generatedAt": "2026-04-21T18:13:51.279Z",
+  "packages": [
+    {
+      "id": "@platform/admin-builders",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-builders",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-contracts",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-contracts",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-formview",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-formview",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-listview",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-listview",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-reporting",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-reporting",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-shell-workbench",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-shell-workbench",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/admin-widgets",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-admin-widgets",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai-evals",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai-evals",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai-guardrails",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai-guardrails",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai-mcp",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai-mcp",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai-memory",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai-memory",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ai-runtime",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ai-runtime",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/analytics",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-analytics",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/chart",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-chart",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/command-palette",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-command-palette",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/communication",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-communication",
+      "version": "0.1.0",
+      "channel": "stable",
+      "artifact": {
+        "uri": "https://github.com/gutula/gutu-lib-communication/releases/download/v0.1.0/platform-communication-0.1.0.tgz",
+        "format": "tgz",
+        "sha256": "5b644938818b465c2b172bd3b2b125b0a61d14c06541550379f000a7c638ad02",
+        "signature": "H8rlfMous55wQ4nunKV+8eFcbG6X85xjZv4y6SXdbsGwz6likgp7pyi6F+xhLNKJYYERmt2gdKnEN7ikmEnaAA==",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAexuSkN+unzBKhRPyW54aCkHfx457CDrGZ8bOFNSylkU=\n-----END PUBLIC KEY-----\n"
+      }
+    },
+    {
+      "id": "@platform/contracts",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-contracts",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/data-table",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-data-table",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/editor",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-editor",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/email-templates",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-email-templates",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/form",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-form",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/geo",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-geo",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/layout",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-layout",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/query",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-query",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/router",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-router",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/search",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-search",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/telemetry-ui",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-telemetry-ui",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-editor",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-editor",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-form",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-form",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-kit",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-kit",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-query",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-query",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-router",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-router",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-shell",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-shell",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-table",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-table",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-zone-next",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-zone-next",
+      "version": "0.1.0",
+      "channel": "stable"
+    },
+    {
+      "id": "@platform/ui-zone-static",
+      "kind": "library",
+      "repo": "gutula/gutu-lib-ui-zone-static",
+      "version": "0.1.0",
+      "channel": "stable"
+    }
+  ]
 }

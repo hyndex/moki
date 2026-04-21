@@ -8,6 +8,12 @@ Catalog repository for first-party Gutu plugins.
 
 This catalog is a **truth-first index** for the extracted plugin ecosystem. The badges and maturity labels referenced here are local-status documentation badges backed by repo facts, not live npm or GitHub Actions badges.
 
+## Live Catalog Surface
+
+- `catalog/index.json` tracks the full first-party plugin inventory.
+- `channels/stable.json` and `channels/next.json` are the installable release channels used by `gutu vendor sync`.
+- Promoted channel entries point at signed GitHub Release assets and are validated in CI before merge.
+
 ## What Gutu Solves
 
 | Platform Problem | Typical Failure Mode | Gutu Response |
