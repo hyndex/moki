@@ -156,6 +156,12 @@ export function PluginInspectorPage() {
       {/* Theme + layout picker */}
       <ThemeAndLayoutPicker />
 
+      {/* Auth providers (if any) */}
+      <AuthProvidersCard />
+
+      {/* Trusted publisher keys for signed-remote install */}
+      <TrustedKeysCard />
+
       {/* Registries — live extension points */}
       <RegistriesCard />
     </div>
@@ -355,6 +361,153 @@ function ThemeAndLayoutPicker() {
               ))}
             </select>
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Auth providers card — lists every contributed auth provider with a
+ *  one-click "Sign in with …" button. Useful for re-authentication and
+ *  linking secondary identities. Pre-auth sign-in integration is a
+ *  separate architectural change (requires loading auth-provider plugins
+ *  before RuntimeProvider mounts). */
+function AuthProvidersCard() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version;
+  if (!host) return null;
+  const providers = host.registries.authProviders.list();
+  if (providers.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Auth providers</CardTitle>
+        <CardDescription>
+          Additional sign-in methods contributed by plugins. Click to authenticate.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {providers.map((p) => (
+            <Button
+              key={p.key}
+              variant="ghost"
+              size="sm"
+              onClick={() => void p.value.signIn().catch(() => { /* plugin handles */ })}
+              iconLeft={<Download className="h-3 w-3" />}
+            >
+              Sign in with {p.value.label}
+              <span className="ml-2 text-[10px] text-text-muted">· {p.contributor}</span>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Trusted publisher keys — used by signature verification during
+ *  install-from-URL. Operators add publishers they trust. */
+function TrustedKeysCard() {
+  const [keys, setKeys] = React.useState<readonly { publicKey: string; keyId: string; label: string; addedAt: string }[]>([]);
+  const [keyId, setKeyId] = React.useState("");
+  const [label, setLabel] = React.useState("");
+  const [publicKey, setPublicKey] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    /* Lazy-load to keep the signature module out of the initial bundle. */
+    import("@/runtime/pluginSignature").then((m) => {
+      setKeys(m.loadTrustedKeys());
+    });
+  }, []);
+
+  const add = async () => {
+    setError(null);
+    const pk = publicKey.trim();
+    if (!pk) {
+      setError("Public key is required");
+      return;
+    }
+    try {
+      const m = await import("@/runtime/pluginSignature");
+      const next = m.addTrustedKey({
+        publicKey: pk,
+        keyId: keyId.trim() || `key_${Date.now()}`,
+        label: label.trim() || "unnamed",
+        addedAt: new Date().toISOString(),
+      });
+      setKeys(next);
+      setKeyId("");
+      setLabel("");
+      setPublicKey("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const remove = async (pk: string) => {
+    const m = await import("@/runtime/pluginSignature");
+    setKeys(m.removeTrustedKey(pk));
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Trusted publisher keys</CardTitle>
+        <CardDescription>
+          Remote-plugin manifests that declare a <code>signature</code> must
+          be signed by one of these Ed25519 public keys. Signed-plugin install
+          is refused when the publisher's key isn't here.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <ul className="divide-y divide-border-subtle">
+          {keys.length === 0 ? (
+            <li className="px-1 py-3 text-xs text-text-muted">No trusted keys yet.</li>
+          ) : (
+            keys.map((k) => (
+              <li key={k.publicKey} className="flex items-start gap-2 py-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{k.label}</div>
+                  <div className="text-[10px] font-mono text-text-muted break-all">{k.publicKey}</div>
+                  <div className="text-[10px] text-text-muted">
+                    id: {k.keyId} · added {new Date(k.addedAt).toLocaleString()}
+                  </div>
+                </div>
+                <Button variant="ghost" size="xs" onClick={() => void remove(k.publicKey)}>
+                  Remove
+                </Button>
+              </li>
+            ))
+          )}
+        </ul>
+        <div className="grid grid-cols-3 gap-2">
+          <Input
+            placeholder="Label (e.g. Acme Labs)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="col-span-1"
+          />
+          <Input
+            placeholder="Key ID (e.g. acme-2024)"
+            value={keyId}
+            onChange={(e) => setKeyId(e.target.value)}
+            className="col-span-1"
+          />
+          <Input
+            placeholder="SPKI public key (base64)"
+            value={publicKey}
+            onChange={(e) => setPublicKey(e.target.value)}
+            className="col-span-1 font-mono text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={() => void add()} disabled={!publicKey.trim()}>
+            Add trusted key
+          </Button>
+          {error && <span className="text-xs text-intent-danger">{error}</span>}
         </div>
       </CardContent>
     </Card>

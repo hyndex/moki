@@ -12,6 +12,7 @@ import { useAggregation } from "@/runtime/useAggregation";
 import { formatValue } from "./formatters";
 import type { ChartWidget as ChartSpec } from "@/contracts/widgets";
 import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
+import { useRegistries } from "@/host/pluginHostContext";
 
 export function ChartWidget({ widget }: { widget: ChartSpec }) {
   const workspaceFilter = useWorkspaceFilter(widget.aggregation.resource);
@@ -102,5 +103,28 @@ function ChartBody({
   if (widget.chart === "sparkline") {
     return <Sparkline data={(data.series ?? []).map((s) => s.value)} />;
   }
-  return null;
+  /* Plugin-contributed chart kind — registries.chartKinds fallback. */
+  return <PluginContributedChart widget={widget} data={data} fmt={fmt} />;
+}
+
+function PluginContributedChart({
+  widget,
+  data,
+  fmt,
+}: {
+  widget: ChartSpec;
+  data: NonNullable<ReturnType<typeof useAggregation>["data"]>;
+  fmt: (v: number) => string;
+}) {
+  const registries = useRegistries();
+  const spec = registries?.chartKinds.get(widget.chart as string);
+  if (!spec) {
+    return (
+      <div className="text-xs text-text-muted p-2 border border-dashed border-border rounded">
+        Unknown chart kind "<code className="font-mono">{widget.chart}</code>".
+      </div>
+    );
+  }
+  const Render = spec.render;
+  return <Render data={data} height={widget.height} format={fmt} />;
 }

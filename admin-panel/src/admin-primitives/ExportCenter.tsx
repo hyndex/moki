@@ -10,8 +10,10 @@ import {
 } from "@/primitives/DropdownMenu";
 import { Button } from "@/primitives/Button";
 import { useRuntime } from "@/runtime/context";
+import { useRegistries } from "@/host/pluginHostContext";
 
-export type ExportFormat = "csv" | "xlsx" | "json" | "pdf";
+/** Legacy format type — kept so existing plugin-author code still compiles. */
+export type ExportFormat = string;
 
 export interface ExportCenterProps {
   resource: string;
@@ -21,29 +23,10 @@ export interface ExportCenterProps {
   fetchRows: () => Promise<Record<string, unknown>[]>;
   /** Optional custom file name (without extension). */
   fileName?: string;
+  /** Restrict the formats shown. When omitted, every registered exporter
+   *  in `registries.exporters` is offered. */
   formats?: readonly ExportFormat[];
   className?: string;
-}
-
-function toCsv(rows: Record<string, unknown>[]): string {
-  if (rows.length === 0) return "";
-  const headers = Array.from(
-    rows.reduce((s, r) => {
-      for (const k of Object.keys(r)) s.add(k);
-      return s;
-    }, new Set<string>()),
-  );
-  const escape = (v: unknown) => {
-    if (v === null || v === undefined) return "";
-    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-    if (/[,"\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  };
-  const lines = [headers.join(",")];
-  for (const r of rows) {
-    lines.push(headers.map((h) => escape(r[h])).join(","));
-  }
-  return lines.join("\n");
 }
 
 function download(blob: Blob, name: string): void {
@@ -62,32 +45,35 @@ export function ExportCenter({
   count,
   fetchRows,
   fileName,
-  formats = ["csv", "json"],
+  formats,
   className,
 }: ExportCenterProps) {
   const { analytics, actions } = useRuntime();
-  const [busy, setBusy] = React.useState<ExportFormat | null>(null);
+  const registries = useRegistries();
+  const [busy, setBusy] = React.useState<string | null>(null);
 
-  const run = async (format: ExportFormat) => {
+  /* Discover exporters from the registry. Every plugin-registered
+   * exporter appears here automatically. */
+  const availableExporters = React.useMemo(() => {
+    const all = registries?.exporters.list() ?? [];
+    if (!formats) return all;
+    const filter = new Set(formats);
+    return all.filter((e) => filter.has(e.key));
+  }, [registries, formats]);
+
+  const run = async (format: string) => {
     setBusy(format);
     const started = Date.now();
     try {
       const rows = await fetchRows();
-      analytics.emit("page.export.started", {
-        resource,
-        format,
-        rows: rows.length,
-      });
-      const name = `${fileName ?? resource.replace(/\./g, "-")}.${format}`;
-      if (format === "csv") {
-        download(new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }), name);
-      } else if (format === "json") {
-        download(
-          new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" }),
-          name,
-        );
+      analytics.emit("page.export.started", { resource, format, rows: rows.length });
+      const baseName = fileName ?? resource.replace(/\./g, "-");
+      const entry = registries?.exporters.list().find((e) => e.key === format);
+      if (entry) {
+        const blob = await entry.value.export(rows, { fileName: baseName });
+        download(blob, `${baseName}.${entry.value.extension}`);
       } else {
-        // xlsx/pdf need server-side or heavy lib — delegate via toast
+        // No registered exporter — server-side / delegated path.
         actions.toast({
           title: `${format.toUpperCase()} export queued`,
           description: "You'll receive a notification when it's ready.",
@@ -128,11 +114,20 @@ export function ExportCenter({
           {count !== undefined ? `${count} records · current view` : "Current view"}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {formats.map((f) => (
-          <DropdownMenuItem key={f} onSelect={() => void run(f)}>
-            Export as {f.toUpperCase()}
-          </DropdownMenuItem>
-        ))}
+        {availableExporters.length === 0 ? (
+          <DropdownMenuItem disabled>No exporters registered</DropdownMenuItem>
+        ) : (
+          availableExporters.map((e) => (
+            <DropdownMenuItem key={e.key} onSelect={() => void run(e.key)}>
+              Export as {e.value.label}
+              {e.contributor !== "shell" && (
+                <span className="ml-2 text-[10px] text-text-muted">
+                  · {e.contributor}
+                </span>
+              )}
+            </DropdownMenuItem>
+          ))
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

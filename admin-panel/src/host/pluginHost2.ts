@@ -43,6 +43,11 @@ import {
 } from "@/runtime/registries";
 import { satisfies as semverSatisfies } from "@/runtime/semver";
 import type { AdminRuntime } from "@/runtime/context";
+import {
+  verifyAgainstTrustedKeys,
+  loadTrustedKeys,
+  type SignatureDescriptor,
+} from "@/runtime/pluginSignature";
 
 export interface PluginHost2 {
   readonly registries: ExtensionRegistriesMutable;
@@ -73,6 +78,8 @@ interface ActiveEntry {
   disposers: Disposable[];
   error?: string;
   activatedAt?: number;
+  /** Sandbox handle when manifest.sandbox is "iframe" or "worker". */
+  sandbox?: { dispose: () => void };
 }
 
 export function createPluginHost2(args: {
@@ -136,6 +143,13 @@ export function createPluginHost2(args: {
   /* ----- Per-plugin activation ----- */
   const activatePlugin = async (plugin: PluginV2): Promise<ActiveEntry> => {
     const manifest = plugin.manifest;
+    /* Sandbox tier — when declared, spawn an iframe / worker for the
+     * plugin and let the sandbox bridge handle activation. The plugin's
+     * main-thread activate() is NOT called; instead the sandbox re-loads
+     * the module from its origin URL and runs activate() in isolation. */
+    if (manifest.sandbox === "iframe" || manifest.sandbox === "worker") {
+      return activateSandboxed(plugin);
+    }
     const entry: ActiveEntry = {
       manifest,
       plugin,
@@ -227,6 +241,57 @@ export function createPluginHost2(args: {
     return entry;
   };
 
+  const activateSandboxed = async (plugin: PluginV2): Promise<ActiveEntry> => {
+    const manifest = plugin.manifest;
+    const entry: ActiveEntry = {
+      manifest,
+      plugin,
+      status: "activating",
+      disposers: [],
+    };
+    active.set(manifest.id, entry);
+    emit();
+    const entryUrl = manifest.origin?.location ?? "";
+    if (!entryUrl) {
+      entry.status = "quarantined";
+      entry.error = "Sandboxed plugins require manifest.origin.location (module URL).";
+      emitPeer("quarantined", manifest.id);
+      emit();
+      return entry;
+    }
+    try {
+      if (manifest.sandbox === "iframe") {
+        const { spawnIframeSandbox } = await import("./sandbox/iframeSandbox");
+        const handle = await spawnIframeSandbox({
+          plugin,
+          host: self as unknown as PluginHost2,
+          entryUrl,
+        });
+        entry.sandbox = handle;
+      } else if (manifest.sandbox === "worker") {
+        const { spawnWorkerSandbox } = await import("./sandbox/workerSandbox");
+        const handle = await spawnWorkerSandbox({
+          plugin,
+          host: self as unknown as PluginHost2,
+          entryUrl,
+        });
+        entry.sandbox = handle;
+      }
+      entry.status = "active";
+      entry.activatedAt = Date.now();
+      emitPeer("activated", manifest.id);
+    } catch (err) {
+      entry.status = "quarantined";
+      entry.error = err instanceof Error ? err.message : String(err);
+      emitPeer("quarantined", manifest.id);
+      // eslint-disable-next-line no-console
+      console.error(`[plugin-host] sandbox "${manifest.id}" failed to spawn`, err);
+    } finally {
+      emit();
+    }
+    return entry;
+  };
+
   const deactivatePlugin = async (pluginId: string): Promise<void> => {
     const entry = active.get(pluginId);
     if (!entry) return;
@@ -238,6 +303,10 @@ export function createPluginHost2(args: {
     }
     for (const d of entry.disposers) {
       try { d(); } catch { /* swallow */ }
+    }
+    /* Dispose sandbox if present. */
+    if (entry.sandbox) {
+      try { entry.sandbox.dispose(); } catch { /* swallow */ }
     }
     contributions.dropByPlugin(pluginId);
     entry.status = "deactivated";
@@ -296,6 +365,33 @@ export function createPluginHost2(args: {
         throw new Error(
           `Integrity check failed: declared ${expected}, computed ${actual}`,
         );
+      }
+    }
+    /* Signature check — if the manifest declares a signature, the
+     * publisher's public key must be in the trusted-keys list and the
+     * signature must verify against the bundle bytes. */
+    const sigObj = manifest.origin as unknown as
+      | (Partial<SignatureDescriptor> & { signaturePublicKey?: string })
+      | undefined;
+    if (sigObj?.signature) {
+      if (!sigObj.signaturePublicKey && !sigObj.publicKey) {
+        throw new Error(
+          "Manifest declares a signature but no publicKey to verify it against.",
+        );
+      }
+      const trusted = loadTrustedKeys();
+      if (trusted.length === 0) {
+        throw new Error(
+          "No trusted publisher keys configured. Add the publisher's key via Plugin Inspector → Trusted keys before installing signed plugins.",
+        );
+      }
+      const descriptor: SignatureDescriptor = {
+        signature: sigObj.signature,
+        publicKey: sigObj.publicKey ?? sigObj.signaturePublicKey!,
+      };
+      const verify = await verifyAgainstTrustedKeys(buf, descriptor);
+      if (!verify.ok) {
+        throw new Error(`Signature verification failed: ${verify.error ?? "unknown"}`);
       }
     }
     // Load via a Blob URL so the browser treats it as a fresh ESM module.
