@@ -2,12 +2,35 @@ import * as React from "react";
 import { Badge } from "@/primitives/Badge";
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import type { ColumnDescriptor } from "@/contracts/views";
+import type { ExtensionRegistries } from "@/contracts/plugin-v2";
 
-/** Default cell renderer used when a column doesn't supply a custom `render`. */
+/** Default cell renderer used when a column doesn't supply a custom `render`.
+ *
+ *  Now registry-aware: if a plugin has contributed a `fieldKinds` entry with
+ *  a `cell` component for the column's kind, that component takes over. This
+ *  is the primary extension point for new column kinds (e.g. "color-swatch",
+ *  "barcode", "rating") — plugins register once, every list view picks it up. */
 export function renderCellValue(
   col: ColumnDescriptor,
   value: unknown,
+  record: Record<string, unknown> = {},
+  registries?: ExtensionRegistries | null,
 ): React.ReactNode {
+  // First: registry override for the column's kind.
+  if (registries && col.kind) {
+    const kindSpec = registries.fieldKinds.get(col.kind);
+    if (kindSpec?.cell) {
+      const Cell = kindSpec.cell;
+      return (
+        <Cell
+          value={value}
+          record={record}
+          options={col.options as { value: string; label: string; intent?: string }[] | undefined}
+        />
+      );
+    }
+  }
+
   if (value === undefined || value === null || value === "") {
     return <span className="text-text-muted">—</span>;
   }

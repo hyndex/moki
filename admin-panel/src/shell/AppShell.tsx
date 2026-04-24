@@ -6,6 +6,8 @@ import { Toaster } from "./Toaster";
 import { ConfirmHost } from "./ConfirmHost";
 import { Breadcrumbs } from "@/admin-primitives/Breadcrumbs";
 import { type AdminRegistry, RegistryContext } from "./registry";
+import { usePluginHost2 } from "@/host/pluginHostContext";
+import { PluginBoundary } from "@/host/PluginBoundary";
 import { useHash, navigateTo } from "@/views/useRoute";
 import { resolveRoute } from "./router";
 import { ListViewRenderer } from "@/views/ListView";
@@ -27,9 +29,45 @@ export interface AppShellProps {
 export function AppShell({ registry }: AppShellProps) {
   const hash = useHash();
   const runtime = useRuntime();
+  const host = usePluginHost2();
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const route = React.useMemo(() => resolveRoute(hash, registry), [hash, registry]);
+
+  /* Route guards — plugins can intercept navigation (auth, feature gates). */
+  const prevHashRef = React.useRef<string>(hash);
+  React.useEffect(() => {
+    if (!host) return;
+    if (prevHashRef.current === hash) return;
+    const from = prevHashRef.current;
+    prevHashRef.current = hash;
+    const guards = Array.from(host.contributions.routeGuards.values())
+      .map((e) => e.guard)
+      .sort((a, b) => (a.priority ?? 50) - (b.priority ?? 50));
+    (async () => {
+      for (const g of guards) {
+        const matches =
+          typeof g.match === "string"
+            ? hash.startsWith(g.match)
+            : g.match.test(hash);
+        if (!matches) continue;
+        try {
+          const result = await g.guard({ path: hash, from });
+          if (result === false) {
+            navigateTo(from);
+            return;
+          }
+          if (result && typeof result === "object" && "redirect" in result) {
+            navigateTo(result.redirect);
+            return;
+          }
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error("[route-guard] threw", err);
+        }
+      }
+    })();
+  }, [hash, host]);
 
   /* Track route changes for analytics. */
   React.useEffect(() => {
@@ -113,7 +151,16 @@ export function AppShell({ registry }: AppShellProps) {
           >
             <div className="max-w-[1400px] mx-auto px-6 py-6">
               <ErrorBoundary key={hash}>
-                <RouteView route={route} registry={registry} />
+                <PluginBoundary
+                  pluginId={
+                    route?.view && "resource" in route.view
+                      ? registry.pluginByResource[route.view.resource as string] ?? "shell"
+                      : "shell"
+                  }
+                  label={route?.view?.title}
+                >
+                  <RouteView route={route} registry={registry} />
+                </PluginBoundary>
               </ErrorBoundary>
             </div>
           </main>

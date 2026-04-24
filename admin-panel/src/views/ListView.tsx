@@ -31,6 +31,7 @@ import { Spinner } from "@/primitives/Spinner";
 import { useList } from "@/runtime/hooks";
 import { useRuntime } from "@/runtime/context";
 import { renderCellValue, getPath } from "./renderCellValue";
+import { useRegistries } from "@/host/pluginHostContext";
 import { navigateTo } from "./useRoute";
 import { filterRows } from "@/lib/filterEngine";
 import { evalExpression } from "@/lib/expression";
@@ -59,6 +60,7 @@ export interface ListViewRendererProps {
  */
 export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
   const runtime = useRuntime();
+  const registries = useRegistries();
 
   /* ---------------- saved view state ---------------- */
   const defaultView = runtime.savedViews.getDefault(view.resource);
@@ -204,7 +206,7 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
           const row = ctx.row.original;
           const v = ctx.getValue();
           if (c.render) return c.render(v, row);
-          return renderCellValue(c, v);
+          return renderCellValue(c, v, row, registries);
         },
       });
     }

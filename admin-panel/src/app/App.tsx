@@ -1,3 +1,4 @@
+import * as React from "react";
 import { AdminRoot } from "@/host";
 import {
   bookingPlugin,
@@ -154,9 +155,14 @@ const bridgedPlugins: BridgedPlugin[] = [
 ];
 
 export function App() {
-  // Bridged plugins are structurally compatible with the native Plugin shape,
-  // so AdminRoot accepts the union. (The `resources: never[]` + `commands` /
-  // `views` sub-shapes match @/contracts/plugin.Plugin.)
-  const all = [...plugins, ...(bridgedPlugins as unknown as typeof plugins)];
+  // Legacy + bridged plugins are accepted alongside new v2 plugins — see
+  // `AnyPlugin` in `@/contracts/plugin-v2`. Filesystem-discovered plugins
+  // under `src/plugins/*` are merged automatically by AdminRoot.
+  // Stable reference — the plugin list never changes at runtime for the
+  // shell itself; runtime install/uninstall goes through the Plugin Inspector.
+  const all = React.useMemo(
+    () => [...plugins, ...(bridgedPlugins as unknown as typeof plugins)],
+    [],
+  );
   return <AdminRoot plugins={all} />;
 }
