@@ -20,6 +20,9 @@
 /.codex/
 /ref/
 
+# Claude Code session-local config (launch.json has absolute paths).
+/.claude/
+
 # Graphify durable outputs can be committed; skip only local/runtime byproducts.
 graphify-out/cache/
 graphify-out/manifest.json
