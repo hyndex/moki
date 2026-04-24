@@ -1,0 +1,23 @@
+{
+  "name": "@gutu/admin-shell-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bridge adapter that surfaces @platform/admin-contracts contributions inside @gutu/admin-shell-next. Zero changes required in existing plugins.",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./legacy-types": {
+      "types": "./src/legacy-types.ts",
+      "import": "./src/legacy-types.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test"
+  }
+}

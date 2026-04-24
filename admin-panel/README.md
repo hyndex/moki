@@ -245,6 +245,73 @@ Run `bun run dev` and open `http://localhost:5173/#/contacts` to see it live.
 - **Accessibility.** Radix under every interactive primitive. Focus rings token
   driven. Reduced-motion honored.
 
+## Two coexisting plugin APIs
+
+The Gutu ecosystem has two admin plugin APIs today. **Both render in the same shell.** Plugin authors pick per-plugin based on what fits their domain.
+
+### API 1 — `@platform/admin-contracts` (the existing ecosystem API)
+
+Used by 55+ plugins already in production. Plugin authors ship their own React components and declare where they mount:
+
+```ts
+// existing gutu-plugin-crm-core/src/ui/admin.contributions.ts
+import { defineWorkspace, defineAdminNav, definePage, defineCommand } from "@platform/admin-contracts";
+
+export const adminContributions = {
+  workspaces: [defineWorkspace({ id: "crm", label: "CRM", permission: "crm.leads.read", homePath: "/admin/business/crm" })],
+  nav: [defineAdminNav({ workspace: "crm", group: "control-room", items: [/* ... */] })],
+  pages: [definePage({ id: "crm-core.page", kind: "dashboard", route: "/admin/business/crm", component: BusinessAdminPage, permission: "crm.leads.read", label: "CRM", workspace: "crm" })],
+  commands: [defineCommand({ id: "crm.open", label: "Open CRM", href: "/admin/business/crm", permission: "crm.leads.read" })],
+};
+```
+
+### API 2 — `@gutu/admin-shell-next` (schema-driven, new)
+
+Lives in `admin-panel/packages/admin-shell-next/`. Gives you realtime invalidation, saved views, widgets, column configurator, multi-tenancy — for free — when the page is schema-shaped:
+
+```ts
+import { definePlugin, defineListView, defineResource } from "@gutu/admin-shell-next";
+
+export const crmPlugin = definePlugin({
+  id: "crm-core",
+  label: "CRM Core",
+  admin: {
+    resources: [defineResource({ id: "crm.contact", schema: ContactSchema, fields: [...] })],
+    views: [defineListView({ id: "crm.contacts", resource: "crm.contact", columns: [...], filters: [...] })],
+  },
+});
+```
+
+### Bridge — `@gutu/admin-shell-bridge`
+
+Lives in `admin-panel/packages/admin-shell-bridge/`. Surfaces legacy API-1 contributions inside the new shell with zero changes to existing plugins:
+
+```ts
+import { AdminRoot } from "@gutu/admin-shell-next/host";
+import { adoptLegacyContributions } from "@gutu/admin-shell-bridge";
+import { adminContributions as crmLegacy } from "gutu-plugin-crm-core";
+import { nativePlugins } from "./my-native-plugins";
+
+<AdminRoot plugins={[
+  ...nativePlugins,
+  adoptLegacyContributions(crmLegacy, { sourceId: "crm-core", plugin: { /* ... */ } }),
+]} />
+```
+
+The bridge translates `WorkspaceContribution → NavSection + NavItem`, `PageContribution → CustomView`, `CommandContribution → CommandDescriptor`, `ReportContribution → CustomView`, `BuilderContribution → CustomView`, `ZoneLaunchContribution → NavItem`. Partial registries are handled. Permission introspector gates items when supplied. 13 tests cover the translation matrix.
+
+### When to use which
+
+| Need | API |
+|---|---|
+| Plain CRUD (list/form/detail) | API 2 — schema-driven |
+| Custom JSX page (calendar, graph, workflow builder) | Either — API 2 `defineCustomView` or API 1 `definePage({ component })` |
+| Already-built plugin on API 1 | Keep it on API 1, use the bridge |
+| Dashboard of KPIs + charts + shortcuts | API 2 — `WorkspaceRenderer` + widget descriptors |
+| Need realtime, saved views, widgets, multi-tenancy | API 2 |
+
+Migration is **per plugin, voluntary, driven by concrete wins**. Staying on API 1 is always supported.
+
 ## Multi-tenancy
 
 The framework supports **three deployment modes** via environment variables.

@@ -18,8 +18,12 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@gutu/admin-shell-next": ["packages/admin-shell-next/src/index.ts"],
+      "@gutu/admin-shell-next/*": ["packages/admin-shell-next/src/*"],
+      "@gutu/admin-shell-bridge": ["packages/admin-shell-bridge/src/index.ts"],
+      "@gutu/admin-shell-bridge/*": ["packages/admin-shell-bridge/src/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "packages/*/src"]
 }
