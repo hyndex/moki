@@ -715,8 +715,15 @@ export function buildPluginContext(args: PluginContextBuildArgs): BuiltPluginCon
   const resources = makeScopedResourceClient(manifest, runtime, permissions);
 
   // Wrap the registries so that every `.register()` is attributed to this
-  // plugin AND auto-cleaned when the plugin deactivates.
-  const scopedRegistries = scopedRegistryFacade(registries, manifest.id, disposers);
+  // plugin AND auto-cleaned when the plugin deactivates. Enforces
+  // register:* capabilities at call time.
+  const scopedRegistries = scopedRegistryFacade(
+    registries,
+    manifest.id,
+    disposers,
+    permissions,
+    manifest,
+  );
 
   const scopedRuntime: ScopedRuntime = {
     resources,
@@ -784,23 +791,50 @@ function wrapContributionsForCleanup(
   };
 }
 
+/** Map from registry name → the capability required to register entries. */
+const REGISTRY_CAPS: Readonly<Record<string, Capability>> = {
+  fieldKinds: "register:field-kind",
+  widgetTypes: "register:widget-type",
+  viewModes: "register:view-mode",
+  chartKinds: "register:chart-kind",
+  exporters: "register:exporter",
+  importers: "register:importer",
+  authProviders: "auth",
+  dataSources: "data-source",
+  themes: "theme",
+  layouts: "layout",
+};
+
 /** Return a registries object whose `register(...)` calls are attributed
  *  to the given plugin id AND auto-disposed when the plugin unloads. */
 function scopedRegistryFacade(
   registries: ExtensionRegistriesMutable,
   contributor: string,
   disposers: Disposable[],
+  permissions?: PermissionGate,
+  manifest?: PluginManifest,
 ): ExtensionRegistriesMutable {
   const wrapRegistry = <K extends string, V>(
     r: ExtensionRegistriesMutable[keyof ExtensionRegistriesMutable] & {
       register: (k: K, v: V) => Disposable;
       registerMany?: (entries: Record<K, V>) => Disposable;
     },
+    registryName: string,
   ): typeof r => {
+    const requiredCap = REGISTRY_CAPS[registryName];
+    const guard = () => {
+      if (requiredCap && permissions && !permissions.has(requiredCap)) {
+        throw new CapabilityError(
+          manifest?.id ?? contributor,
+          requiredCap,
+        );
+      }
+    };
     return new Proxy(r, {
       get(target, prop) {
         if (prop === "register") {
           return (k: K, v: V) => {
+            guard();
             const d = registries._withContributor(contributor, () =>
               (target as unknown as { register: (k: K, v: V) => Disposable }).register(k, v),
             );
@@ -810,6 +844,7 @@ function scopedRegistryFacade(
         }
         if (prop === "registerMany") {
           return (entries: Record<K, V>) => {
+            guard();
             const d = registries._withContributor(contributor, () =>
               (target as unknown as { registerMany: (e: Record<K, V>) => Disposable }).registerMany(entries),
             );
@@ -824,19 +859,19 @@ function scopedRegistryFacade(
 
   return {
     _withContributor: registries._withContributor.bind(registries),
-    fieldKinds: wrapRegistry(registries.fieldKinds) as typeof registries.fieldKinds,
-    widgetTypes: wrapRegistry(registries.widgetTypes) as typeof registries.widgetTypes,
-    viewModes: wrapRegistry(registries.viewModes) as typeof registries.viewModes,
-    themes: wrapRegistry(registries.themes) as typeof registries.themes,
-    layouts: wrapRegistry(registries.layouts) as typeof registries.layouts,
-    dataSources: wrapRegistry(registries.dataSources) as typeof registries.dataSources,
-    exporters: wrapRegistry(registries.exporters) as typeof registries.exporters,
-    importers: wrapRegistry(registries.importers) as typeof registries.importers,
-    authProviders: wrapRegistry(registries.authProviders) as typeof registries.authProviders,
-    chartKinds: wrapRegistry(registries.chartKinds) as typeof registries.chartKinds,
-    notificationChannels: wrapRegistry(registries.notificationChannels) as typeof registries.notificationChannels,
-    filterOps: wrapRegistry(registries.filterOps) as typeof registries.filterOps,
-    expressionFunctions: wrapRegistry(registries.expressionFunctions) as typeof registries.expressionFunctions,
+    fieldKinds: wrapRegistry(registries.fieldKinds, "fieldKinds") as typeof registries.fieldKinds,
+    widgetTypes: wrapRegistry(registries.widgetTypes, "widgetTypes") as typeof registries.widgetTypes,
+    viewModes: wrapRegistry(registries.viewModes, "viewModes") as typeof registries.viewModes,
+    themes: wrapRegistry(registries.themes, "themes") as typeof registries.themes,
+    layouts: wrapRegistry(registries.layouts, "layouts") as typeof registries.layouts,
+    dataSources: wrapRegistry(registries.dataSources, "dataSources") as typeof registries.dataSources,
+    exporters: wrapRegistry(registries.exporters, "exporters") as typeof registries.exporters,
+    importers: wrapRegistry(registries.importers, "importers") as typeof registries.importers,
+    authProviders: wrapRegistry(registries.authProviders, "authProviders") as typeof registries.authProviders,
+    chartKinds: wrapRegistry(registries.chartKinds, "chartKinds") as typeof registries.chartKinds,
+    notificationChannels: wrapRegistry(registries.notificationChannels, "notificationChannels") as typeof registries.notificationChannels,
+    filterOps: wrapRegistry(registries.filterOps, "filterOps") as typeof registries.filterOps,
+    expressionFunctions: wrapRegistry(registries.expressionFunctions, "expressionFunctions") as typeof registries.expressionFunctions,
   };
 }
 

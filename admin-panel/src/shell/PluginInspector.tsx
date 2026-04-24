@@ -153,6 +153,9 @@ export function PluginInspectorPage() {
         </CardContent>
       </Card>
 
+      {/* Theme + layout picker */}
+      <ThemeAndLayoutPicker />
+
       {/* Registries — live extension points */}
       <RegistriesCard />
     </div>
@@ -268,6 +271,94 @@ function StatusBadge({ status }: { status: PluginStatus }) {
   };
   const { label, intent } = map[status];
   return <Badge intent={intent}>{label}</Badge>;
+}
+
+/** Theme + Layout picker — reads live from the registries, applies the
+ *  selected theme's CSS custom properties to document.documentElement, and
+ *  persists the choice in localStorage. */
+function ThemeAndLayoutPicker() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version;
+  const [theme, setTheme] = React.useState<string>(
+    () => localStorage.getItem("gutu.theme") ?? "shell.light",
+  );
+  const [layout, setLayout] = React.useState<string>(
+    () => localStorage.getItem("gutu.layout") ?? "shell.standard",
+  );
+
+  React.useEffect(() => {
+    if (!host) return;
+    const spec = host.registries.themes.get(theme);
+    if (!spec) return;
+    const root = document.documentElement;
+    // Record the chosen colour scheme + overlay its tokens.
+    root.dataset.theme = theme;
+    root.dataset.colorScheme = spec.mode;
+    for (const [k, v] of Object.entries(spec.tokens ?? {})) {
+      root.style.setProperty(k, v);
+    }
+    localStorage.setItem("gutu.theme", theme);
+  }, [theme, host]);
+
+  React.useEffect(() => {
+    if (!host) return;
+    const spec = host.registries.layouts.get(layout);
+    if (!spec) return;
+    document.documentElement.dataset.layout = layout;
+    if (spec.density) document.documentElement.dataset.density = spec.density;
+    if (spec.sidebar) document.documentElement.dataset.sidebar = spec.sidebar;
+    if (spec.topbar) document.documentElement.dataset.topbar = spec.topbar;
+    localStorage.setItem("gutu.layout", layout);
+  }, [layout, host]);
+
+  if (!host) return null;
+  const themes = host.registries.themes.list();
+  const layouts = host.registries.layouts.list();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Appearance</CardTitle>
+        <CardDescription>
+          Pick a theme / layout. Any plugin can contribute its own via{" "}
+          <code className="font-mono">ctx.registries.themes.register(...)</code>.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Theme</div>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full h-9 rounded border border-border bg-surface-0 px-2 text-sm"
+            >
+              {themes.map((t) => (
+                <option key={t.key} value={t.key}>
+                  {t.value.label ?? t.key} · {t.value.mode} · by {t.contributor}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Layout</div>
+            <select
+              value={layout}
+              onChange={(e) => setLayout(e.target.value)}
+              className="w-full h-9 rounded border border-border bg-surface-0 px-2 text-sm"
+            >
+              {layouts.map((l) => (
+                <option key={l.key} value={l.key}>
+                  {l.value.label ?? l.key} · by {l.contributor}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function RegistriesCard() {

@@ -208,7 +208,10 @@ export default definePlugin<WarehouseApi>({
     /* 3. View extension — add "Warehouse stock" tab to any Sales Order detail. */
     ctx.contribute.viewExtensions([
       {
-        target: (viewId) => viewId === "sales.deal-detail.view" || viewId === "sales.order-detail.view",
+        // Broad match — any sales.* detail page. Includes sales-partner,
+        // territory, credit-limit, etc. Demonstrates cross-plugin view
+        // augmentation end-to-end.
+        target: (viewId) => /^sales\..*-detail\.view$/.test(viewId),
         tab: {
           id: "warehouse.stock",
           label: "Warehouse stock",

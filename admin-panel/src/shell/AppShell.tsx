@@ -78,7 +78,12 @@ export function AppShell({ registry }: AppShellProps) {
     });
   }, [hash, route, runtime]);
 
-  /* Global keyboard shortcuts */
+  /* Global keyboard shortcuts + plugin-contributed shortcuts
+   *
+   *  Sequence support — plugins can register "g w" (press g then w within
+   *  1.2s). The first token is captured; if the second matches a contributed
+   *  shortcut, it fires. */
+  const sequenceRef = React.useRef<{ key: string; at: number } | null>(null);
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const isMod = e.metaKey || e.ctrlKey;
@@ -93,22 +98,77 @@ export function AppShell({ registry }: AppShellProps) {
         e.preventDefault();
         setPaletteOpen((v) => !v);
         runtime.analytics.emit("shell.command_palette.opened", {});
-      } else if (!inInput && e.key === "?" && !e.metaKey && !e.ctrlKey) {
+        return;
+      }
+      if (!inInput && e.key === "?" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         setShortcutsOpen(true);
         runtime.analytics.emit("shell.keyboard_shortcut", { key: "?" });
-      } else if (!inInput && e.key === "/" && !e.metaKey && !e.ctrlKey) {
+        return;
+      }
+      if (!inInput && e.key === "/" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         setPaletteOpen(true);
         runtime.analytics.emit("shell.keyboard_shortcut", { key: "/" });
-      } else if (e.key === "Escape") {
+        return;
+      }
+      if (e.key === "Escape") {
         if (paletteOpen) setPaletteOpen(false);
         if (shortcutsOpen) setShortcutsOpen(false);
+        return;
+      }
+
+      /* Plugin-contributed shortcuts */
+      if (inInput) return;
+      if (!host) return;
+
+      // Build normalized key: "mod+<key>" / "shift+<key>" / "<key>".
+      const kk = e.key.toLowerCase();
+      const tokens: string[] = [];
+      if (isMod) tokens.push("mod");
+      if (e.shiftKey && kk !== "shift") tokens.push("shift");
+      if (e.altKey && kk !== "alt") tokens.push("alt");
+      tokens.push(kk);
+      const singleKey = tokens.join("+");
+
+      // Sequence support — "g w" style.
+      const now = performance.now();
+      const prev = sequenceRef.current;
+      if (prev && now - prev.at <= 1200 && !isMod) {
+        const sequenceKey = `${prev.key} ${singleKey}`;
+        const match = findShortcut(host, sequenceKey);
+        if (match) {
+          e.preventDefault();
+          sequenceRef.current = null;
+          runShortcut(match);
+          return;
+        }
+      }
+
+      // Direct match
+      const direct = findShortcut(host, singleKey);
+      if (direct) {
+        e.preventDefault();
+        sequenceRef.current = null;
+        runShortcut(direct);
+        return;
+      }
+
+      // Could be the first key of a sequence — remember it if it's a
+      // plain single letter and any contributed shortcut starts with it.
+      if (!isMod && !e.shiftKey && !e.altKey && /^[a-z]$/.test(kk)) {
+        const hasSeqStarting = Array.from(host.contributions.shortcuts.values()).some(
+          (s) => s.shortcut.keys.startsWith(`${kk} `),
+        );
+        if (hasSeqStarting) sequenceRef.current = { key: kk, at: now };
+        else sequenceRef.current = null;
+      } else {
+        sequenceRef.current = null;
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paletteOpen, shortcutsOpen, runtime]);
+  }, [paletteOpen, shortcutsOpen, runtime, host]);
 
   /* Nav events from runtime (so actions can trigger navigation) */
   React.useEffect(
@@ -273,6 +333,28 @@ function RouteView({
       return <>{route.view.render()}</>;
     default:
       return null;
+  }
+}
+
+/** Find a plugin-contributed shortcut whose keys match the normalized seq. */
+function findShortcut(host: ReturnType<typeof usePluginHost2>, keys: string) {
+  if (!host) return null;
+  for (const entry of host.contributions.shortcuts.values()) {
+    if (entry.shortcut.keys.toLowerCase() === keys) return entry.shortcut;
+  }
+  return null;
+}
+
+function runShortcut(shortcut: { run: () => void | Promise<void>; when?: () => boolean }) {
+  try {
+    if (shortcut.when && !shortcut.when()) return;
+    Promise.resolve(shortcut.run()).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error("[shortcut] threw", err);
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[shortcut] threw", err);
   }
 }
 

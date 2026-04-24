@@ -31,6 +31,9 @@ import {
 } from "./detailSections";
 import { useRegistry, type AdminRegistry } from "@/shell/registry";
 import type { NavItem } from "@/contracts/nav";
+import { usePluginHost2 } from "@/host/pluginHostContext";
+import { resolveViewExtensions } from "@/host/viewExtensions";
+import { PluginBoundary } from "@/host/PluginBoundary";
 
 /** Rich detail page generated directly from a Zod schema.
  *
@@ -90,6 +93,7 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
   const hash = useHash();
   const runtime = useRuntime();
   const registry = useRegistry();
+  const host = usePluginHost2();
   const id = hash.split("/").pop() ?? "";
   const { data: record, loading, error } = useRecord(args.resource, id);
   const { data: auditPage } = useLiveAudit({ pageSize: 100 });
@@ -123,6 +127,16 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
   const status = resolveStatus(rec, fields);
   const metrics = pickMetrics(rec, fields);
   const editPath = `${args.path}/${id}/edit`;
+
+  /* View extensions contributed by other plugins. */
+  const detailViewId = args.viewId ?? `${args.resource}-detail.view`;
+  const ext = resolveViewExtensions(host, {
+    id: detailViewId,
+    type: "custom",
+    title: args.singular,
+    resource: args.resource,
+    render: () => null,
+  } as unknown as Parameters<typeof resolveViewExtensions>[1]);
 
   return (
     <RichDetailPage
@@ -257,6 +271,17 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
             />
           ),
         },
+        ...ext.tabs
+          .filter((t) => !t.visibleWhen || t.visibleWhen(rec))
+          .map((t) => ({
+            id: t.id,
+            label: t.label,
+            render: () => (
+              <PluginBoundary pluginId={t.contributor} label={t.label}>
+                {t.render(rec)}
+              </PluginBoundary>
+            ),
+          })),
         {
           id: "activity",
           label: "Activity",
@@ -398,6 +423,15 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
           priority: 20,
           render: () => <AIInsightPanel insights={[]} loading={false} />,
         },
+        ...ext.railCards.map((c) => ({
+          id: `ext::${c.contributor}::${c.id}`,
+          priority: c.priority,
+          render: () => (
+            <PluginBoundary pluginId={c.contributor} label={c.id}>
+              {c.render(rec)}
+            </PluginBoundary>
+          ),
+        })),
       ]}
     />
   );

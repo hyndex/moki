@@ -31,6 +31,9 @@ import {
   ActionsPanel,
 } from "./detailSections";
 import { useRegistry } from "@/shell/registry";
+import { usePluginHost2 } from "@/host/pluginHostContext";
+import { resolveViewExtensions } from "@/host/viewExtensions";
+import { PluginBoundary } from "@/host/PluginBoundary";
 
 /** Auto-generated RichDetailPage for every factory-built resource.
  *
@@ -145,6 +148,7 @@ export function RichDealDetailPage({
   const hash = useHash();
   const runtime = useRuntime();
   const registry = useRegistry();
+  const host = usePluginHost2();
   const fullResourceId = `${plugin.id}.${resource.id}`;
 
   // Extract record id from the hash path. Convention: <basePath>/<id>.
@@ -180,6 +184,20 @@ export function RichDealDetailPage({
   const metrics = pickMetrics(rec, resource);
 
   const editPath = `${resource.path}/${id}/edit`;
+
+  /* View extensions — other plugins can augment this detail view. */
+  const detailViewId = `${fullResourceId}-detail.view`;
+  const ext = React.useMemo(
+    () =>
+      resolveViewExtensions(host, {
+        id: detailViewId,
+        type: "custom",
+        title: resource.singular,
+        resource: fullResourceId,
+        render: () => null,
+      } as unknown as Parameters<typeof resolveViewExtensions>[1]),
+    [host, detailViewId, fullResourceId, resource.singular],
+  );
 
   return (
     <RichDetailPage
@@ -349,6 +367,17 @@ export function RichDealDetailPage({
               </Card>
             ),
         },
+        ...ext.tabs
+          .filter((t) => !t.visibleWhen || t.visibleWhen(rec))
+          .map((t) => ({
+            id: t.id,
+            label: t.label,
+            render: () => (
+              <PluginExtensionBoundary pluginId={t.contributor} label={t.label}>
+                {t.render(rec)}
+              </PluginExtensionBoundary>
+            ),
+          })),
         {
           id: "audit",
           label: "Audit",
@@ -465,7 +494,35 @@ export function RichDealDetailPage({
             />
           ),
         },
+        ...ext.railCards.map((c) => ({
+          id: `ext::${c.contributor}::${c.id}`,
+          priority: c.priority,
+          render: () => (
+            <PluginExtensionBoundary pluginId={c.contributor} label={c.id}>
+              {c.render(rec)}
+            </PluginExtensionBoundary>
+          ),
+        })),
       ]}
     />
+  );
+}
+
+/** Per-extension error boundary wrapper — uses the shared PluginBoundary so
+ *  a single plugin's extension crashing doesn't take out the whole detail
+ *  view. */
+function PluginExtensionBoundary({
+  pluginId,
+  label,
+  children,
+}: {
+  pluginId: string;
+  label?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <PluginBoundary pluginId={pluginId} label={label}>
+      {children}
+    </PluginBoundary>
   );
 }

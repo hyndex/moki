@@ -30,6 +30,7 @@ import {
   WorkspaceFilterContext,
   buildFilterState,
 } from "./workspaceFilter";
+import { useRegistries } from "@/host/pluginHostContext";
 
 const STORAGE_PREFIX = "gutu-workspace-";
 
@@ -529,5 +530,30 @@ function WidgetSwitch({ widget }: { widget: Widget }) {
       return <QuickListWidget widget={widget} />;
     case "custom":
       return <>{widget.render()}</>;
+    default:
+      return <PluginContributedWidget widget={widget} />;
   }
+}
+
+/** Render a widget type that was contributed by a plugin via
+ *  `ctx.registries.widgetTypes.register(...)`. Falls back to a friendly
+ *  "unknown widget type" card if no plugin has provided a renderer. */
+function PluginContributedWidget({ widget }: { widget: Widget }) {
+  const registries = useRegistries();
+  const type = (widget as { type?: string }).type ?? "unknown";
+  const spec = registries?.widgetTypes.get(type);
+  if (!spec) {
+    return (
+      <div className="rounded-md border border-intent-warning/40 bg-intent-warning/5 p-3 text-xs">
+        <div className="font-medium text-intent-warning">
+          Unknown widget type: <code className="font-mono">{type}</code>
+        </div>
+        <div className="text-text-muted mt-1">
+          No plugin has registered a renderer for this widget type.
+        </div>
+      </div>
+    );
+  }
+  const Render = spec.render;
+  return <Render widget={widget as unknown} />;
 }
