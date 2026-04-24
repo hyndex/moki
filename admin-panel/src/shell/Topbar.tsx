@@ -179,6 +179,10 @@ function AlertCenterMount() {
 }
 
 function AccountMenu() {
+  // Subscribe to authStore so initials/name/email update on login, logout,
+  // profile changes, or tenant switch (all of which fire `change`).
+  const [, rerender] = React.useReducer((n: number) => n + 1, 0);
+  React.useEffect(() => authStore.emitter.on("change", () => rerender()), []);
   const user = authStore.user;
   const initials = user
     ? user.name

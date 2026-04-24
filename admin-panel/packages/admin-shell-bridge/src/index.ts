@@ -27,7 +27,7 @@
  *  cannot synthesize views it does not own.
  */
 
-import type { ComponentType, ReactNode } from "react";
+import { createElement, type ComponentType, type ReactNode } from "react";
 import type {
   AdminContributionRegistry,
   AdminNavContribution,
@@ -248,7 +248,7 @@ function convertPage(
         // React JSX is constructed via createElement to avoid requiring
         // a JSX toolchain in this package.
         // deno-lint-ignore no-explicit-any
-        return (require("react") as any).createElement(Component);
+        return createElement(Component);
       };
 
   const view: BridgedView = {
@@ -309,9 +309,7 @@ function convertReport(
           kind: `report:${report.kind}`,
           label: report.label,
         })
-    : (): ReactNode =>
-        // deno-lint-ignore no-explicit-any
-        (require("react") as any).createElement(Component);
+    : (): ReactNode => createElement(Component);
 
   return {
     nav: {
@@ -348,9 +346,7 @@ function convertBuilder(
           kind: "builder",
           label: builder.label,
         })
-    : (): ReactNode =>
-        // deno-lint-ignore no-explicit-any
-        (require("react") as any).createElement(Component);
+    : (): ReactNode => createElement(Component);
 
   return {
     nav: {

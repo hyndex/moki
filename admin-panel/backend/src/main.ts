@@ -49,9 +49,12 @@ console.log(
 import { resolveTenant } from "./tenancy/resolver";
 import { dbx } from "./dbx";
 
-async function resolveWsTenantId(req: Request): Promise<string | null> {
-  // Parse auth from either Authorization header or `?token=` query param
-  // (WebSockets can't set headers in all browsers).
+/** Resolve a WebSocket upgrade's session + tenant. Returns null if the token
+ *  is missing, unknown, or expired — caller refuses the upgrade in that case. */
+async function resolveWsSession(req: Request): Promise<{
+  userId: string;
+  tenantId: string;
+} | null> {
   const url = new URL(req.url);
   let token: string | null = null;
   const auth = req.headers.get("authorization");
@@ -60,24 +63,29 @@ async function resolveWsTenantId(req: Request): Promise<string | null> {
   } else {
     token = url.searchParams.get("token");
   }
-  let sessionTenantId: string | null = null;
-  if (token) {
-    const db = dbx();
-    const prefix = db.kind === "postgres" ? "public." : "";
-    const row = await db.get<{ tenant_id: string | null }>(
-      `SELECT tenant_id FROM ${prefix}sessions WHERE token = ?`,
-      [token],
-    );
-    sessionTenantId = row?.tenant_id ?? null;
-  }
-  const host = req.headers.get("host");
+  if (!token) return null;
+  const db = dbx();
+  const prefix = db.kind === "postgres" ? "public." : "";
+  const row = await db.get<{
+    user_id: string;
+    tenant_id: string | null;
+    expires_at: string;
+  }>(
+    `SELECT user_id, tenant_id, expires_at FROM ${prefix}sessions WHERE token = ?`,
+    [token],
+  );
+  if (!row) return null;
+  if (row.expires_at && new Date(row.expires_at) < new Date()) return null;
+
+  // Resolve tenant — session's bound tenant first, else strategy-based
+  // fallback (subdomain/header/path/default). Always returns a tenant.
   const { tenant } = await resolveTenant({
-    host,
+    host: req.headers.get("host"),
     headers: Object.fromEntries(req.headers.entries()),
     pathname: url.pathname,
-    sessionTenantId,
+    sessionTenantId: row.tenant_id,
   });
-  return tenant.id;
+  return { userId: row.user_id, tenantId: tenant.id };
 }
 
 Bun.serve({
@@ -86,8 +94,13 @@ Bun.serve({
   async fetch(req, server) {
     const url = new URL(req.url);
     if (url.pathname === "/api/ws") {
-      const tenantId = await resolveWsTenantId(req);
-      const upgraded = server.upgrade(req, { data: { tenantId } });
+      const session = await resolveWsSession(req);
+      if (!session) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      const upgraded = server.upgrade(req, {
+        data: { userId: session.userId, tenantId: session.tenantId },
+      });
       if (upgraded) return;
       return new Response("WebSocket upgrade failed", { status: 400 });
     }

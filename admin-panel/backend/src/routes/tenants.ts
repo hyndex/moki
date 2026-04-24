@@ -17,6 +17,7 @@ import {
 import { loadConfig } from "../config";
 import { dbx } from "../dbx";
 import { recordAudit } from "../lib/audit";
+import { closeSocketsForTenant } from "../lib/ws";
 
 export const tenantRoutes = new Hono();
 
@@ -145,14 +146,19 @@ tenantRoutes.post("/:id/delete-hard", requireAuth, async (c) => {
   if (t.slug === loadConfig().defaultTenantSlug)
     return c.json({ error: "cannot_delete_default_tenant" }, 400);
   await deleteTenantHard(t.id);
+  // Kick every live socket off — they now hold a session that was just
+  // deleted, and we must not keep feeding them broadcasts from the ghost
+  // tenant id.
+  const closed = closeSocketsForTenant(t.id, 4001, "tenant_deleted");
   recordAudit({
     actor: user.email,
     action: "tenant.deleted_hard",
     resource: "platform.tenant",
     recordId: t.id,
     level: "error",
+    payload: { closedSockets: closed },
   });
-  return c.json({ ok: true });
+  return c.json({ ok: true, closedSockets: closed });
 });
 
 /* ---------------- memberships ---------------- */

@@ -134,7 +134,11 @@ export async function apiFetch<T = unknown>(
 ): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  if (init.body && !headers.has("Content-Type"))
+  // Don't tag FormData with application/json — the browser sets
+  // multipart/form-data with the right boundary when Content-Type is unset.
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (init.body && !isFormData && !headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");
   if (authStore.token) headers.set("Authorization", `Bearer ${authStore.token}`);
 
@@ -146,7 +150,13 @@ export async function apiFetch<T = unknown>(
     } catch {
       /* plain text */
     }
-    if (res.status === 401) authStore.clear();
+    // 401 on an auth-flow endpoint ("invalid credentials", "mfa_required",
+    // "invalid_mfa_code") is normal signal — do NOT log the caller out.
+    // Only clear storage on 401 from a protected endpoint (i.e. a real
+    // session-expired response).
+    if (res.status === 401 && !path.startsWith("/auth/")) {
+      authStore.clear();
+    }
     throw new ApiError(res.status, body, `${res.status} ${res.statusText}`);
   }
   if (res.status === 204) return undefined as T;

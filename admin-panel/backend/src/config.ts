@@ -78,6 +78,25 @@ export function loadConfig(): Config {
     process.exit(1);
   }
 
+  // The generic record/audit/files query layer (backend/src/lib/query.ts,
+  // lib/audit.ts, routes/resources.ts) still uses the synchronous legacy
+  // SQLite handle. Tenant-scoped per-schema routing via dbx() is in place
+  // for the tenancy module itself, but not yet migrated into the data-plane
+  // routes. Booting in Postgres multisite mode without this acknowledgement
+  // silently breaks isolation — see docs/AUDIT.md (finding #1/#5).
+  if (
+    multisite &&
+    dbKind === "postgres" &&
+    process.env.I_UNDERSTAND_POSTGRES_MULTISITE_BETA !== "1"
+  ) {
+    console.error(
+      "[config] Postgres multisite mode is beta — lib/query.ts is not yet\n" +
+        "          tenant-scoped. Set I_UNDERSTAND_POSTGRES_MULTISITE_BETA=1 to\n" +
+        "          acknowledge the gap and proceed. See docs/AUDIT.md.",
+    );
+    process.exit(1);
+  }
+
   const path = require("node:path") as typeof import("node:path");
   // Resolve relative to this file so the server runs regardless of cwd.
   // config.ts lives in admin-panel/backend/src → backendRoot = ../

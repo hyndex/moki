@@ -59,8 +59,14 @@ export function broadcast(
     predicate ??
     ((ws: ServerWebSocket<SocketData>): boolean => {
       const socketTenant = ws.data?.tenantId ?? null;
-      if (!tenantId) return true;
-      if (!socketTenant) return true; // legacy client, include
+      // Fail-closed: refuse to broadcast unless BOTH the message and the
+      // socket have a tenant, and they match. A missing message tenant
+      // (broadcast outside any request context) or a missing socket tenant
+      // (connection that never completed authentication) is treated as
+      // cross-tenant risk and rejected. The only exception is socket hello
+      // messages (type=hello), which are addressed to a single socket
+      // directly (not via broadcast).
+      if (!tenantId || !socketTenant) return false;
       return socketTenant === tenantId;
     });
   for (const ws of sockets) {
@@ -87,6 +93,18 @@ export function broadcastResourceChange(
     actor,
     at: new Date().toISOString(),
   });
+}
+
+/** Close every socket attached to a given tenant. Used when a tenant is
+ *  deleted or suspended so clients drop their stale realtime subscription. */
+export function closeSocketsForTenant(tenantId: string, code = 4001, reason = "tenant_terminated"): number {
+  let closed = 0;
+  for (const ws of sockets) {
+    if (ws.data?.tenantId === tenantId) {
+      try { ws.close(code, reason); closed++; } catch { /* best effort */ }
+    }
+  }
+  return closed;
 }
 
 export function broadcastAudit(actor: string, action: string, resource: string): void {

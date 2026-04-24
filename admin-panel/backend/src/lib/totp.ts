@@ -75,15 +75,34 @@ export async function totp(
   return String(code % 10 ** digits).padStart(digits, "0");
 }
 
+/** In-memory replay cache — key: `${secretBase32}:${code}:${step}`.
+ *  Entries expire after 120s (covers drift window + a safety margin).
+ *  A successful verification marks the triple consumed so the same code
+ *  cannot be reused within the drift window. */
+const replayCache = new Map<string, number>();
+
+function prunReplayCache(): void {
+  const cutoff = Date.now() - 120_000;
+  for (const [k, v] of replayCache) if (v < cutoff) replayCache.delete(k);
+}
+
 export async function verifyTotp(
   secretBase32: string,
   code: string,
   drift = 1,
 ): Promise<boolean> {
+  prunReplayCache();
+  const trimmed = code.trim();
   const now = Math.floor(Date.now() / 1000);
   for (let i = -drift; i <= drift; i++) {
+    const step = Math.floor((now + i * 30) / 30);
     const expected = await totp(secretBase32, 30, 6, now + i * 30);
-    if (expected === code.trim()) return true;
+    if (expected === trimmed) {
+      const key = `${secretBase32}:${trimmed}:${step}`;
+      if (replayCache.has(key)) return false; // already consumed
+      replayCache.set(key, Date.now());
+      return true;
+    }
   }
   return false;
 }

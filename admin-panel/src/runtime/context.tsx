@@ -9,6 +9,7 @@ import { createAnalytics, consoleSink, restSink } from "./analytics";
 import { createPermissionEvaluator } from "./permissions";
 import { createFeatureFlags, createCapabilityRegistry } from "./featureFlags";
 import { createSavedViewStore } from "./savedViews";
+import { authStore } from "./auth";
 import type { ActionRuntime } from "@/contracts/actions";
 import type { ResourceAdapter } from "./types";
 import type { AnalyticsEmitter } from "@/contracts/analytics";
@@ -128,6 +129,16 @@ export function createRuntime(): AdminRuntime {
   if (!useMock && typeof window !== "undefined") {
     runtime.stopRealtime = startRealtime(resources, bus);
   }
+
+  // Clear ALL cached queries whenever the active tenant changes — stale
+  // data from the previous tenant must never surface in the new one.
+  // Covers direct switchTenant() calls that bypass the WorkspaceSwitcher UI.
+  authStore.emitter.on("tenant", ({ active }) => {
+    resources.cache.clear();
+    if (active) {
+      analytics.setMeta({ tenantId: active.id });
+    }
+  });
   // expose backend for plugin seeding during registration (mock only — the REST
   // adapter has no seed hook; data seeding happens server-side)
   if (backend instanceof MockBackend) {

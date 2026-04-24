@@ -17,8 +17,9 @@ import { db, nowIso } from "../db";
 import { uuid, token as randomToken } from "../lib/id";
 import { recordAudit } from "../lib/audit";
 import { otpauthUrl, randomSecret, verifyTotp } from "../lib/totp";
-import { listMembershipsForUser, getTenant } from "../tenancy/provisioner";
+import { addMembership, ensureDefaultTenant, listMembershipsForUser, getTenant } from "../tenancy/provisioner";
 import { dbx } from "../dbx";
+import { loadConfig } from "../config";
 
 export const authRoutes = new Hono();
 
@@ -33,7 +34,9 @@ authRoutes.post("/login", async (c) => {
   const parsed = LoginBody.safeParse(body);
   if (!parsed.success)
     return c.json({ error: "invalid body", issues: parsed.error.issues }, 400);
-  const user = getUserByEmail(parsed.data.email);
+  // Email is case-insensitive per RFC. Normalize before lookup.
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = getUserByEmail(email);
   if (!user) return c.json({ error: "invalid credentials" }, 401);
   const ok = await verifyPassword(parsed.data.password, user.password_hash);
   if (!ok) return c.json({ error: "invalid credentials" }, 401);
@@ -48,6 +51,22 @@ authRoutes.post("/login", async (c) => {
     c.req.header("user-agent") ?? undefined,
     c.req.header("x-forwarded-for") ?? undefined,
   );
+  // Auto-bind session to the user's tenant when they have exactly one
+  // membership — avoids a useless round-trip in single-site installs and
+  // matches the user's expectation that they "log into a workspace".
+  try {
+    const mems = await listMembershipsForUser(user.id);
+    if (mems.length === 1) {
+      const db = dbx();
+      const prefix = db.kind === "postgres" ? "public." : "";
+      await db.run(
+        `UPDATE ${prefix}sessions SET tenant_id = ? WHERE token = ?`,
+        [mems[0].tenant.id, t],
+      );
+    }
+  } catch {
+    /* non-fatal — login still succeeds; user must switch tenants manually */
+  }
   recordAudit({
     actor: user.email,
     action: "auth.login",
@@ -71,25 +90,51 @@ authRoutes.post("/signup", async (c) => {
   const parsed = SignupBody.safeParse(body);
   if (!parsed.success)
     return c.json({ error: "invalid body", issues: parsed.error.issues }, 400);
-  if (getUserByEmail(parsed.data.email))
+  // Normalize email to lowercase so we never have "Foo@" vs "foo@" duplicates.
+  const email = parsed.data.email.trim().toLowerCase();
+  if (getUserByEmail(email))
     return c.json({ error: "email already registered" }, 409);
+  const cfg = loadConfig();
+  // In multisite mode, signup without an invitation is dangerous — refuse
+  // unless explicitly enabled via OPEN_SIGNUPS=1.
+  if (cfg.multisite && process.env.OPEN_SIGNUPS !== "1") {
+    return c.json({ error: "signup_by_invite_only" }, 403);
+  }
   const now = nowIso();
   const id = uuid();
   const hash = await hashPassword(parsed.data.password);
   db.prepare(
     `INSERT INTO users (id, email, name, role, password_hash, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, parsed.data.email, parsed.data.name, "member", hash, now, now);
+  ).run(id, email, parsed.data.name, "member", hash, now, now);
+
+  // Attach the new user to the default tenant as a member, and bind the
+  // freshly-issued session to that tenant so downstream requests resolve
+  // correctly without an explicit /switch-tenant call.
+  const defaultTenant = await ensureDefaultTenant();
+  await addMembership(defaultTenant.id, id, "member");
+
   const t = createSession(id);
+  try {
+    const db2 = dbx();
+    const prefix = db2.kind === "postgres" ? "public." : "";
+    await db2.run(
+      `UPDATE ${prefix}sessions SET tenant_id = ? WHERE token = ?`,
+      [defaultTenant.id, t],
+    );
+  } catch {
+    /* session still valid — user can switch manually */
+  }
+
   recordAudit({
-    actor: parsed.data.email,
+    actor: email,
     action: "auth.signup",
     resource: "auth.user",
     recordId: id,
   });
   return c.json({
     token: t,
-    user: { id, email: parsed.data.email, name: parsed.data.name, role: "member" },
+    user: { id, email, name: parsed.data.name, role: "member" },
   });
 });
 
@@ -109,7 +154,8 @@ authRoutes.post("/forgot-password", async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = z.object({ email: z.string().email() }).safeParse(body);
   if (!parsed.success) return c.json({ ok: true });
-  const user = getUserByEmail(parsed.data.email);
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = getUserByEmail(email);
   if (!user) {
     // Never leak account existence — always return OK.
     return c.json({ ok: true });
@@ -126,12 +172,19 @@ authRoutes.post("/forgot-password", async (c) => {
     resource: "auth.user",
     recordId: user.id,
   });
-  // No mailer wired — print to console so the dev can complete the flow.
-  console.log(
-    `\n[auth] password reset for ${user.email}: ` +
-      `http://localhost:5173/#/auth/reset?token=${t}\n`,
-  );
-  return c.json({ ok: true, devToken: t });
+  // Development convenience — show the reset link in server logs and in
+  // the HTTP response. Gated by `cfg.dev` so production never leaks the
+  // token back to the requester (which would let anyone hijack any account
+  // just by calling /forgot-password).
+  const cfg = loadConfig();
+  if (cfg.dev) {
+    console.log(
+      `\n[auth] password reset for ${user.email}: ` +
+        `http://localhost:5173/#/auth/reset?token=${t}\n`,
+    );
+    return c.json({ ok: true, devToken: t });
+  }
+  return c.json({ ok: true });
 });
 
 authRoutes.post("/reset-password", async (c) => {
@@ -183,11 +236,15 @@ authRoutes.post("/send-verify-email", requireAuth, (c) => {
     nowIso(),
     new Date(Date.now() + 24 * 3600_000).toISOString(),
   );
-  console.log(
-    `\n[auth] verify email for ${user.email}: ` +
-      `http://localhost:5173/#/auth/verify?token=${t}\n`,
-  );
-  return c.json({ ok: true, devToken: t });
+  const cfg = loadConfig();
+  if (cfg.dev) {
+    console.log(
+      `\n[auth] verify email for ${user.email}: ` +
+        `http://localhost:5173/#/auth/verify?token=${t}\n`,
+    );
+    return c.json({ ok: true, devToken: t });
+  }
+  return c.json({ ok: true });
 });
 
 authRoutes.post("/verify-email", async (c) => {

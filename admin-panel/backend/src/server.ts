@@ -9,14 +9,32 @@ import { filesRoutes } from "./routes/files";
 import { tenantRoutes } from "./routes/tenants";
 import { configRoutes } from "./routes/config";
 import { tenantMiddleware } from "./tenancy/middleware";
+import { loadConfig } from "./config";
+
+/** Parse comma-separated CORS origin list from env. */
+function allowedOrigins(): string[] | "dev-any" {
+  const cfg = loadConfig();
+  const raw = process.env.CORS_ORIGINS?.trim();
+  if (raw) return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  // Dev-only: echo any Origin. Production installs MUST set CORS_ORIGINS.
+  if (cfg.dev) return "dev-any";
+  // Production default: refuse cross-origin by returning empty allowlist.
+  return [];
+}
 
 export function createApp() {
   const app = new Hono();
   app.use("*", logger());
+
+  const origins = allowedOrigins();
   app.use(
     "*",
     cors({
-      origin: (origin) => origin ?? "*",
+      origin: (origin) => {
+        if (origins === "dev-any") return origin ?? "*";
+        if (!origin) return origin ?? "";
+        return origins.includes(origin) ? origin : "";
+      },
       credentials: true,
       allowHeaders: ["Content-Type", "Authorization", "x-tenant"],
       exposeHeaders: ["x-tenant"],

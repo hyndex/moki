@@ -312,6 +312,25 @@ The bridge translates `WorkspaceContribution → NavSection + NavItem`, `PageCon
 
 Migration is **per plugin, voluntary, driven by concrete wins**. Staying on API 1 is always supported.
 
+## Production-readiness
+
+A comprehensive audit (36 findings, full triage) has been completed. **All P0 ship-blockers and security-relevant P1s are fixed.** See [`docs/AUDIT.md`](docs/AUDIT.md) for the full list, severity rationale, and status of every deferred item.
+
+Fast facts:
+- `/api/health` returns no data — load-balancer-safe. `/api/health/detail` is auth-gated.
+- WebSocket upgrade requires a valid session; broadcasts are tenant-partitioned (fail-closed when context missing).
+- Tenant hard-delete closes live sockets for that tenant.
+- Signup attaches the new user to the default tenant; multisite mode refuses open signups unless `OPEN_SIGNUPS=1`.
+- Login + signup normalize email to lowercase; `getUserByEmail` uses `LOWER()` on both sides.
+- TOTP codes cannot be reused within the drift window (120s replay cache).
+- `forgot-password` / `send-verify-email` return the reset token only in dev.
+- CORS is allowlist-based (`CORS_ORIGINS=https://a.com,https://b.com`) in production.
+- Bridge adapter no longer uses `require("react")` — works in Vite/ESM.
+- Query cache clears automatically on tenant switch.
+- Topbar account menu re-renders on login/logout/tenant change.
+
+**Known beta gap**: the generic record/audit/files query layer still uses the legacy synchronous SQLite handle. SQLite single-site mode is fully correct (one tenant exists, no isolation needed). Postgres multisite mode is gated behind the `I_UNDERSTAND_POSTGRES_MULTISITE_BETA=1` env flag at boot — see audit finding #1.
+
 ## Multi-tenancy
 
 The framework supports **three deployment modes** via environment variables.
