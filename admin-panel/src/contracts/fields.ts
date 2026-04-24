@@ -25,6 +25,14 @@ export interface EnumOption {
   readonly intent?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
 }
 
+/** Runtime context passed to dynamic field predicates — has current user + role + permission helpers. */
+export interface FieldPredicateContext {
+  record: Record<string, unknown>;
+  user?: { id?: string; roles?: readonly string[]; email?: string };
+  /** True if the user has the named permission on the current resource. */
+  hasPermission?: (perm: string) => boolean;
+}
+
 export interface FieldDescriptor {
   /** Field name on the record. */
   readonly name: string;
@@ -47,6 +55,34 @@ export interface FieldDescriptor {
   /** Hide from forms but keep in list views (e.g. computed read-only fields). */
   readonly formHidden?: boolean;
   readonly listHidden?: boolean;
+
+  /* ---- ERPNext-parity dynamic controls ---- */
+
+  /** Show this field only when this predicate returns true (given the record
+   *  being edited). Use for conditional visibility — e.g. "if status ===
+   *  'cancelled' then show reason". */
+  readonly visibleWhen?: (ctx: FieldPredicateContext) => boolean;
+  /** Mark required dynamically based on other fields. */
+  readonly requiredWhen?: (ctx: FieldPredicateContext) => boolean;
+  /** Mark readonly dynamically. */
+  readonly readonlyWhen?: (ctx: FieldPredicateContext) => boolean;
+  /** Field-level view permission. When false, the field is hidden. */
+  readonly canView?: (ctx: FieldPredicateContext) => boolean;
+  /** Field-level edit permission. When false, rendered as read-only. */
+  readonly canEdit?: (ctx: FieldPredicateContext) => boolean;
+  /** Default value when creating a new record (field-level default,
+   *  alternative to form-level `defaults`). Can be a value or a function of
+   *  the partial record being constructed. */
+  readonly defaultValue?:
+    | unknown
+    | ((record: Record<string, unknown>) => unknown);
+  /** Description / long-form help shown below the field. */
+  readonly description?: string;
+  /** Placeholder unit (e.g. "kg", "%") shown after the input. */
+  readonly unit?: string;
+  /** Grid column span for this field inside its section (1-3). Defaults to
+   *  1 inside a 3-col section. Use `"full"` for full-width. */
+  readonly colSpan?: 1 | 2 | 3 | "full";
 }
 
 export interface FieldRenderContext {

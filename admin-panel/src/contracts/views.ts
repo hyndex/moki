@@ -51,6 +51,19 @@ export interface FormSection {
   readonly description?: string;
   readonly columns?: 1 | 2 | 3;
   readonly fields: readonly FieldDescriptor[];
+  /** Section collapse behavior.
+   *    - `false` (default): always expanded, no chevron.
+   *    - `true`: collapsible; user-toggle, default expanded.
+   *    - `"collapsed"`: collapsible; user-toggle, default collapsed.
+   */
+  readonly collapsible?: boolean | "collapsed";
+  /** Hide this section when the predicate returns false. */
+  readonly visibleWhen?: (ctx: {
+    record: Record<string, unknown>;
+    user?: { id?: string; roles?: readonly string[]; email?: string };
+  }) => boolean;
+  /** Icon name (lucide) shown next to the section title. */
+  readonly icon?: string;
 }
 
 export interface FormView extends ViewBase {
@@ -89,9 +102,35 @@ export interface CustomView extends ViewBase {
   readonly render: () => ReactNode;
 }
 
+/** KanbanView — live drag-and-drop board bound to a resource. */
+export interface KanbanColumnSpec {
+  readonly id: string;
+  readonly title: string;
+  readonly intent?: "neutral" | "accent" | "success" | "warning" | "danger" | "info";
+  /** WIP limit — column header turns amber when exceeded. */
+  readonly wipLimit?: number;
+}
+
+export interface KanbanView extends ViewBase {
+  readonly type: "kanban";
+  /** Field on the record whose value is the column id (e.g. "status"). */
+  readonly statusField: string;
+  readonly columns: readonly KanbanColumnSpec[];
+  /** How to render each card; receives the full record. */
+  readonly renderCard: (record: Record<string, unknown>) => ReactNode;
+  /** Optional client-side filter. */
+  readonly filter?: (record: Record<string, unknown>) => boolean;
+  /** Page size for initial fetch (default 200). */
+  readonly pageSize?: number;
+  /** Click a card → navigate to this path (defaults to `${basePath}/${id}`). */
+  readonly cardPath?: (record: Record<string, unknown>) => string;
+  readonly actions?: readonly ActionDescriptor[];
+}
+
 export type View =
   | ListView
   | FormView
   | DetailView
   | DashboardView
+  | KanbanView
   | CustomView;

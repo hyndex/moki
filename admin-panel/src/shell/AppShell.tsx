@@ -12,6 +12,7 @@ import { ListViewRenderer } from "@/views/ListView";
 import { FormViewRenderer } from "@/views/FormView";
 import { DetailViewRenderer } from "@/views/DetailView";
 import { DashboardViewRenderer } from "@/views/DashboardView";
+import { KanbanViewRenderer } from "@/views/KanbanView";
 import { EmptyState } from "@/admin-primitives/EmptyState";
 import { EmptyStateFramework } from "@/admin-primitives/EmptyStateFramework";
 import { KeyboardShortcutsOverlay, DEFAULT_SHORTCUTS } from "@/admin-primitives/KeyboardShortcutsOverlay";
@@ -161,6 +162,9 @@ function RouteView({
     case "dashboard":
       if (route.view.type !== "dashboard") return null;
       return <DashboardViewRenderer view={route.view} />;
+    case "kanban":
+      if (route.view.type !== "kanban") return null;
+      return <KanbanViewRenderer view={route.view} basePath={base} />;
     case "new": {
       const formView = resolveFormView(route.view.resource, registry);
       if (!formView) return <NoForm resource={route.view.resource} />;

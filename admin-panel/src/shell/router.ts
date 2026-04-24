@@ -4,7 +4,7 @@ import type { View } from "@/contracts/views";
 export interface Route {
   path: string;
   view: View;
-  mode: "list" | "new" | "edit" | "detail" | "dashboard" | "custom";
+  mode: "list" | "new" | "edit" | "detail" | "dashboard" | "custom" | "kanban";
   id?: string;
   navItemPath?: string;
 }
@@ -88,7 +88,10 @@ function findViewForNav(
   for (const candidate of candidates) {
     const hit = Object.values(registry.views).find(
       (v) =>
-        (v.type === "list" || v.type === "dashboard" || v.type === "custom") &&
+        (v.type === "list" ||
+          v.type === "dashboard" ||
+          v.type === "custom" ||
+          v.type === "kanban") &&
         (v.id.endsWith(`.${candidate}`) || v.id === candidate),
     );
     if (hit) return hit;
@@ -109,6 +112,8 @@ function classify(view: View, base: string, remainder: string): Route {
       return { path: base, view, mode: "dashboard", navItemPath: base };
     if (view.type === "list")
       return { path: base, view, mode: "list", navItemPath: base };
+    if (view.type === "kanban")
+      return { path: base, view, mode: "kanban", navItemPath: base };
     if (view.type === "custom")
       return { path: base, view, mode: "custom", navItemPath: base };
     if (view.type === "form")

@@ -4,6 +4,7 @@ import type {
   DetailView,
   DashboardView,
   CustomView,
+  KanbanView,
 } from "@/contracts/views";
 import type { Plugin, AdminContribution } from "@/contracts/plugin";
 import type { ResourceDefinition } from "@/contracts/resources";
@@ -30,6 +31,10 @@ export function defineDashboard(view: Omit<DashboardView, "type">): DashboardVie
 
 export function defineCustomView(view: Omit<CustomView, "type">): CustomView {
   return { ...view, type: "custom" };
+}
+
+export function defineKanbanView(view: Omit<KanbanView, "type">): KanbanView {
+  return { ...view, type: "kanban" };
 }
 
 export function defineResource<R extends ResourceDefinition>(resource: R): R {
