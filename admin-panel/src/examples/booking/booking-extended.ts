@@ -2,6 +2,8 @@ import { z } from "zod";
 import { defineResource, defineListView } from "@/builders";
 import type { View } from "@/contracts/views";
 import type { ResourceDefinition } from "@/contracts/resources";
+import { formViewFromZod } from "../_factory/formFromZod";
+import { detailViewFromZod } from "../_factory/detailFromZod";
 
 /** Extended Booking resources — Service, Resource (room/asset), Staff,
  *  Availability, Location, PricingTier, Booking waitlist entry. Gives the
@@ -321,6 +323,118 @@ export const waitlistListView = defineListView({
   ],
 });
 
+/* ------------------------------------------------------------------------ */
+/* Auto-generated Form + Detail views for each resource.                      */
+/* Uses the Zod schemas above — no hand-written field lists needed.           */
+/* ------------------------------------------------------------------------ */
+
+const serviceFormView = formViewFromZod({
+  id: "booking.service.form",
+  title: "Service",
+  resource: "booking.service",
+  schema: ServiceSchema,
+  defaults: { active: true, currency: "USD" },
+});
+const serviceDetailView = detailViewFromZod({
+  resource: "booking.service",
+  singular: "Service",
+  plural: "Services",
+  pluginLabel: "Booking",
+  path: "/bookings/services",
+  icon: "Briefcase",
+  schema: ServiceSchema,
+  displayField: "name",
+});
+
+const resourceAssetFormView = formViewFromZod({
+  id: "booking.resource.form",
+  title: "Bookable Resource",
+  resource: "booking.resource",
+  schema: ResourceBookableSchema,
+  defaults: { status: "available" },
+});
+const resourceAssetDetailView = detailViewFromZod({
+  resource: "booking.resource",
+  singular: "Bookable Resource",
+  plural: "Bookable Resources",
+  pluginLabel: "Booking",
+  path: "/bookings/resources",
+  icon: "DoorOpen",
+  schema: ResourceBookableSchema,
+  displayField: "name",
+});
+
+const staffFormView = formViewFromZod({
+  id: "booking.staff.form",
+  title: "Staff Member",
+  resource: "booking.staff",
+  schema: StaffSchema,
+  defaults: { active: true },
+});
+const staffDetailView = detailViewFromZod({
+  resource: "booking.staff",
+  singular: "Staff Member",
+  plural: "Staff",
+  pluginLabel: "Booking",
+  path: "/bookings/staff",
+  icon: "UserCircle",
+  schema: StaffSchema,
+  displayField: "name",
+});
+
+const availabilityFormView = formViewFromZod({
+  id: "booking.availability-rule.form",
+  title: "Availability Rule",
+  resource: "booking.availability-rule",
+  schema: AvailabilityRuleSchema,
+});
+const availabilityDetailView = detailViewFromZod({
+  resource: "booking.availability-rule",
+  singular: "Availability Rule",
+  plural: "Availability Rules",
+  pluginLabel: "Booking",
+  path: "/bookings/availability-rules",
+  icon: "Clock",
+  schema: AvailabilityRuleSchema,
+  displayField: "id",
+});
+
+const locationFormView = formViewFromZod({
+  id: "booking.location.form",
+  title: "Location",
+  resource: "booking.location",
+  schema: LocationSchema,
+  defaults: { active: true },
+});
+const locationDetailView = detailViewFromZod({
+  resource: "booking.location",
+  singular: "Location",
+  plural: "Locations",
+  pluginLabel: "Booking",
+  path: "/bookings/locations",
+  icon: "MapPin",
+  schema: LocationSchema,
+  displayField: "name",
+});
+
+const waitlistFormView = formViewFromZod({
+  id: "booking.waitlist.form",
+  title: "Waitlist Entry",
+  resource: "booking.waitlist",
+  schema: WaitlistSchema,
+  defaults: { status: "waiting" },
+});
+const waitlistDetailView = detailViewFromZod({
+  resource: "booking.waitlist",
+  singular: "Waitlist Entry",
+  plural: "Waitlist",
+  pluginLabel: "Booking",
+  path: "/bookings/waitlist",
+  icon: "ListOrdered",
+  schema: WaitlistSchema,
+  displayField: "customer",
+});
+
 export const BOOKING_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
   serviceResource,
   bookingResourceAsset,
@@ -332,9 +446,21 @@ export const BOOKING_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
 
 export const BOOKING_EXTENDED_VIEWS: readonly View[] = [
   serviceListView,
+  serviceFormView,
+  serviceDetailView,
   resourceListView,
+  resourceAssetFormView,
+  resourceAssetDetailView,
   staffListView,
+  staffFormView,
+  staffDetailView,
   availabilityRuleListView,
+  availabilityFormView,
+  availabilityDetailView,
   locationListView,
+  locationFormView,
+  locationDetailView,
   waitlistListView,
+  waitlistFormView,
+  waitlistDetailView,
 ];

@@ -3,6 +3,7 @@ import { defineResource, defineListView } from "@/builders";
 import type { View } from "@/contracts/views";
 import type { ResourceDefinition } from "@/contracts/resources";
 import { formViewFromZod } from "../_factory/formFromZod";
+import { detailViewFromZod } from "../_factory/detailFromZod";
 
 /** Extended CRM resources — full ERPNext+ parity.
  *
@@ -947,21 +948,71 @@ const salesStageFormView = formViewFromZod({
   columns: 2,
 });
 
+/* ---- Auto-generated rich detail views ---- */
+const leadDetailView = detailViewFromZod({
+  resource: "crm.lead", singular: "Lead", plural: "Leads",
+  pluginLabel: "CRM", path: "/crm/leads", icon: "UserRound",
+  schema: LeadSchema, displayField: "name",
+});
+const opportunityDetailView = detailViewFromZod({
+  resource: "crm.opportunity", singular: "Opportunity", plural: "Opportunities",
+  pluginLabel: "CRM", path: "/crm/opportunities", icon: "Target",
+  schema: OpportunitySchema, displayField: "name",
+});
+const campaignDetailView = detailViewFromZod({
+  resource: "crm.campaign", singular: "Campaign", plural: "Campaigns",
+  pluginLabel: "CRM", path: "/crm/campaigns", icon: "Megaphone",
+  schema: CampaignSchema, displayField: "name",
+});
+const appointmentDetailView = detailViewFromZod({
+  resource: "crm.appointment", singular: "Appointment", plural: "Appointments",
+  pluginLabel: "CRM", path: "/crm/appointments", icon: "Calendar",
+  schema: AppointmentSchema, displayField: "subject",
+});
+const contractDetailView = detailViewFromZod({
+  resource: "crm.contract", singular: "Contract", plural: "Contracts",
+  pluginLabel: "CRM", path: "/crm/contracts", icon: "FileText",
+  schema: ContractSchema, displayField: "name",
+});
+const competitorDetailView = detailViewFromZod({
+  resource: "crm.competitor", singular: "Competitor", plural: "Competitors",
+  pluginLabel: "CRM", path: "/crm/competitors", icon: "Swords",
+  schema: CompetitorSchema, displayField: "name",
+});
+const marketSegmentDetailView = detailViewFromZod({
+  resource: "crm.market-segment", singular: "Market Segment", plural: "Market Segments",
+  pluginLabel: "CRM", path: "/crm/market-segments", icon: "Target",
+  schema: MarketSegmentSchema, displayField: "name",
+});
+const salesStageDetailView = detailViewFromZod({
+  resource: "crm.sales-stage", singular: "Sales Stage", plural: "Sales Stages",
+  pluginLabel: "CRM", path: "/crm/sales-stages", icon: "Settings2",
+  schema: SalesStageSchema, displayField: "label",
+});
+
 export const CRM_EXTENDED_VIEWS: readonly View[] = [
   leadListView,
   leadFormView,
+  leadDetailView,
   opportunityListView,
   opportunityFormView,
+  opportunityDetailView,
   campaignListView,
   campaignFormView,
+  campaignDetailView,
   appointmentListView,
   appointmentFormView,
+  appointmentDetailView,
   contractListView,
   contractFormView,
+  contractDetailView,
   competitorListView,
   competitorFormView,
+  competitorDetailView,
   marketSegmentListView,
   marketSegmentFormView,
+  marketSegmentDetailView,
   salesStageListView,
   salesStageFormView,
+  salesStageDetailView,
 ];

@@ -3,6 +3,7 @@ import { defineResource, defineListView } from "@/builders";
 import type { View } from "@/contracts/views";
 import type { ResourceDefinition } from "@/contracts/resources";
 import { formViewFromZod } from "../_factory/formFromZod";
+import { detailViewFromZod } from "../_factory/detailFromZod";
 
 const ProductBundleSchema = z.object({
   id: z.string(), code: z.string(), name: z.string(),
@@ -394,6 +395,52 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
     resource: "sales.delivery-schedule",
     schema: DeliveryScheduleSchema,
     defaults: { status: "pending", qty: 1 },
+  }),
+  /* ---- Auto-generated rich detail views ---- */
+  detailViewFromZod({
+    resource: "sales.product-bundle", singular: "Product Bundle", plural: "Product Bundles",
+    pluginLabel: "Sales", path: "/sales/product-bundles", icon: "Package",
+    schema: ProductBundleSchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.installation-note", singular: "Installation Note", plural: "Installation Notes",
+    pluginLabel: "Sales", path: "/sales/installation-notes", icon: "ClipboardCheck",
+    schema: InstallationNoteSchema, displayField: "code",
+  }),
+  detailViewFromZod({
+    resource: "sales.sales-partner", singular: "Sales Partner", plural: "Sales Partners",
+    pluginLabel: "Sales", path: "/sales/partners", icon: "Handshake",
+    schema: SalesPartnerSchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.sales-team", singular: "Sales Team", plural: "Sales Teams",
+    pluginLabel: "Sales", path: "/sales/teams", icon: "Users",
+    schema: SalesTeamSchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.customer-credit-limit", singular: "Credit Limit", plural: "Credit Limits",
+    pluginLabel: "Sales", path: "/sales/credit-limits", icon: "CreditCard",
+    schema: CustomerCreditLimitSchema, displayField: "customer",
+  }),
+  detailViewFromZod({
+    resource: "sales.territory", singular: "Territory", plural: "Territories",
+    pluginLabel: "Sales", path: "/sales/territories", icon: "Map",
+    schema: TerritorySchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.commission-rule", singular: "Commission Rule", plural: "Commission Rules",
+    pluginLabel: "Sales", path: "/sales/commission-rules", icon: "Percent",
+    schema: CommissionRuleSchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.pricing-rule", singular: "Pricing Rule", plural: "Pricing Rules",
+    pluginLabel: "Sales", path: "/sales/pricing-rules", icon: "Tag",
+    schema: PricingRuleSchema, displayField: "name",
+  }),
+  detailViewFromZod({
+    resource: "sales.delivery-schedule", singular: "Delivery Schedule", plural: "Delivery Schedules",
+    pluginLabel: "Sales", path: "/sales/delivery-schedules", icon: "Truck",
+    schema: DeliveryScheduleSchema, displayField: "orderId",
   }),
 ];
 
