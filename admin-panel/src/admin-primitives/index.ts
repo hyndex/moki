@@ -43,5 +43,6 @@ export * from "./widgets";
 export * from "./charts/EChartsCard";
 export * from "./AdvancedDataTable";
 export * from "./DnDKanban";
+export * from "./LiveDnDKanban";
 export * from "./WorkflowCanvas";
 export * from "./RichDetailPage";

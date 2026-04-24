@@ -52,7 +52,7 @@ import { Button } from "@/primitives/Button";
 import { Input } from "@/primitives/Input";
 import { Textarea } from "@/primitives/Textarea";
 import { Checkbox } from "@/primitives/Checkbox";
-import { Kanban } from "@/admin-primitives/Kanban";
+import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { cn } from "@/lib/cn";
 import { formatCurrency, formatRelative } from "@/lib/format";
 import {
@@ -618,16 +618,16 @@ function CrmPipelinePage() {
           ))}
         </PageGrid>
 
-        <Kanban
+        <LiveDnDKanban<Contact>
+          resource="crm.contact"
+          statusField="stage"
           columns={columns.map((c) => ({
             id: c.id,
             title: `${c.title} · ${c.items.length}`,
             intent: c.intent,
-            items: c.items,
           }))}
-          rowKey={(c: Contact) => c.id}
-          onItemClick={(c) => navigateTo(`/contacts/${c.id}`)}
-          renderItem={(c) => (
+          onCardClick={(c) => navigateTo(`/contacts/${c.id}`)}
+          renderCard={(c) => (
             <div>
               <Inline gap="gap-2">
                 <Avatar name={c.name} size="sm" />

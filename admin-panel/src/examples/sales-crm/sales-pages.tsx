@@ -26,7 +26,7 @@ import { StatCard } from "@/admin-primitives/StatCard";
 import { PropertyList } from "@/admin-primitives/PropertyList";
 import { TabBar } from "@/admin-primitives/TabBar";
 import { QuickFilterBar } from "@/admin-primitives/QuickFilter";
-import { Kanban } from "@/admin-primitives/Kanban";
+import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { Timeline } from "@/admin-primitives/Timeline";
 import { EmptyState } from "@/admin-primitives/EmptyState";
 import { BarChart } from "@/admin-primitives/charts/BarChart";
@@ -554,16 +554,16 @@ function SalesPipelinePage() {
           ))}
         </PageGrid>
 
-        <Kanban
+        <LiveDnDKanban<Deal>
+          resource="sales.deal"
+          statusField="stage"
           columns={columns.map((c) => ({
             id: c.id,
             title: `${c.title} · ${c.items.length}`,
             intent: c.intent,
-            items: c.items,
           }))}
-          rowKey={(d: Deal) => d.id}
-          onItemClick={(d) => navigateTo(`/sales/deals/${d.id}`)}
-          renderItem={(d) => (
+          onCardClick={(d) => navigateTo(`/sales/deals/${d.id}`)}
+          renderCard={(d) => (
             <div>
               <Inline gap="gap-2">
                 <Avatar name={d.account} size="sm" />

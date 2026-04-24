@@ -1,8 +1,7 @@
 import { defineCustomView } from "@/builders";
 import { PageHeader } from "@/admin-primitives/PageHeader";
-import { Kanban } from "@/admin-primitives/Kanban";
+import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { Badge } from "@/primitives/Badge";
-import { code, personName, pick } from "./_factory/seeds";
 
 const TICKET_COLS = [
   { id: "open", title: "Open", intent: "info" as const },
@@ -17,46 +16,51 @@ const PRIORITY_INTENT: Record<string, "neutral" | "info" | "warning" | "danger">
   urgent: "danger",
 };
 
+type IssueRow = {
+  id: string;
+  code?: string;
+  title?: string;
+  assignee?: string;
+  priority?: keyof typeof PRIORITY_INTENT;
+  status: string;
+  severity?: string;
+};
+
 export const issuesKanbanView = defineCustomView({
   id: "issues.kanban.view",
   title: "Board",
-  description: "Issues grouped by status.",
+  description: "Issues grouped by status — drag to change status.",
   resource: "issues.issue",
-  render: () => {
-    const columns = TICKET_COLS.map((c, ci) => ({
-      ...c,
-      items: Array.from({ length: 2 + (ci % 4) + 1 }, (_, i) => {
-        const idx = ci * 7 + i;
-        return {
-          id: `iss-${c.id}-${i}`,
-          code: code("ISS", idx),
-          title: pick(
-            ["Login fails in Safari", "Typo in settings", "Export broken", "Email bounces", "Slow dashboard"],
-            idx,
-          ),
-          assignee: personName(idx),
-          priority: pick(["low", "normal", "high", "urgent"], idx),
-        };
-      }),
-    }));
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeader title="Issues board" description="Every open engineering issue." />
-        <Kanban
-          columns={columns}
-          rowKey={(i) => i.id}
-          renderItem={(i) => (
-            <div>
-              <div className="flex items-center justify-between">
-                <code className="text-xs font-mono text-text-muted">{i.code}</code>
-                <Badge intent={PRIORITY_INTENT[i.priority]}>{i.priority}</Badge>
-              </div>
-              <div className="text-sm text-text-primary mt-1">{i.title}</div>
-              <div className="text-xs text-text-muted mt-1">{i.assignee}</div>
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Issues board"
+        description="Every open engineering issue. Drag cards to move them between columns."
+      />
+      <LiveDnDKanban<IssueRow>
+        resource="issues.issue"
+        statusField="status"
+        columns={TICKET_COLS}
+        onCardClick={(row) => {
+          window.location.hash = `/issues/${row.id}`;
+        }}
+        renderCard={(i) => (
+          <div>
+            <div className="flex items-center justify-between">
+              <code className="text-xs font-mono text-text-muted">{i.code}</code>
+              {i.priority && (
+                <Badge intent={PRIORITY_INTENT[i.priority] ?? "neutral"}>
+                  {i.priority}
+                </Badge>
+              )}
             </div>
-          )}
-        />
-      </div>
-    );
-  },
+            <div className="text-sm text-text-primary mt-1 line-clamp-2">
+              {i.title}
+            </div>
+            <div className="text-xs text-text-muted mt-1">{i.assignee}</div>
+          </div>
+        )}
+      />
+    </div>
+  ),
 });

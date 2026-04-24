@@ -1,16 +1,15 @@
 import { defineCustomView } from "@/builders";
 import { PageHeader } from "@/admin-primitives/PageHeader";
-import { Kanban } from "@/admin-primitives/Kanban";
+import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { Card, CardContent, CardHeader, CardTitle } from "@/admin-primitives/Card";
 import { MetricGrid } from "@/admin-primitives/MetricGrid";
 import { Badge } from "@/primitives/Badge";
 import { BarChart } from "@/admin-primitives/charts/BarChart";
 import { Donut } from "@/admin-primitives/charts/Donut";
-import { code, personName, pick } from "./_factory/seeds";
 
 const TICKET_COLS = [
-  { id: "open", title: "Open", intent: "info" as const },
-  { id: "in_progress", title: "In progress", intent: "warning" as const },
+  { id: "open", title: "Open", intent: "info" as const, wipLimit: 40 },
+  { id: "in_progress", title: "In progress", intent: "warning" as const, wipLimit: 25 },
   { id: "resolved", title: "Resolved", intent: "success" as const },
   { id: "closed", title: "Closed", intent: "neutral" as const },
 ];
@@ -21,48 +20,66 @@ const PRIORITY_INTENT: Record<string, "neutral" | "info" | "warning" | "danger">
   urgent: "danger",
 };
 
+type TicketRow = {
+  id: string;
+  code?: string;
+  subject?: string;
+  priority?: keyof typeof PRIORITY_INTENT;
+  requester?: string;
+  assignee?: string;
+  status: string;
+  slaBreached?: boolean;
+};
+
 export const supportKanbanView = defineCustomView({
   id: "support-service.kanban.view",
   title: "Ticket Board",
-  description: "Tickets grouped by status.",
+  description: "Tickets grouped by status — drag to update.",
   resource: "support-service.ticket",
-  render: () => {
-    const columns = TICKET_COLS.map((c, ci) => ({
-      ...c,
-      items: Array.from({ length: 3 + (ci + 2) }, (_, i) => {
-        const idx = ci * 10 + i;
-        return {
-          id: `sup-${c.id}-${i}`,
-          code: code("SUP", idx),
-          subject: pick(
-            ["Cannot log in", "Slow report", "Missing invoice", "Crash on export", "Feature request"],
-            idx,
-          ),
-          priority: pick(["low", "normal", "high", "urgent"], idx),
-          requester: personName(idx),
-        };
-      }),
-    }));
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeader title="Ticket board" description="Tickets grouped by status." />
-        <Kanban
-          columns={columns}
-          rowKey={(i) => i.id}
-          renderItem={(i) => (
-            <div>
-              <div className="flex items-center justify-between">
-                <code className="text-xs font-mono text-text-muted">{i.code}</code>
-                <Badge intent={PRIORITY_INTENT[i.priority]}>{i.priority}</Badge>
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Ticket board"
+        description="Drag tickets between columns to change status. WIP limits flag overloaded columns."
+      />
+      <LiveDnDKanban<TicketRow>
+        resource="support-service.ticket"
+        statusField="status"
+        columns={TICKET_COLS}
+        onCardClick={(row) => {
+          window.location.hash = `/support/tickets/${row.id}`;
+        }}
+        renderCard={(i) => (
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <code className="text-xs font-mono text-text-muted">{i.code}</code>
+              <div className="flex items-center gap-1">
+                {i.slaBreached && (
+                  <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-intent-danger-bg text-intent-danger">
+                    SLA
+                  </span>
+                )}
+                {i.priority && (
+                  <Badge intent={PRIORITY_INTENT[i.priority] ?? "neutral"}>
+                    {i.priority}
+                  </Badge>
+                )}
               </div>
-              <div className="text-sm text-text-primary mt-1">{i.subject}</div>
-              <div className="text-xs text-text-muted mt-1">{i.requester}</div>
             </div>
-          )}
-        />
-      </div>
-    );
-  },
+            <div className="text-sm text-text-primary mt-1 line-clamp-2">
+              {i.subject}
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <div className="text-xs text-text-muted truncate">{i.requester}</div>
+              {i.assignee && (
+                <div className="text-xs text-text-secondary">{i.assignee}</div>
+              )}
+            </div>
+          </div>
+        )}
+      />
+    </div>
+  ),
 });
 
 export const supportAnalyticsView = defineCustomView({
