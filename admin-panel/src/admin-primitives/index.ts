@@ -40,3 +40,8 @@ export * from "./ExportCenter";
 export * from "./ReportBuilder";
 export * from "./ConnectionsPanel";
 export * from "./widgets";
+export * from "./charts/EChartsCard";
+export * from "./AdvancedDataTable";
+export * from "./DnDKanban";
+export * from "./WorkflowCanvas";
+export * from "./RichDetailPage";

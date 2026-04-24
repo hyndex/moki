@@ -1,6 +1,7 @@
 import * as React from "react";
 import { z, type ZodTypeAny } from "zod";
 import {
+  defineCustomView,
   defineDetailView,
   defineFormView,
   defineListView,
@@ -16,6 +17,7 @@ import type {
   ColumnDescriptor,
   View,
 } from "@/contracts/views";
+import { RichDealDetailPage } from "./richDetailFactory";
 
 /** Compact per-field config that produces: zod schema, form input, list column,
  *  and detail renderer — everything aligned, nothing duplicated. */
@@ -82,6 +84,13 @@ export interface DomainPluginConfig {
   /** Extra nav items for custom pages. Each one typically points at one of
    *  the extraViews via `view: "<id>"`. */
   extraNav?: readonly NavItem[];
+  /** Per-plugin ConnectionsPanel — shown on the rich detail rail. Plugins
+   *  describe what related resources exist for their records here (e.g. for
+   *  CRM contacts: "Deals", "Invoices", "Tickets"). */
+  connections?: import("@/contracts/widgets").ConnectionDescriptor;
+  /** Opt out of the auto-generated RichDetailPage (custom layout in the
+   *  plugin file takes over). Default: generated. */
+  disableRichDetail?: boolean;
 }
 
 /** Single builder that takes the compact config and produces a full plugin. */
@@ -276,6 +285,31 @@ function buildViews(cfg: DomainPluginConfig, r: DomainResourceConfig) {
     ],
   });
   views.push(detail);
+
+  // Auto-generated RichDetailPage — named `<resource>-detail.view` so the
+  // shell's router prefers it over the plain detail view when it's a custom
+  // view (see resolveCustomDetailView in shell/AppShell.tsx).
+  //
+  // Skip if the plugin already supplies a custom detail view with the same
+  // id or any `*-detail.view` / `*.detail.view` for this resource — the
+  // hand-written one wins.
+  const hasCustomDetail = (cfg.extraViews ?? []).some(
+    (v) =>
+      v.type === "custom" &&
+      v.resource === resourceId &&
+      (v.id.endsWith("-detail.view") || v.id.endsWith(".detail.view")),
+  );
+  if (!cfg.disableRichDetail && !hasCustomDetail) {
+    views.push(
+      defineCustomView({
+        id: `${resourceId}-detail.view`,
+        title: r.singular,
+        description: `Rich ${r.singular.toLowerCase()} detail page.`,
+        resource: resourceId,
+        render: () => <RichDealDetailPage plugin={cfg} resource={r} />,
+      }),
+    );
+  }
 
   return views;
 }

@@ -22,6 +22,8 @@ export const badgeVariants = cva(
   },
 );
 
+export type Intent = "neutral" | "accent" | "success" | "warning" | "danger" | "info";
+
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {}

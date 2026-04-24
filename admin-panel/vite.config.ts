@@ -5,7 +5,11 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@gutu/admin-shell-next": path.resolve(__dirname, "./packages/admin-shell-next/src/index.ts"),
+      "@gutu/admin-shell-bridge": path.resolve(__dirname, "./packages/admin-shell-bridge/src/index.ts"),
+    },
   },
   server: {
     port: Number(process.env.PORT ?? 5173),
