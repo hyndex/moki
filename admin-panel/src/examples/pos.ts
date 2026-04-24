@@ -320,7 +320,7 @@ export const posPlugin = buildDomainPlugin({
   extraNav: [
     { id: "pos.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/pos/control-room", view: "pos.control-room.view", order: 0 },
     { id: "pos.reports.nav", label: "Reports", icon: "BarChart3", path: "/pos/reports", view: "pos.reports.view" },
-    { id: "pos.shift.nav", label: "Shift summary", icon: "Receipt", path: "/pos/shift", view: "pos.shift-summary.view" },
+    { id: "pos.shift-summary.nav", label: "Shift summary", icon: "Receipt", path: "/pos/shift-summary", view: "pos.shift-summary.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail, posShiftSummaryView],
   commands: [

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { defineResource, defineListView } from "@/builders";
 import type { View } from "@/contracts/views";
 import type { ResourceDefinition } from "@/contracts/resources";
+import { formViewFromZod } from "../_factory/formFromZod";
 
 /** Extended CRM resources — full ERPNext+ parity.
  *
@@ -849,13 +850,118 @@ export const CRM_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
   salesStageResource,
 ];
 
+/* ================================================================ */
+/* Auto-generated form views from Zod schemas                        */
+/* ================================================================ */
+
+const leadFormView = formViewFromZod({
+  id: "crm.lead.form",
+  title: "Lead",
+  resource: "crm.lead",
+  schema: LeadSchema,
+  exclude: ["id", "score"],
+  defaults: { status: "new", source: "website", score: 50 },
+  columns: 2,
+});
+
+const opportunityFormView = formViewFromZod({
+  id: "crm.opportunity.form",
+  title: "Opportunity",
+  resource: "crm.opportunity",
+  schema: OpportunitySchema,
+  exclude: ["id", "weightedAmount"],
+  defaults: { stage: "discovery", probability: 10, amount: 0 },
+  columns: 2,
+});
+
+const campaignFormView = formViewFromZod({
+  id: "crm.campaign.form",
+  title: "Campaign",
+  resource: "crm.campaign",
+  schema: CampaignSchema,
+  exclude: ["id"],
+  defaults: {
+    status: "draft",
+    type: "email",
+    budget: 0,
+    spent: 0,
+    leadsGenerated: 0,
+    opportunitiesGenerated: 0,
+    revenueGenerated: 0,
+  },
+  columns: 2,
+});
+
+const appointmentFormView = formViewFromZod({
+  id: "crm.appointment.form",
+  title: "Appointment",
+  resource: "crm.appointment",
+  schema: AppointmentSchema,
+  exclude: ["id"],
+  defaults: { status: "proposed", type: "discovery-call", durationMinutes: 30 },
+  columns: 2,
+});
+
+const contractFormView = formViewFromZod({
+  id: "crm.contract.form",
+  title: "Contract",
+  resource: "crm.contract",
+  schema: ContractSchema,
+  exclude: ["id"],
+  defaults: {
+    status: "draft",
+    autoRenew: false,
+    currency: "USD",
+    value: 0,
+  },
+  columns: 2,
+});
+
+const competitorFormView = formViewFromZod({
+  id: "crm.competitor.form",
+  title: "Competitor",
+  resource: "crm.competitor",
+  schema: CompetitorSchema,
+  exclude: ["id"],
+  defaults: { winRateVsUs: 50, strengths: [], weaknesses: [] },
+  columns: 2,
+});
+
+const marketSegmentFormView = formViewFromZod({
+  id: "crm.market-segment.form",
+  title: "Market Segment",
+  resource: "crm.market-segment",
+  schema: MarketSegmentSchema,
+  exclude: ["id"],
+  defaults: { companySize: "SMB", targetAccountCount: 100, coveragePct: 0 },
+  columns: 2,
+});
+
+const salesStageFormView = formViewFromZod({
+  id: "crm.sales-stage.form",
+  title: "Sales Stage",
+  resource: "crm.sales-stage",
+  schema: SalesStageSchema,
+  exclude: ["id"],
+  defaults: { order: 1, probability: 10 },
+  columns: 2,
+});
+
 export const CRM_EXTENDED_VIEWS: readonly View[] = [
   leadListView,
+  leadFormView,
   opportunityListView,
+  opportunityFormView,
   campaignListView,
+  campaignFormView,
   appointmentListView,
+  appointmentFormView,
   contractListView,
+  contractFormView,
   competitorListView,
+  competitorFormView,
   marketSegmentListView,
+  marketSegmentFormView,
   salesStageListView,
+  salesStageFormView,
 ];

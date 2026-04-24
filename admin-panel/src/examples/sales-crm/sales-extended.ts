@@ -2,6 +2,7 @@ import { z } from "zod";
 import { defineResource, defineListView } from "@/builders";
 import type { View } from "@/contracts/views";
 import type { ResourceDefinition } from "@/contracts/resources";
+import { formViewFromZod } from "../_factory/formFromZod";
 
 const ProductBundleSchema = z.object({
   id: z.string(), code: z.string(), name: z.string(),
@@ -309,6 +310,75 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
       ]},
       { field: "carrier", label: "Carrier" },
     ],
+  }),
+  /* ---- Auto-generated form views from Zod schemas ---- */
+  formViewFromZod({
+    id: "sales.product-bundle.form",
+    title: "Product Bundle",
+    resource: "sales.product-bundle",
+    schema: ProductBundleSchema,
+    defaults: { active: true, discountPct: 0, totalPrice: 0, bundledSkus: [] },
+  }),
+  formViewFromZod({
+    id: "sales.installation-note.form",
+    title: "Installation Note",
+    resource: "sales.installation-note",
+    schema: InstallationNoteSchema,
+    defaults: { status: "scheduled" },
+  }),
+  formViewFromZod({
+    id: "sales.sales-partner.form",
+    title: "Sales Partner",
+    resource: "sales.sales-partner",
+    schema: SalesPartnerSchema,
+    defaults: { active: true, commissionRate: 10, ytdRevenue: 0 },
+  }),
+  formViewFromZod({
+    id: "sales.sales-team.form",
+    title: "Sales Team",
+    resource: "sales.sales-team",
+    schema: SalesTeamSchema,
+    defaults: { members: 0, currentAttainment: 0, quarterlyTarget: 0 },
+  }),
+  formViewFromZod({
+    id: "sales.customer-credit-limit.form",
+    title: "Customer Credit Limit",
+    resource: "sales.customer-credit-limit",
+    schema: CustomerCreditLimitSchema,
+    defaults: { status: "within-limit", currency: "USD", utilized: 0 },
+  }),
+  formViewFromZod({
+    id: "sales.territory.form",
+    title: "Territory",
+    resource: "sales.territory",
+    schema: TerritorySchema,
+    defaults: { accountCount: 0, ytdRevenue: 0, target: 0, countries: [] },
+  }),
+  formViewFromZod({
+    id: "sales.commission-rule.form",
+    title: "Commission Rule",
+    resource: "sales.commission-rule",
+    schema: CommissionRuleSchema,
+    defaults: { active: true, rate: 10, kind: "percent-of-revenue" },
+  }),
+  formViewFromZod({
+    id: "sales.pricing-rule.form",
+    title: "Pricing Rule",
+    resource: "sales.pricing-rule",
+    schema: PricingRuleSchema,
+    defaults: {
+      active: true,
+      priority: 10,
+      discountType: "percent",
+      discountValue: 0,
+    },
+  }),
+  formViewFromZod({
+    id: "sales.delivery-schedule.form",
+    title: "Delivery Schedule",
+    resource: "sales.delivery-schedule",
+    schema: DeliveryScheduleSchema,
+    defaults: { status: "pending", qty: 1 },
   }),
 ];
 

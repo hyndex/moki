@@ -210,7 +210,7 @@ function CrmOverviewPage() {
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <Sparkline
-                            data={c.activityTrend}
+                            data={c.activityTrend ?? []}
                             width={80}
                             height={22}
                           />
@@ -548,7 +548,7 @@ function ContactsList() {
                         {formatCurrency(c.lifetimeValue)}
                       </td>
                       <td className="py-2 pr-2 text-right">
-                        <Sparkline data={c.activityTrend} width={80} height={22} />
+                        <Sparkline data={c.activityTrend ?? []} width={80} height={22} />
                       </td>
                       <td className="py-2 pr-4 text-right text-xs text-text-muted">
                         {formatRelative(c.lastActivityAt)}
@@ -935,9 +935,10 @@ function ContactDetailPage() {
   }
 
   const related = ACTIVITIES.filter((a) => a.contactId === contact.id).slice(0, 10);
-  const daysSinceTouch = Math.round(
-    (Date.now() - new Date(contact.lastActivityAt).getTime()) / 86400_000,
-  );
+  const lastTouchMs = contact.lastActivityAt
+    ? new Date(contact.lastActivityAt).getTime()
+    : Date.now();
+  const daysSinceTouch = Math.round((Date.now() - lastTouchMs) / 86400_000);
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -1042,8 +1043,11 @@ function ContactDetailPage() {
                 <Stack gap="gap-3">
                   <StatCard
                     label="Activity (12 months)"
-                    value={contact.activityTrend.reduce((a, b) => a + b, 0)}
-                    spark={contact.activityTrend}
+                    value={(contact.activityTrend ?? []).reduce(
+                      (a, b) => a + b,
+                      0,
+                    )}
+                    spark={contact.activityTrend ?? []}
                     intent="accent"
                   />
                   <StatCard
