@@ -11,6 +11,7 @@ import { seedInventoryExtended } from "./inventory-extended";
 import { seedHrPayrollExtended } from "./hr-payroll-extended";
 import { seedSupportExtended } from "./support-extended";
 import { seedBookingExtended } from "./booking-extended";
+import { seedFieldServiceExtended } from "./field-service-extended";
 
 /** Idempotent: if the records table already has data, do nothing unless
  *  `force: true` is passed. Auth users are seeded when empty regardless. */
@@ -43,7 +44,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
     const hrExt = seedHrPayrollExtended();
     const supExt = seedSupportExtended();
     const bookExt = seedBookingExtended();
-    const combined = { ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt };
+    const fsExt = seedFieldServiceExtended();
+    const combined = { ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt };
     const extTotal = Object.values(combined).reduce((a, b) => a + b, 0);
     if (extTotal > 0) {
       console.log(
@@ -73,7 +75,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
   const hrExt = seedHrPayrollExtended();
   const supExt = seedSupportExtended();
   const bookExt = seedBookingExtended();
-  const all = { ...crm, ...factory, ...extended, ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt };
+  const fsExt = seedFieldServiceExtended();
+  const all = { ...crm, ...factory, ...extended, ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt };
   const total = Object.values(all).reduce((a, b) => a + b, 0);
   console.log(
     `[seed] inserted ${total} records across ${Object.keys(all).length} resources in ${Date.now() - t0}ms`,
