@@ -16,16 +16,20 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, EyeOff, GripVertical, Pencil, RotateCcw, Save, X } from "lucide-react";
+import { Eye, EyeOff, Filter, GripVertical, Pencil, RotateCcw, Save, X } from "lucide-react";
 import { Button } from "@/primitives/Button";
 import { cn } from "@/lib/cn";
-import type { Widget, WorkspaceDescriptor } from "@/contracts/widgets";
+import type { Widget, WorkspaceDescriptor, WorkspaceFilterField } from "@/contracts/widgets";
 import { NumberCardWidget } from "./NumberCardWidget";
 import { ChartWidget } from "./ChartWidget";
 import { ShortcutCardWidget } from "./ShortcutCardWidget";
 import { HeaderWidget } from "./HeaderWidget";
 import { SpacerWidget } from "./SpacerWidget";
 import { QuickListWidget } from "./QuickListWidget";
+import {
+  WorkspaceFilterContext,
+  buildFilterTree,
+} from "./workspaceFilter";
 
 const STORAGE_PREFIX = "gutu-workspace-";
 
@@ -105,6 +109,18 @@ export function WorkspaceRenderer({
   const [editMode, setEditMode] = React.useState(false);
   const [draft, setDraft] = React.useState<WorkspacePersonalization>(personalization);
 
+  // Workspace-level filter bar (session-only). Empty values skipped.
+  const [filterValues, setFilterValues] = React.useState<Record<string, unknown>>(
+    {},
+  );
+  const workspaceFilter = React.useMemo(
+    () =>
+      workspace.filterBar
+        ? buildFilterTree(workspace.filterBar, filterValues)
+        : undefined,
+    [workspace.filterBar, filterValues],
+  );
+
   const widgetsForView = React.useMemo(
     () =>
       personalizable
@@ -133,22 +149,36 @@ export function WorkspaceRenderer({
 
   if (!personalizable || !editMode) {
     return (
-      <div className="flex flex-col gap-3">
-        {personalizable && workspace.widgets.length > 1 && (
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              size="xs"
-              iconLeft={<Pencil className="h-3 w-3" />}
-              onClick={enterEdit}
-              aria-label="Customize dashboard"
-            >
-              Customize
-            </Button>
-          </div>
-        )}
-        <WidgetGrid widgets={widgetsForView} />
-      </div>
+      <WorkspaceFilterContext.Provider value={workspaceFilter}>
+        <div className="flex flex-col gap-3">
+          {(workspace.filterBar && workspace.filterBar.length > 0) ||
+          (personalizable && workspace.widgets.length > 1) ? (
+            <div className="flex items-center gap-2">
+              {workspace.filterBar && workspace.filterBar.length > 0 && (
+                <WorkspaceFilterBar
+                  fields={workspace.filterBar}
+                  values={filterValues}
+                  onChange={setFilterValues}
+                />
+              )}
+              <div className="ml-auto flex items-center gap-1">
+                {personalizable && workspace.widgets.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    iconLeft={<Pencil className="h-3 w-3" />}
+                    onClick={enterEdit}
+                    aria-label="Customize dashboard"
+                  >
+                    Customize
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <WidgetGrid widgets={widgetsForView} />
+        </div>
+      </WorkspaceFilterContext.Provider>
     );
   }
 
@@ -354,6 +384,133 @@ function WidgetGrid({ widgets }: { widgets: readonly Widget[] }) {
 function clampCol(col: number): number {
   if (!Number.isFinite(col)) return 12;
   return Math.min(12, Math.max(1, Math.round(col)));
+}
+
+/* ------------------------------------------------------------------------ */
+/* Workspace filter bar                                                      */
+/* ------------------------------------------------------------------------ */
+
+function WorkspaceFilterBar({
+  fields,
+  values,
+  onChange,
+}: {
+  fields: readonly WorkspaceFilterField[];
+  values: Record<string, unknown>;
+  onChange: (next: Record<string, unknown>) => void;
+}) {
+  const active = fields.filter((f) => {
+    const v = values[f.field];
+    return v !== undefined && v !== null && v !== "";
+  }).length;
+  const clearAll = () => onChange({});
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-2 py-1 border border-border rounded-md bg-surface-1">
+      <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+        <Filter className="h-3 w-3" />
+        Filters
+      </span>
+      {fields.map((f) => (
+        <WorkspaceFilterInput
+          key={f.field}
+          field={f}
+          value={values[f.field]}
+          onChange={(v) =>
+            onChange({
+              ...values,
+              [f.field]: v === undefined || v === "" ? undefined : v,
+            })
+          }
+        />
+      ))}
+      {active > 0 && (
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={clearAll}
+          aria-label="Clear all filters"
+        >
+          Clear
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function WorkspaceFilterInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: WorkspaceFilterField;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  if (field.kind === "enum" && field.options) {
+    return (
+      <select
+        aria-label={field.label}
+        value={(value as string) ?? ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="h-7 rounded border border-border bg-surface-0 px-2 text-xs"
+      >
+        <option value="">{field.label}: any</option>
+        {field.options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  if (field.kind === "boolean") {
+    return (
+      <select
+        aria-label={field.label}
+        value={(value as string) ?? ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="h-7 rounded border border-border bg-surface-0 px-2 text-xs"
+      >
+        <option value="">{field.label}: any</option>
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    );
+  }
+  if (field.kind === "date-range") {
+    const [from, to] = Array.isArray(value) ? (value as [string, string]) : ["", ""];
+    return (
+      <span className="inline-flex items-center gap-1 text-xs">
+        <span className="text-text-muted">{field.label}</span>
+        <input
+          type="date"
+          aria-label={`${field.label} from`}
+          value={from ?? ""}
+          onChange={(e) => onChange([e.target.value, to ?? ""])}
+          className="h-7 rounded border border-border bg-surface-0 px-1"
+        />
+        <span>→</span>
+        <input
+          type="date"
+          aria-label={`${field.label} to`}
+          value={to ?? ""}
+          onChange={(e) => onChange([from ?? "", e.target.value])}
+          className="h-7 rounded border border-border bg-surface-0 px-1"
+        />
+      </span>
+    );
+  }
+  return (
+    <input
+      type="text"
+      aria-label={field.label}
+      value={(value as string) ?? ""}
+      placeholder={field.placeholder ?? field.label}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-7 rounded border border-border bg-surface-0 px-2 text-xs"
+    />
+  );
 }
 
 function WidgetSwitch({ widget }: { widget: Widget }) {

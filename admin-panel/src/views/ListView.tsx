@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Layers, Plus, RefreshCw } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { ListView as ListViewDef } from "@/contracts/views";
-import type { SavedView } from "@/contracts/saved-views";
+import type { ListView as ListViewDef, ColumnDescriptor } from "@/contracts/views";
+import type { FilterTree, SavedView } from "@/contracts/saved-views";
 import { PageHeader } from "@/admin-primitives/PageHeader";
 import { Toolbar, ToolbarSeparator } from "@/admin-primitives/Toolbar";
 import { FilterBar } from "@/admin-primitives/FilterBar";
@@ -17,6 +17,7 @@ import {
 } from "@/admin-primitives/SmartColumnConfigurator";
 import { SavedViewManager } from "@/admin-primitives/SavedViewManager";
 import { ExportCenter } from "@/admin-primitives/ExportCenter";
+import { QueryBuilder, type QBField } from "@/admin-primitives/QueryBuilder";
 import { ErrorState } from "@/admin-primitives/ErrorState";
 import { EmptyState } from "@/admin-primitives/EmptyState";
 import { Button } from "@/primitives/Button";
@@ -31,6 +32,8 @@ import { useList } from "@/runtime/hooks";
 import { useRuntime } from "@/runtime/context";
 import { renderCellValue, getPath } from "./renderCellValue";
 import { navigateTo } from "./useRoute";
+import { filterRows } from "@/lib/filterEngine";
+import { evalExpression } from "@/lib/expression";
 import type { ActionDescriptor } from "@/contracts/actions";
 
 export interface ListViewRendererProps {
@@ -76,6 +79,12 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
   );
   const [search, setSearch] = React.useState("");
   const [filters, setFilters] = React.useState<Record<string, unknown>>({});
+  const [filterTree, setFilterTree] = React.useState<FilterTree | undefined>(
+    activeSavedView?.filter,
+  );
+  const [groupBy, setGroupBy] = React.useState<string | null>(
+    activeSavedView?.grouping ?? null,
+  );
   const [density, setDensity] = React.useState<"comfortable" | "compact" | "dense">(
     activeSavedView?.density ?? "compact",
   );
@@ -129,7 +138,38 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
   // Reset page when filters change
   React.useEffect(() => {
     setPage(1);
-  }, [search, filters]);
+  }, [search, filters, filterTree, groupBy]);
+
+  /* ---------------- advanced filter + groupby (client-side) ---------------- */
+  const qbFields: QBField[] = React.useMemo(
+    () =>
+      view.columns.map((c) => ({
+        field: c.field,
+        label: c.label ?? humanize(c.field),
+        kind: ((c.kind ?? "text") as QBField["kind"]),
+        options: c.options,
+      })),
+    [view.columns],
+  );
+
+  const filteredRows = React.useMemo(() => {
+    const baseRows = (data?.rows ?? []) as Record<string, unknown>[];
+    // First evaluate any calculated columns so the filter tree can filter on them too.
+    const enriched = baseRows.map((r) => withComputed(r, view.columns));
+    return filterTree ? filterRows(enriched, filterTree) : enriched;
+  }, [data?.rows, filterTree, view.columns]);
+
+  const groupedRows = React.useMemo(() => {
+    if (!groupBy) return null;
+    return groupAndAggregate(filteredRows, groupBy, view.columns);
+  }, [groupBy, filteredRows, view.columns]);
+
+  /** Grand-totals row across the currently filtered data (only when at least
+   *  one column has `totaling`). */
+  const totalsRow = React.useMemo(
+    () => computeTotalsRow(filteredRows, view.columns),
+    [filteredRows, view.columns],
+  );
 
   /* ---------------- action partitioning ---------------- */
   const rowActions =
@@ -156,7 +196,7 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
     for (const c of ordered) {
       cols.push({
         id: c.field,
-        accessorFn: (row) => getPath(row, c.field),
+        accessorFn: (row) => resolveCellValue(row, c),
         header: c.label ?? humanize(c.field),
         enableSorting: c.sortable,
         size: typeof c.width === "number" ? c.width : undefined,
@@ -195,18 +235,22 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
     },
     [],
   );
-  const selectedRows = data?.rows.filter((r) => selection.has(String(r.id))) ?? [];
+  const selectedRows = filteredRows.filter((r) => selection.has(String(r.id))) ?? [];
 
   /* ---------------- saved view apply ---------------- */
   const handleSavedViewSelect = (sv: SavedView | null) => {
     setActiveSavedViewId(sv?.id ?? null);
     if (sv) {
       setFilters({});
+      setFilterTree(sv.filter);
+      setGroupBy(sv.grouping ?? null);
       setSort(sv.sort?.[0] ?? view.defaultSort ?? null);
       setPageSize(sv.pageSize ?? view.pageSize ?? 25);
       setDensity(sv.density ?? "compact");
     } else {
       setFilters({});
+      setFilterTree(undefined);
+      setGroupBy(null);
       setSort(view.defaultSort ?? null);
       setPageSize(view.pageSize ?? 25);
       setDensity("compact");
@@ -272,15 +316,52 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
         <SavedViewManager
           resource={view.resource}
           currentState={{
-            filter: undefined, // TODO: serialize filters → FilterTree
+            filter: filterTree,
             sort: sort ? [sort] : undefined,
             columns: columnConfig.filter((c) => c.visible).map((c) => c.field),
+            grouping: groupBy ?? undefined,
             density,
             pageSize,
           }}
           activeId={activeSavedViewId}
           onSelect={handleSavedViewSelect}
         />
+        <ToolbarSeparator />
+        <QueryBuilder
+          fields={qbFields}
+          value={filterTree}
+          onChange={setFilterTree}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconLeft={<Layers className="h-3.5 w-3.5" />}
+            >
+              {groupBy ? `Group by: ${humanize(groupBy)}` : "Group by"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setGroupBy(null)}>
+              {!groupBy ? "✓ " : "  "}No grouping
+            </DropdownMenuItem>
+            {view.columns
+              .filter((c) => {
+                const k = c.kind ?? "text";
+                return k === "enum" || k === "text" || k === "boolean";
+              })
+              .map((c) => (
+                <DropdownMenuItem
+                  key={c.field}
+                  onSelect={() => setGroupBy(c.field)}
+                >
+                  {groupBy === c.field ? "✓ " : "  "}
+                  {c.label ?? humanize(c.field)}
+                </DropdownMenuItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ToolbarSeparator />
         <FilterBar
           search={view.search !== false}
@@ -380,26 +461,70 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
         />
       ) : (
         <>
+          {(filterTree || groupBy) && (
+            <div className="flex items-center gap-2 text-xs text-text-muted">
+              {filterTree && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-text">Advanced filter active</span>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setFilterTree(undefined)}
+                  >
+                    Clear
+                  </Button>
+                </span>
+              )}
+              {groupBy && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-text">
+                    Grouped by {humanize(groupBy)} · {groupedRows?.length ?? 0} groups
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setGroupBy(null)}
+                  >
+                    Ungroup
+                  </Button>
+                </span>
+              )}
+              <span className="ml-auto tabular-nums">
+                {filteredRows.length.toLocaleString()} matching row
+                {filteredRows.length === 1 ? "" : "s"}
+              </span>
+            </div>
+          )}
           <AdvancedDataTable
-            rows={data?.rows ?? []}
+            rows={groupedRows ?? filteredRows}
             columns={columns}
             getRowId={(r) => String(r.id)}
             loading={loading}
             density={density}
             stateKey={view.resource}
             onSelectionChange={
-              bulkActions.length > 0 ? handleSelectionChange : undefined
+              bulkActions.length > 0 && !groupBy ? handleSelectionChange : undefined
             }
-            onRowClick={(row) =>
-              navigateTo(
-                view.detailPath
-                  ? `${basePath}/${view.detailPath(row)}`
-                  : `${basePath}/${row.id}`,
-              )
+            onRowClick={
+              groupBy
+                ? undefined
+                : (row) =>
+                    navigateTo(
+                      view.detailPath
+                        ? `${basePath}/${view.detailPath(row)}`
+                        : `${basePath}/${row.id}`,
+                    )
             }
             emptyTitle="No records match"
             emptyDescription="Try removing a filter or broadening your search."
           />
+          {!groupBy && totalsRow && (
+            <TotalsFooter
+              totalsRow={totalsRow}
+              columns={view.columns}
+              columnConfig={columnConfig}
+            />
+          )}
           {data && data.total !== undefined && data.total > pageSize && (
             <Pagination
               page={page}
@@ -587,4 +712,209 @@ function humanize(field: string): string {
     .replace(/^./, (c) => c.toUpperCase())
     .replace(/_/g, " ")
     .trim();
+}
+
+/** Totals footer — one chip per column with a `totaling` function, labelled
+ *  with the column's label + aggregate kind. Shown under the table when any
+ *  column declares totaling and no grouping is active (grouping already
+ *  produces per-group totals on the summary rows). */
+function TotalsFooter({
+  totalsRow,
+  columns,
+  columnConfig,
+}: {
+  totalsRow: Record<string, unknown>;
+  columns: readonly ColumnDescriptor[];
+  columnConfig: ColumnConfig[];
+}) {
+  const visible = new Set(
+    columnConfig.filter((c) => c.visible).map((c) => c.field),
+  );
+  const entries = columns.filter((c) => c.totaling && visible.has(c.field));
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface-1 px-3 py-2 text-xs">
+      <span className="font-medium text-text">Totals</span>
+      {entries.map((c) => {
+        const v = totalsRow[c.field];
+        const display =
+          typeof v === "number"
+            ? c.totaling === "avg"
+              ? v.toLocaleString(undefined, { maximumFractionDigits: 2 })
+              : v.toLocaleString()
+            : "—";
+        return (
+          <span
+            key={c.field}
+            className="inline-flex items-center gap-1 rounded-sm border border-border bg-surface-0 px-2 py-0.5 tabular-nums"
+          >
+            <span className="text-text-muted">
+              {c.label ?? humanize(c.field)} · {c.totaling}:
+            </span>
+            <span className="font-medium text-text">{display}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- expression / computed / aggregation helpers ---------------- */
+
+/** For each column with `expr` or `compute`, evaluate and attach the computed
+ *  value onto the record under `column.field`. Returns a new object — never
+ *  mutates the input row. Rows without any calculated columns are returned
+ *  as-is (same reference) to keep downstream memos cheap. */
+function withComputed(
+  row: Record<string, unknown>,
+  columns: readonly ColumnDescriptor[],
+): Record<string, unknown> {
+  const calc = columns.filter((c) => c.expr || c.compute);
+  if (calc.length === 0) return row;
+  const next: Record<string, unknown> = { ...row };
+  for (const c of calc) {
+    let v: unknown;
+    if (c.compute) {
+      try {
+        v = c.compute(row);
+      } catch {
+        v = undefined;
+      }
+    } else if (c.expr) {
+      const res = evalExpression(c.expr, row);
+      v = res.error ? undefined : res.value;
+    }
+    // Write under the column's field path. For non-dotted paths this is the
+    // common case. For dotted paths we only write the final segment under the
+    // top-level bucket to keep merging safe.
+    setPath(next, c.field, v);
+  }
+  return next;
+}
+
+/** Resolve the cell value for a column — preferring the attached computed
+ *  value (already on the row after `withComputed`) and falling back to the
+ *  plain field path read. */
+function resolveCellValue(
+  row: Record<string, unknown>,
+  column: ColumnDescriptor,
+): unknown {
+  if (column.expr || column.compute) return getPath(row, column.field);
+  return getPath(row, column.field);
+}
+
+/** Safe shallow setPath — supports `a.b.c`. Skips writes if any intermediate
+ *  segment is a primitive (non-object), to avoid clobbering real data. */
+function setPath(obj: Record<string, unknown>, path: string, value: unknown) {
+  const segs = path.split(".");
+  if (segs.length === 1) {
+    obj[path] = value;
+    return;
+  }
+  let cur: Record<string, unknown> = obj;
+  for (let i = 0; i < segs.length - 1; i++) {
+    const k = segs[i];
+    const nxt = cur[k];
+    if (nxt && typeof nxt === "object" && !Array.isArray(nxt)) {
+      // shallow-copy so we don't mutate the original nested object
+      const copy = { ...(nxt as Record<string, unknown>) };
+      cur[k] = copy;
+      cur = copy;
+    } else {
+      const copy: Record<string, unknown> = {};
+      cur[k] = copy;
+      cur = copy;
+    }
+  }
+  cur[segs[segs.length - 1]] = value;
+}
+
+/** Group rows by the given field and aggregate per `column.totaling`.
+ *  The return is a list of "summary" rows, one per group:
+ *    - `id` — stable string id derived from the group key
+ *    - `[groupField]` — the group value
+ *    - `__group_count` — number of rows in the group
+ *    - any column with `totaling` — aggregated number
+ *  Other columns are blank on summary rows. */
+function groupAndAggregate(
+  rows: readonly Record<string, unknown>[],
+  groupField: string,
+  columns: readonly ColumnDescriptor[],
+): Record<string, unknown>[] {
+  const buckets = new Map<string, Record<string, unknown>[]>();
+  for (const r of rows) {
+    const key = groupKey(getPath(r, groupField));
+    const b = buckets.get(key);
+    if (b) b.push(r);
+    else buckets.set(key, [r]);
+  }
+  const totaling = columns.filter((c) => c.totaling);
+  const result: Record<string, unknown>[] = [];
+  for (const [key, bucketRows] of buckets) {
+    const summary: Record<string, unknown> = {
+      id: `__group__${key}`,
+      __group_count: bucketRows.length,
+    };
+    // Set group key on the row under the groupField.
+    setPath(summary, groupField, bucketRows[0] ? getPath(bucketRows[0], groupField) : key);
+    for (const c of totaling) {
+      summary[c.field] = aggregate(bucketRows, c);
+    }
+    result.push(summary);
+  }
+  return result;
+}
+
+/** Apply a column's `totaling` function over the given rows. Numeric-only —
+ *  non-numeric cells are skipped. */
+function aggregate(
+  rows: readonly Record<string, unknown>[],
+  column: ColumnDescriptor,
+): number | undefined {
+  const vals: number[] = [];
+  for (const r of rows) {
+    const v = getPath(r, column.field);
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    if (Number.isFinite(n)) vals.push(n);
+  }
+  if (vals.length === 0) return column.totaling === "count" ? rows.length : undefined;
+  switch (column.totaling) {
+    case "sum":
+      return vals.reduce((a, b) => a + b, 0);
+    case "avg":
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    case "count":
+      return rows.length;
+    case "min":
+      return Math.min(...vals);
+    case "max":
+      return Math.max(...vals);
+    default:
+      return undefined;
+  }
+}
+
+/** Compute a grand-total row over the currently filtered rows for any column
+ *  that declares a `totaling` function. Returns null when no column has one. */
+function computeTotalsRow(
+  rows: readonly Record<string, unknown>[],
+  columns: readonly ColumnDescriptor[],
+): Record<string, unknown> | null {
+  const totaling = columns.filter((c) => c.totaling);
+  if (totaling.length === 0) return null;
+  const row: Record<string, unknown> = { id: "__totals__" };
+  for (const c of totaling) row[c.field] = aggregate(rows, c);
+  return row;
+}
+
+function groupKey(v: unknown): string {
+  if (v == null) return "__null__";
+  if (typeof v === "object") {
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return String(v);
+    }
+  }
+  return String(v);
 }

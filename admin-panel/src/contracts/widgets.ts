@@ -152,6 +152,21 @@ export type Widget =
 /* Workspace                                                           */
 /* ------------------------------------------------------------------ */
 
+/** A single field declared on a workspace-level filter bar. The user's chosen
+ *  value is merged (AND) into every widget's aggregation.filter before
+ *  evaluation — so NumberCards, Charts and QuickLists all respect the same
+ *  slice. */
+export interface WorkspaceFilterField {
+  /** Field path on the underlying records. Use `_.wildcard` to target just a
+   *  subset of widgets when the same field name is used across resources. */
+  field: string;
+  label: string;
+  kind: "text" | "enum" | "boolean" | "date-range";
+  options?: readonly { value: string; label: string }[];
+  /** Placeholder for the text/enum input. */
+  placeholder?: string;
+}
+
 export interface WorkspaceDescriptor {
   id: string;
   label: string;
@@ -162,6 +177,10 @@ export interface WorkspaceDescriptor {
   personalizable?: boolean;
   /** Persist personalization under this key. Falls back to `id`. */
   storageKey?: string;
+  /** Optional workspace-level filter bar. Whatever the user selects is
+   *  AND-merged into every widget's `aggregation.filter`. Values are kept
+   *  in session (not persisted) so the next visit starts fresh. */
+  filterBar?: readonly WorkspaceFilterField[];
 }
 
 /* ------------------------------------------------------------------ */

@@ -11,9 +11,21 @@ import { Spinner } from "@/primitives/Spinner";
 import { useAggregation } from "@/runtime/useAggregation";
 import { formatValue } from "./formatters";
 import type { ChartWidget as ChartSpec } from "@/contracts/widgets";
+import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function ChartWidget({ widget }: { widget: ChartSpec }) {
-  const { data, loading } = useAggregation(widget.aggregation);
+  const workspaceFilter = useWorkspaceFilter();
+  const effectiveSpec = React.useMemo(
+    () =>
+      workspaceFilter
+        ? {
+            ...widget.aggregation,
+            filter: mergeFilters(widget.aggregation.filter, workspaceFilter),
+          }
+        : widget.aggregation,
+    [widget.aggregation, workspaceFilter],
+  );
+  const { data, loading } = useAggregation(effectiveSpec);
   const fmt = (v: number) => formatValue(v, widget.format, widget.currency);
 
   const onOpen = widget.drilldown

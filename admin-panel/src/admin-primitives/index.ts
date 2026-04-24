@@ -39,6 +39,7 @@ export * from "./ImportWizard";
 export * from "./ExportCenter";
 export * from "./ReportBuilder";
 export * from "./PivotTable";
+export * from "./QueryBuilder";
 export * from "./ConnectionsPanel";
 export * from "./widgets";
 export * from "./charts/EChartsCard";

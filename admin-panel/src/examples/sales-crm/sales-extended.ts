@@ -228,10 +228,13 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
     id: "sales.sales-partners.list", title: "Sales Partners", resource: "sales.sales-partner",
     columns: [
       { field: "name", label: "Name", sortable: true },
-      { field: "partnerType", label: "Type" },
-      { field: "territory", label: "Territory" },
+      { field: "partnerType", label: "Type", kind: "enum" },
+      { field: "territory", label: "Territory", kind: "enum" },
       { field: "commissionRate", label: "Commission %", align: "right", kind: "number" },
-      { field: "ytdRevenue", label: "YTD Revenue", align: "right", kind: "currency", sortable: true },
+      { field: "ytdRevenue", label: "YTD Revenue", align: "right", kind: "currency", sortable: true, totaling: "sum" },
+      // Calculated: commission earned = ytdRevenue * commissionRate / 100
+      { field: "commissionEarned", label: "Commission earned", align: "right", kind: "currency",
+        expr: "ytdRevenue * commissionRate / 100", totaling: "sum" },
       { field: "active", label: "Active", kind: "boolean" },
     ],
   }),
@@ -251,8 +254,14 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
     search: true,
     columns: [
       { field: "customer", label: "Customer", sortable: true },
-      { field: "limit", label: "Limit", align: "right", kind: "currency" },
-      { field: "utilized", label: "Utilized", align: "right", kind: "currency" },
+      { field: "limit", label: "Limit", align: "right", kind: "currency", totaling: "sum" },
+      { field: "utilized", label: "Utilized", align: "right", kind: "currency", totaling: "sum" },
+      // Calculated: available head-room = limit - utilized
+      { field: "available", label: "Available", align: "right", kind: "currency",
+        expr: "limit - utilized", totaling: "sum" },
+      // Calculated: utilization % rounded to 1 dp
+      { field: "utilizationPct", label: "Utilization %", align: "right", kind: "number",
+        expr: "round(utilized / limit * 100, 1)" },
       { field: "status", label: "Status", kind: "enum", options: [
         { value: "within-limit", label: "Within limit", intent: "success" },
         { value: "near-limit", label: "Near limit", intent: "warning" },
@@ -266,9 +275,15 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
     columns: [
       { field: "name", label: "Name", sortable: true },
       { field: "manager", label: "Manager" },
-      { field: "accountCount", label: "Accounts", align: "right", kind: "number" },
-      { field: "ytdRevenue", label: "YTD revenue", align: "right", kind: "currency" },
-      { field: "target", label: "Target", align: "right", kind: "currency" },
+      { field: "accountCount", label: "Accounts", align: "right", kind: "number", totaling: "sum" },
+      { field: "ytdRevenue", label: "YTD revenue", align: "right", kind: "currency", totaling: "sum" },
+      { field: "target", label: "Target", align: "right", kind: "currency", totaling: "sum" },
+      // Calculated: attainment % of target
+      { field: "attainmentPct", label: "Attainment %", align: "right", kind: "number",
+        expr: "round(ytdRevenue / target * 100, 1)" },
+      // Calculated: gap (positive = over target, negative = behind)
+      { field: "gap", label: "Gap", align: "right", kind: "currency",
+        expr: "ytdRevenue - target", totaling: "sum" },
     ],
   }),
   defineListView({

@@ -6,6 +6,28 @@ import type { ReportDefinition, ReportResult } from "@/contracts/widgets";
 const workspace: WorkspaceDescriptor = {
   id: "sales.control-room",
   label: "Sales Control Room",
+  // Cross-widget filter bar — selections flow into every widget's aggregation.
+  filterBar: [
+    {
+      field: "owner",
+      label: "Owner",
+      kind: "text",
+      placeholder: "Owner email",
+    },
+    {
+      field: "stage",
+      label: "Stage",
+      kind: "enum",
+      options: [
+        { value: "lead", label: "Lead" },
+        { value: "qualified", label: "Qualified" },
+        { value: "proposal", label: "Proposal" },
+        { value: "negotiation", label: "Negotiation" },
+        { value: "won", label: "Won" },
+        { value: "lost", label: "Lost" },
+      ],
+    },
+  ],
   widgets: [
     { id: "h-pulse", type: "header", col: 12, label: "Pulse", level: 2 },
     { id: "k-pipeline", type: "number_card", col: 3, label: "Open pipeline",

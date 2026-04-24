@@ -5,9 +5,21 @@ import { useAggregation } from "@/runtime/useAggregation";
 import { formatDelta, formatValue } from "./formatters";
 import { cn } from "@/lib/cn";
 import type { NumberCardWidget as NumberCardSpec } from "@/contracts/widgets";
+import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function NumberCardWidget({ widget }: { widget: NumberCardSpec }) {
-  const { data, loading } = useAggregation(widget.aggregation);
+  const workspaceFilter = useWorkspaceFilter();
+  const effectiveSpec = React.useMemo(
+    () =>
+      workspaceFilter
+        ? {
+            ...widget.aggregation,
+            filter: mergeFilters(widget.aggregation.filter, workspaceFilter),
+          }
+        : widget.aggregation,
+    [widget.aggregation, workspaceFilter],
+  );
+  const { data, loading } = useAggregation(effectiveSpec);
 
   const value = data?.value ?? 0;
   const prev = data?.previousValue;

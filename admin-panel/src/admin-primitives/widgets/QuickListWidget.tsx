@@ -5,14 +5,25 @@ import { EmptyStateFramework } from "../EmptyStateFramework";
 import { Spinner } from "@/primitives/Spinner";
 import { useList } from "@/runtime/hooks";
 import type { QuickListWidget as QuickListSpec } from "@/contracts/widgets";
+import { filterRows } from "@/lib/filterEngine";
+import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function QuickListWidget({ widget }: { widget: QuickListSpec }) {
+  const workspaceFilter = useWorkspaceFilter();
   const { data, loading } = useList(widget.resource, {
     page: 1,
-    pageSize: widget.limit ?? 10,
+    // Grab a larger window when a workspace filter is in play, so post-fetch
+    // client-side filtering still gives us `limit` visible rows.
+    pageSize: workspaceFilter ? Math.max((widget.limit ?? 10) * 5, 50) : widget.limit ?? 10,
     sort: widget.sort,
   });
-  const records = (data?.rows ?? []) as Record<string, unknown>[];
+  const allRecords = (data?.rows ?? []) as Record<string, unknown>[];
+  const effectiveFilter = React.useMemo(
+    () => mergeFilters(widget.filter, workspaceFilter),
+    [widget.filter, workspaceFilter],
+  );
+  const filtered = effectiveFilter ? filterRows(allRecords, effectiveFilter) : allRecords;
+  const records = filtered.slice(0, widget.limit ?? 10);
 
   return (
     <Card className="h-full flex flex-col">

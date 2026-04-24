@@ -20,8 +20,8 @@ function evalLeaf(leaf: FilterLeaf, record: Record<string, unknown>): boolean {
     case "nin": return Array.isArray(leaf.value) && !(leaf.value as unknown[]).includes(v);
     case "contains": return typeof v === "string" && typeof leaf.value === "string" && v.toLowerCase().includes(leaf.value.toLowerCase());
     case "starts_with": return typeof v === "string" && typeof leaf.value === "string" && v.toLowerCase().startsWith(leaf.value.toLowerCase());
-    case "null": return v === null || v === undefined;
-    case "not_null": return v !== null && v !== undefined;
+    case "is_null": return v === null || v === undefined;
+    case "is_not_null": return v !== null && v !== undefined;
     case "between": {
       if (!Array.isArray(leaf.value) || leaf.value.length !== 2) return false;
       if (typeof v === "number") return v >= (leaf.value[0] as number) && v <= (leaf.value[1] as number);

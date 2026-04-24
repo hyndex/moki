@@ -27,14 +27,14 @@ export interface AdvancedFilterBuilderProps {
 }
 
 const OPS_BY_KIND: Record<FilterFieldDef["kind"], FilterLeaf["op"][]> = {
-  text: ["contains", "eq", "neq", "starts_with", "null", "not_null"],
-  number: ["eq", "neq", "lt", "lte", "gt", "gte", "between", "null", "not_null"],
-  enum: ["eq", "neq", "in", "nin", "null", "not_null"],
-  date: ["eq", "lt", "lte", "gt", "gte", "between", "null", "not_null"],
-  boolean: ["eq", "null", "not_null"],
+  text: ["contains", "eq", "neq", "starts_with", "is_null", "is_not_null"],
+  number: ["eq", "neq", "lt", "lte", "gt", "gte", "between", "is_null", "is_not_null"],
+  enum: ["eq", "neq", "in", "nin", "is_null", "is_not_null"],
+  date: ["eq", "lt", "lte", "gt", "gte", "between", "is_null", "is_not_null"],
+  boolean: ["eq", "is_null", "is_not_null"],
 };
 
-const OP_LABELS: Record<FilterLeaf["op"], string> = {
+const OP_LABELS: Partial<Record<FilterLeaf["op"], string>> = {
   eq: "equals",
   neq: "not equals",
   lt: "less than",
@@ -46,8 +46,8 @@ const OP_LABELS: Record<FilterLeaf["op"], string> = {
   contains: "contains",
   starts_with: "starts with",
   between: "between",
-  null: "is empty",
-  not_null: "is not empty",
+  is_null: "is empty",
+  is_not_null: "is not empty",
 };
 
 function isLeaf(tree: FilterTree): tree is FilterLeaf {
@@ -150,7 +150,7 @@ function LeafRow({
 }) {
   const def = fields.find((f) => f.field === leaf.field);
   const ops: FilterLeaf["op"][] = def ? OPS_BY_KIND[def.kind] : ["eq"];
-  const showValue = leaf.op !== "null" && leaf.op !== "not_null";
+  const showValue = leaf.op !== "is_null" && leaf.op !== "is_not_null";
 
   return (
     <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ function LeafRow({
         <SelectContent>
           {ops.map((op) => (
             <SelectItem key={op} value={op}>
-              {OP_LABELS[op]}
+              {OP_LABELS[op] ?? op}
             </SelectItem>
           ))}
         </SelectContent>

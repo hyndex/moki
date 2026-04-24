@@ -23,6 +23,15 @@ export interface ColumnDescriptor {
   readonly render?: (value: unknown, record: Record<string, unknown>) => ReactNode;
   readonly kind?: FieldDescriptor["kind"];
   readonly options?: FieldDescriptor["options"];
+  /** Calculated column — safe arithmetic expression evaluated per row.
+   *  Example: `revenue - cost`, `qty * price * (1 - discount_pct/100)`,
+   *  `round(actual / budget * 100, 1)`.
+   *  See src/lib/expression.ts for the grammar + allowlisted functions. */
+  readonly expr?: string;
+  /** Imperative computed value (when expr isn't expressive enough). */
+  readonly compute?: (record: Record<string, unknown>) => unknown;
+  /** Total function for footer aggregation in list/report views. */
+  readonly totaling?: "sum" | "avg" | "count" | "min" | "max";
 }
 
 export interface FilterDescriptor {

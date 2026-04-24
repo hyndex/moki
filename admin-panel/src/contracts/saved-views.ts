@@ -7,22 +7,54 @@ export interface SortSpec {
   dir: "asc" | "desc";
 }
 
+/** Operator set — ERPNext-parity and beyond.
+ *
+ *  Value-taking operators:
+ *    eq, neq, lt, lte, gt, gte, in, nin, contains, starts_with, ends_with,
+ *    between (value = [min, max]), last_n_days (value = number)
+ *  Unary (no value):
+ *    is_empty, is_not_empty, is_null, is_not_null
+ *  Relative date (no value — resolved server/client-side at evaluation time):
+ *    today, yesterday, this_week, this_month, this_quarter, this_year,
+ *    mtd, qtd, ytd, last_week, last_month, last_quarter, last_year
+ */
+export type FilterOp =
+  | "eq"
+  | "neq"
+  | "lt"
+  | "lte"
+  | "gt"
+  | "gte"
+  | "in"
+  | "nin"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with"
+  | "between"
+  | "last_n_days"
+  | "is_empty"
+  | "is_not_empty"
+  | "is_null"
+  | "is_not_null"
+  // date-relative (no value)
+  | "today"
+  | "yesterday"
+  | "this_week"
+  | "this_month"
+  | "this_quarter"
+  | "this_year"
+  | "mtd"
+  | "qtd"
+  | "ytd"
+  | "last_week"
+  | "last_month"
+  | "last_quarter"
+  | "last_year";
+
 export interface FilterLeaf {
   field: string;
-  op:
-    | "eq"
-    | "neq"
-    | "lt"
-    | "lte"
-    | "gt"
-    | "gte"
-    | "in"
-    | "nin"
-    | "contains"
-    | "starts_with"
-    | "between"
-    | "null"
-    | "not_null";
+  op: FilterOp;
   value?: unknown;
 }
 
