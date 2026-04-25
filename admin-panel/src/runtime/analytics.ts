@@ -6,6 +6,7 @@ import type {
   AnalyticsSink,
   BaseEventMeta,
 } from "@/contracts/analytics";
+import { authStore } from "./auth";
 
 const FLUSH_INTERVAL_MS = 4000;
 const BATCH_MAX = 50;
@@ -116,9 +117,11 @@ export const restSink: AnalyticsSink = {
   async send(events) {
     if (typeof fetch === "undefined") return;
     try {
+      const headers = new Headers({ "content-type": "application/json" });
+      if (authStore.token) headers.set("authorization", `Bearer ${authStore.token}`);
       const res = await fetch("/api/analytics/events", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers,
         body: JSON.stringify({ events }),
         keepalive: true,
       });

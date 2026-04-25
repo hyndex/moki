@@ -1,4 +1,5 @@
 import { db } from "../db";
+import type { SQLQueryBindings } from "bun:sqlite";
 
 export interface ListQueryParams {
   page: number;
@@ -49,7 +50,7 @@ export function parseListQuery(params: URLSearchParams): ListQueryParams {
  *  Uses json_extract() for filter/sort against JSON fields. */
 export function listRecords(resource: string, q: ListQueryParams): ListResult {
   const whereClauses: string[] = ["resource = ?"];
-  const bindings: unknown[] = [resource];
+  const bindings: SQLQueryBindings[] = [resource];
 
   if (q.search) {
     whereClauses.push("LOWER(data) LIKE ?");
@@ -66,7 +67,7 @@ export function listRecords(resource: string, q: ListQueryParams): ListResult {
       bindings.push(`$.${field}`, value);
     } else {
       whereClauses.push(`json_extract(data, ?) = ?`);
-      bindings.push(`$.${field}`, value);
+      bindings.push(`$.${field}`, String(value));
     }
   }
 

@@ -1,6 +1,7 @@
 import type { ResourceClient } from "./resourceClient";
 import type { Emitter } from "@/lib/emitter";
 import type { RuntimeEvents } from "./context";
+import { authStore } from "./auth";
 
 /** Subscribe the runtime to backend WebSocket events. Every `resource.changed`
  *  frame invalidates the matching query cache entries, so any open view
@@ -12,11 +13,30 @@ export function startRealtime(
   let ws: WebSocket | null = null;
   let closed = false;
   let backoff = 1000;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let intentionallyClosing = false;
+
+  const clearReconnect = () => {
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  };
+
+  const socketUrl = (): string | null => {
+    if (!authStore.token) return null;
+    const env = (import.meta as { env?: { VITE_API_BASE?: string } }).env ?? {};
+    const base = env.VITE_API_BASE?.trim() || window.location.origin;
+    const url = new URL("/api/ws", base);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.searchParams.set("token", authStore.token);
+    return url.toString();
+  };
 
   const connect = () => {
     if (closed) return;
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/api/ws`;
+    clearReconnect();
+    if (ws) return;
+    const url = socketUrl();
+    if (!url) return;
     try {
       ws = new WebSocket(url);
     } catch (err) {
@@ -47,8 +67,10 @@ export function startRealtime(
       }
     });
     ws.addEventListener("close", () => {
+      const wasIntentional = intentionallyClosing;
+      intentionallyClosing = false;
       ws = null;
-      scheduleReconnect();
+      if (!wasIntentional) scheduleReconnect();
     });
     ws.addEventListener("error", () => {
       ws?.close();
@@ -57,15 +79,47 @@ export function startRealtime(
 
   const scheduleReconnect = () => {
     if (closed) return;
+    clearReconnect();
+    if (!authStore.token) return;
     const delay = Math.min(30_000, backoff);
     backoff = Math.min(30_000, backoff * 2);
-    setTimeout(connect, delay);
+    reconnectTimer = setTimeout(connect, delay);
   };
 
-  connect();
+  const scheduleConnect = () => {
+    if (closed || !authStore.token) return;
+    clearReconnect();
+    reconnectTimer = setTimeout(connect, 150);
+  };
+
+  const resetSocket = () => {
+    clearReconnect();
+    backoff = 1000;
+    const current = ws;
+    ws = null;
+    if (current) {
+      intentionallyClosing = true;
+      current.close();
+    }
+  };
+
+  const offAuth = authStore.emitter.on("change", ({ token }) => {
+    resetSocket();
+    if (token) scheduleConnect();
+  });
+  const offTenant = authStore.emitter.on("tenant", () => {
+    if (!authStore.token) return;
+    resetSocket();
+    scheduleConnect();
+  });
+
+  scheduleConnect();
 
   return () => {
     closed = true;
+    offAuth();
+    offTenant();
+    clearReconnect();
     ws?.close();
   };
 }

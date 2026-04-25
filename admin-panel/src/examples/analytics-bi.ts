@@ -2,6 +2,7 @@ import { buildDomainPlugin } from "./_factory/buildDomainPlugin";
 import { SECTIONS } from "./_factory/sections";
 import { daysAgo, pick } from "./_factory/seeds";
 import { analyticsDashboardView } from "./analytics-bi-pages";
+import { analyticsBiProductViews } from "./analytics-bi/workbench";
 import { buildCompactControlRoom } from "./_factory/compactDashboard";
 import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 import type { ReportDefinition, ReportResult } from "@/contracts/widgets";
@@ -12,20 +13,20 @@ const controlRoomView = buildCompactControlRoom({
   title: "Analytics & BI Control Room",
   description: "Reports, dashboards, datasets, usage.",
   kpis: [
-    { label: "Reports", resource: "analytics-bi.report" },
-    { label: "Dashboards", resource: "analytics-bi.dashboard" },
-    { label: "Datasets", resource: "analytics-bi.dataset" },
-    { label: "Saved queries", resource: "analytics-bi.query" },
+    { label: "Saved charts", resource: "analytics-bi.chart" },
+    { label: "Dashboards", resource: "analytics-bi.dashboard-content" },
+    { label: "Explores", resource: "analytics-bi.explore" },
+    { label: "Schedules", resource: "analytics-bi.schedule" },
   ],
   charts: [
-    { label: "Reports by dataset", resource: "analytics-bi.report", chart: "bar", groupBy: "dataset" },
-    { label: "Dashboards by owner", resource: "analytics-bi.dashboard", chart: "donut", groupBy: "owner" },
+    { label: "Charts by space", resource: "analytics-bi.chart", chart: "bar", groupBy: "spaceId" },
+    { label: "Dashboards by space", resource: "analytics-bi.dashboard-content", chart: "donut", groupBy: "spaceId" },
   ],
   shortcuts: [
-    { label: "New report", icon: "Plus", href: "/analytics/reports/new" },
-    { label: "New dashboard", icon: "PieChart", href: "/analytics/dashboards/new" },
+    { label: "Explore", icon: "Search", href: "/analytics/explore" },
+    { label: "Charts", icon: "BarChart3", href: "/analytics/charts" },
+    { label: "Dashboards", icon: "PieChart", href: "/analytics/dashboards" },
     { label: "Executive", icon: "LineChart", href: "/analytics/executive" },
-    { label: "Reports library", icon: "BarChart3", href: "/analytics/reports-library" },
   ],
 });
 
@@ -114,9 +115,9 @@ export const analyticsBiPlugin = buildDomainPlugin({
     {
       id: "dashboard",
       singular: "BI Dashboard",
-      plural: "BI Dashboards",
+      plural: "BI Dashboard Records",
       icon: "PieChart",
-      path: "/analytics/dashboards",
+      path: "/analytics/dashboard-records",
       fields: [
         { name: "name", kind: "text", required: true, sortable: true },
         { name: "owner", kind: "text", sortable: true },
@@ -189,13 +190,23 @@ export const analyticsBiPlugin = buildDomainPlugin({
   ],
   extraNav: [
     { id: "analytics-bi.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/analytics/control-room", view: "analytics-bi.control-room.view", order: 0 },
-    { id: "analytics-bi.reports-library.nav", label: "Reports library", icon: "BarChart3", path: "/analytics/reports-library", view: "analytics-bi.reports-library.view" },
-    { id: "analytics.executive.nav", label: "Executive", icon: "LineChart", path: "/analytics/executive", view: "analytics-bi.dashboard.view" },
+    { id: "analytics-bi.explore.nav", label: "Explore", icon: "Search", path: "/analytics/explore", view: "analytics-bi.explore.view", order: 1 },
+    { id: "analytics-bi.charts.nav", label: "Charts", icon: "BarChart3", path: "/analytics/charts", view: "analytics-bi.charts.view", order: 2 },
+    { id: "analytics-bi.dashboards.nav", label: "Dashboards", icon: "PieChart", path: "/analytics/dashboards", view: "analytics-bi.dashboards.view", order: 3 },
+    { id: "analytics-bi.spaces.nav", label: "Spaces", icon: "FolderTree", path: "/analytics/spaces", view: "analytics-bi.spaces.view", order: 4 },
+    { id: "analytics-bi.metrics.nav", label: "Metrics", icon: "Library", path: "/analytics/metrics", view: "analytics-bi.metrics.view", order: 5 },
+    { id: "analytics-bi.sql.nav", label: "SQL Runner", icon: "Database", path: "/analytics/sql-runner", view: "analytics-bi.sql-runner.view", order: 6 },
+    { id: "analytics-bi.schedules.nav", label: "Schedules", icon: "Clock", path: "/analytics/schedules", view: "analytics-bi.schedules.view", order: 7 },
+    { id: "analytics-bi.validation.nav", label: "Validation", icon: "ShieldCheck", path: "/analytics/validation", view: "analytics-bi.validation.view", order: 8 },
+    { id: "analytics-bi.share.nav", label: "Shared links", icon: "Share2", path: "/analytics/share", view: "analytics-bi.share.view", order: 9 },
+    { id: "analytics-bi.reports-library.nav", label: "Prebuilt reports", icon: "BarChart3", path: "/analytics/reports-library", view: "analytics-bi.reports-library.view", order: 20 },
+    { id: "analytics.executive.nav", label: "Executive", icon: "LineChart", path: "/analytics/executive", view: "analytics-bi.dashboard.view", order: 21 },
   ],
-  extraViews: [controlRoomView, reportsIndex, reportsDetail, analyticsDashboardView],
+  extraViews: [controlRoomView, ...analyticsBiProductViews, reportsIndex, reportsDetail, analyticsDashboardView],
   commands: [
     { id: "analytics.go.control-room", label: "Analytics: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/analytics/control-room"; } },
-    { id: "analytics.new-report", label: "New report", icon: "Plus", run: () => { window.location.hash = "/analytics/reports/new"; } },
-    { id: "analytics.new-dashboard", label: "New dashboard", icon: "PieChart", run: () => { window.location.hash = "/analytics/dashboards/new"; } },
+    { id: "analytics.go.explore", label: "Analytics: Explore", icon: "Search", run: () => { window.location.hash = "/analytics/explore"; } },
+    { id: "analytics.go.charts", label: "Analytics: Charts", icon: "BarChart3", run: () => { window.location.hash = "/analytics/charts"; } },
+    { id: "analytics.go.dashboards", label: "Analytics: Dashboards", icon: "PieChart", run: () => { window.location.hash = "/analytics/dashboards"; } },
   ],
 });

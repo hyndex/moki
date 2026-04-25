@@ -33,7 +33,7 @@ export function resolveRoute(
   path: string,
   registry: AdminRegistry,
 ): Route | null {
-  const clean = path.replace(/^#/, "").replace(/\/+$/, "") || "/";
+  const clean = path.replace(/^#/, "").split("?")[0].replace(/\/+$/, "") || "/";
 
   // Try nav items — longest match first
   const navMatches = collectNavPaths(registry.nav)
@@ -132,6 +132,12 @@ function classify(view: View, base: string, remainder: string): Route {
       return { path: base, view, mode: "detail", navItemPath: base };
     if (view.type.startsWith("external:"))
       return { path: base, view, mode: "external", navItemPath: base };
+  }
+  if (view.type === "custom") {
+    return { path: base + remainder, view, mode: "custom", navItemPath: base };
+  }
+  if (view.type.startsWith("external:")) {
+    return { path: base + remainder, view, mode: "external", navItemPath: base };
   }
   const parts = remainder.replace(/^\//, "").split("/");
   if (parts[0] === "new")

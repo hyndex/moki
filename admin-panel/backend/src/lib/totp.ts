@@ -44,14 +44,16 @@ export function base32Decode(s: string): Uint8Array {
 }
 
 async function hmacSha1(key: Uint8Array, msg: Uint8Array): Promise<Uint8Array> {
+  const keyBytes = key.buffer.slice(key.byteOffset, key.byteOffset + key.byteLength) as ArrayBuffer;
+  const msgBytes = msg.buffer.slice(msg.byteOffset, msg.byteOffset + msg.byteLength) as ArrayBuffer;
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    key,
+    keyBytes,
     { name: "HMAC", hash: "SHA-1" },
     false,
     ["sign"],
   );
-  const sig = await crypto.subtle.sign("HMAC", cryptoKey, msg);
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, msgBytes);
   return new Uint8Array(sig);
 }
 

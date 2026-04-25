@@ -24,30 +24,35 @@ import {
 
 const SPREADSHEET_VIEW = {
   id: "office.spreadsheets.view",
+  title: "Spreadsheets",
   resource: "spreadsheet.workbook" as const,
   type: "custom" as const,
   render: () => <SpreadsheetWorkspace />,
 };
 const DOCUMENT_VIEW = {
   id: "office.documents.view",
+  title: "Documents",
   resource: "document.page" as const,
   type: "custom" as const,
   render: () => <DocumentWorkspace />,
 };
 const SLIDES_VIEW = {
   id: "office.slides.view",
+  title: "Slides",
   resource: "slides.deck" as const,
   type: "custom" as const,
   render: () => <SlidesWorkspace />,
 };
 const PAGES_VIEW = {
   id: "office.pages.view",
+  title: "Pages",
   resource: "collab.page" as const,
   type: "custom" as const,
   render: () => <PagesWorkspace />,
 };
 const WHITEBOARD_VIEW = {
   id: "office.whiteboards.view",
+  title: "Whiteboards",
   resource: "whiteboard.canvas" as const,
   type: "custom" as const,
   render: () => <WhiteboardWorkspace />,
