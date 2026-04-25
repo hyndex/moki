@@ -61,6 +61,11 @@ the umbrella workspace repository.
 - `plugins/gutu-plugin-storage-core`
 - `plugins/gutu-plugin-storage-local`
 - `plugins/gutu-plugin-storage-s3`
+- `plugins/gutu-plugin-spreadsheet-core`
+- `plugins/gutu-plugin-document-editor-core`
+- `plugins/gutu-plugin-slides-core`
+- `plugins/gutu-plugin-collab-pages-core`
+- `plugins/gutu-plugin-whiteboard-core`
 - `plugins/gutu-plugin-subscriptions-core`
 - `plugins/gutu-plugin-support-service-core`
 - `plugins/gutu-plugin-template-core`
@@ -102,6 +107,8 @@ the umbrella workspace repository.
 - `libraries/gutu-lib-router`
 - `libraries/gutu-lib-search`
 - `libraries/gutu-lib-storage`
+- `libraries/gutu-lib-collab-realtime`
+- `libraries/gutu-lib-editor-bridge`
 - `libraries/gutu-lib-telemetry-ui`
 - `libraries/gutu-lib-ui`
 - `libraries/gutu-lib-ui-editor`
