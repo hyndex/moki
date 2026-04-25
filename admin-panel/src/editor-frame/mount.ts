@@ -1,13 +1,30 @@
 /** Adapter-mount registry for the iframe editor.
  *
  *  Each editor kind gets a function that:
- *    - lazy-imports its runtime (Univer or BlockSuite)
+ *    - lazy-imports its runtime (Univer for sheets/docs/slides,
+ *      our own React+TipTap+Yjs editor for pages and whiteboards)
  *    - creates the engine + plugins (with locale + dependent plugins)
  *    - seeds the initial snapshot
  *    - returns `{ destroy, exportSnapshot }` so the frame can save and
  *      tear down cleanly.
  *
- *  Univer requires:
+ *  Page + whiteboard are FIRST-PARTY editors we own end-to-end:
+ *    - Page  → `mountBlockEditor`  → React + TipTap + Yjs (block-based,
+ *      Notion-class), syntax-highlighted code, slash menu, bubble menu
+ *      for inline formatting, tables, task lists, full collab.
+ *    - Whiteboard → `mountWhiteboard` → Yjs-backed canvas with rect /
+ *      ellipse / text / pen / arrow tools, multi-select transform, undo
+ *      via Y.UndoManager, snapshot exports as PNG.
+ *
+ *  Univer continues to power sheets / docs / slides.  AFFiNE / BlockSuite
+ *  is deliberately not used: it was attempted earlier (see git log) but
+ *  its dev-mode dependency graph fights vite's pre-bundle pipeline at
+ *  every layer (CJS interop, TC39 stage-3 lowering, class-field semantics,
+ *  dynamic import resolution).  Owning the editor surface ourselves
+ *  matches our admin-shell UX, keeps the dependency tree tight, and
+ *  ships features when our users ask, not when an upstream prioritizes.
+ *
+ *  Univer specifics:
  *    - a locale object passed at construction time, otherwise LocaleService
  *      throws "Locale not initialized" the first time the Ribbon renders.
  *    - the `@univerjs/docs` + `@univerjs/docs-ui` plugins for sheets and
@@ -16,47 +33,18 @@
 import type * as Y from "yjs";
 import type { EditorKind } from "@/editor-host/types";
 
+export type SaveStatus =
+  | "loading" | "ready" | "saving" | "saved" | "retrying" | "error";
+
 export interface MountedAdapter {
   destroy(): Promise<void>;
   exportSnapshot(format?: string): Promise<{ bytes: Uint8Array; contentType: string }>;
-}
-
-/** Page + whiteboard ship two parallel implementations:
- *
- *    - **Default**: a Yjs-backed minimal editor (rich-text page,
- *      shape-canvas whiteboard) that's hardened, tested, fast to load,
- *      and persists through `gutu-lib-storage` like every other editor.
- *      End-to-end smoke-tested: bold/italic/underline/H1/H2/lists work,
- *      autosave round-trips through the REST API, snapshot ETag tracks.
- *
- *    - **AFFiNE opt-in** (`?affine=1` in the iframe URL): mounts the
- *      full BlockSuite/AFFiNE 0.22 stack. Trace progression in dev mode:
- *
- *        entry → effects-import-ok → container-registered →
- *        imports-ok → sync-ok → schema-ok → classes-resolved →
- *        workspace-created → workspace-started → ▢ doc-created (BLOCKED)
- *
- *      Last verified state (2026-04-25): mount reaches workspace-started
- *      after fixing TestWorkspace.meta.initialize(), then the BlockSuite
- *      DI resolver hits a class-field/constructor-ordering edge case
- *      under es2021 esbuild lowering (ServiceResolver class field
- *      `container = this.provider.container` reads param prop before
- *      assignment). es2021 fixes the symptom but the next layer is a
- *      dynamic `import()` chain that resolves to non-JS responses for
- *      reasons the dev-mode browser doesn't surface in console.
- *
- *      Production (rollup) build is unaffected — `commonjsOptions.
- *      transformMixedEsModules` plus Rollup's tree-shaking handle the
- *      same packages cleanly outside the dev pre-bundle pipeline.
- *
- *  Tenants who want the heavier-weight AFFiNE editor for pages today
- *  can navigate via `…/editor-frame.html?kind=page&id=…&affine=1` after
- *  a `bun run build` (production bundle). For dev iteration, the
- *  default Yjs editor is the verified path. */
-
-function affineFlagFromUrl(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("affine") === "1";
+  /** Push the host's save status into the editor's UI. Optional — only
+   *  the page editor renders a status pill of its own; Univer adapters
+   *  rely on the FrameEditor's outer banner. */
+  setStatus?(status: SaveStatus): void;
+  /** Push a non-fatal error message to display inside the editor. */
+  setError?(message: string | null): void;
 }
 
 export async function mountAdapter(
@@ -65,15 +53,12 @@ export async function mountAdapter(
   doc: Y.Doc,
   initialBytes: Uint8Array | undefined,
 ): Promise<MountedAdapter> {
-  const useAffine = affineFlagFromUrl();
   switch (kind) {
     case "spreadsheet": return mountUniverSheet(container, doc, initialBytes);
     case "document":    return mountUniverDoc(container, doc, initialBytes);
     case "slides":      return mountUniverSlides(container, doc, initialBytes);
-    case "page":
-      return useAffine ? mountBlockSuite(container, doc, "page") : mountRichTextPage(container, doc);
-    case "whiteboard":
-      return useAffine ? mountBlockSuite(container, doc, "edgeless") : mountWhiteboard(container, doc);
+    case "page":        return mountBlockEditor(container, doc);
+    case "whiteboard":  return mountWhiteboard(container, doc);
   }
 }
 
@@ -237,401 +222,256 @@ async function mountUniverSlides(
   };
 }
 
-/* ---------------- BlockSuite (AFFiNE) — page + edgeless ----------------
+/* ---------------- Block editor (page) ----------------
  *
- *  Wires the official AFFiNE 0.22+ editor: Notion-class block editor in
- *  page mode, Miro-class edgeless canvas in edgeless mode. Both modes
- *  share the same Y.Doc backbone so a doc opened twice on different
- *  modes stays in sync.
+ *  Mount strategy: dynamically import React + ReactDOM and the
+ *  BlockEditor component, create a *child* React root inside the
+ *  iframe's container, render <BlockEditor /> into it, and unmount on
+ *  destroy. The iframe itself already has a React root (FrameEditor.tsx)
+ *  but ReactDOM supports nested roots — they share React's runtime but
+ *  reconcile independently, which is exactly what we want for an
+ *  editor isolated from the surrounding lifecycle.
  *
- *  Bootstrap chain (mirrors blocksuite/playground/apps/starter):
- *    1. `effects()` — global side-effects: registers every Lit custom
- *       element used by the editor. Must run BEFORE creating any element.
- *    2. `Schema.register(AffineSchemas)` — registers all block flavours.
- *    3. `new TestWorkspace({ id, awarenessSources, … })` — the concrete
- *       Workspace impl. Test* prefix is misleading: it's the production
- *       in-memory variant exported via `@blocksuite/affine/store/test`.
- *    4. `collection.start()` then `collection.createDoc(id)` →
- *       `doc.getStore({ id })`.
- *    5. Build a `ViewExtensionManager` and `StoreExtensionManager` from
- *       the umbrella's `getInternalViewExtensions` / `getInternalStoreExtensions`.
- *       Push into `collection.storeExtensions = mgr.get('store')`.
- *    6. Create `<affine-editor-container>`, set `.doc = store`,
- *       `.pageSpecs = viewMgr.get('page')`, `.edgelessSpecs =
- *       viewMgr.get('edgeless')`, `.mode = 'page' | 'edgeless'`.
- *    7. Append to container; await `editor.updateComplete`.
+ *  The BlockEditor component owns its own toolbar, status bar, error
+ *  banner, slash menu, and bubble menu. The frame's snapshot save/load
+ *  loop calls `exportSnapshot()` on the returned adapter, which in turn
+ *  proxies to the React component via an imperative ref.
  *
- *  Yjs sync: TestWorkspace owns its own Y.Doc internally. To bridge to
- *  our `gutu-lib-collab-realtime` doc, we snapshot via Yjs update
- *  encode/apply at save time — the editor's edits flow into its internal
- *  doc; we serialize that and store under our doc map. This keeps the
- *  storage surface flat (one binary blob) and avoids mixing two CRDT
- *  trees that don't share a structural identity. */
-
-async function mountBlockSuite(
+ *  We pass `hooks` so the BlockEditor can render the host's save status
+ *  + error message even though they live in the parent FrameEditor's
+ *  state. The hooks let the parent push state into the child without
+ *  re-renders racing the editor's own commands. */
+async function mountBlockEditor(
   container: HTMLDivElement,
   doc: Y.Doc,
-  mode: "page" | "edgeless",
 ): Promise<MountedAdapter> {
-  const trace = (step: string, extra?: unknown) => {
-    const w = window as unknown as { __bsTrace?: { steps: Array<{ step: string; extra?: unknown; t: number }> } };
-    w.__bsTrace ||= { steps: [] };
-    w.__bsTrace.steps.push({ step, extra, t: Date.now() });
-    // eslint-disable-next-line no-console
-    console.log("[bs-trace]", step, extra ?? "");
+  const [{ createRoot }, React, { BlockEditor }] = await Promise.all([
+    import("react-dom/client"),
+    import("react"),
+    import("./BlockEditor"),
+  ]);
+
+  // Mounted via a child root that renders into a wrapper so we can
+  // unmount cleanly without disturbing the parent root's DOM tree.
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:absolute;inset:0;";
+  container.replaceChildren(wrap);
+  const root = createRoot(wrap);
+
+  // The handle is set after the editor mounts via React's ref callback.
+  // useImperativeHandle re-runs whenever its deps change (e.g., when the
+  // TipTap editor instance flips from null → real). The ref callback
+  // fires each time with the LATEST handle, so we always store the most
+  // recent one rather than locking to the first call (which can capture
+  // a closure where `editor` is still null and produces empty exports).
+  // The promise still resolves on first non-null handle so callers
+  // racing initial render don't block forever.
+  type Handle = import("./BlockEditor").BlockEditorHandle;
+  let handle: Handle | null = null;
+  let handleResolved: (h: Handle) => void = () => {};
+  const handlePromise = new Promise<Handle>((r) => { handleResolved = r; });
+  const setHandle = (h: Handle | null) => {
+    if (h) {
+      handle = h;
+      handleResolved(h);
+    }
   };
-  trace("entry", { mode });
-  // 1a. Register effects (custom elements for blocks). Idempotent.
-  let effectsMod: unknown;
-  try {
-    effectsMod = await import("@blocksuite/affine/effects");
-    trace("effects-import-ok");
-  } catch (e) {
-    trace("effects-import-fail", String(e));
-    throw e;
-  }
-  if (typeof (effectsMod as { effects?: () => void }).effects === "function") {
-    try { (effectsMod as { effects: () => void }).effects(); trace("effects-call-ok"); } catch (e) { trace("effects-call-fail", String(e)); }
-  }
-  // 1b. Register the editor host element.
-  try {
-    const { registerAffineEditorContainer } = await import("./affine-editor-container");
-    registerAffineEditorContainer();
-    trace("container-registered", { defined: !!customElements.get("affine-editor-container") });
-  } catch (e) {
-    trace("container-register-fail", String(e));
-    throw e;
-  }
 
-  // 2-5. Build collection + extensions.
-  let storeMod: unknown, storeTestMod: unknown, schemasMod: unknown, extLoaderMod: unknown, extStoreMod: unknown, extViewMod: unknown;
-  try {
-    [storeMod, storeTestMod, schemasMod, extLoaderMod, extStoreMod, extViewMod] = await Promise.all([
-      import("@blocksuite/affine/store"),
-      import("@blocksuite/affine/store/test"),
-      import("@blocksuite/affine/schemas"),
-      import("@blocksuite/affine/ext-loader"),
-      import("@blocksuite/affine/extensions/store"),
-      import("@blocksuite/affine/extensions/view"),
-    ]);
-    trace("imports-ok");
-  } catch (e) {
-    trace("imports-fail", String(e).slice(0, 300));
-    throw e;
-  }
+  // Cross-cutting state the host pushes into the editor (save status,
+  // error message). Stored in a small mutable holder + a fan-out
+  // listener set so the React tree can subscribe with a re-render.
+  type StatusHolder = {
+    status: SaveStatus;
+    error: string | null;
+    listeners: Set<() => void>;
+  };
+  const holder: StatusHolder = { status: "loading", error: null, listeners: new Set() };
+  const fan = () => holder.listeners.forEach((l) => l());
 
-  const syncMod = await import("@blocksuite/affine/sync").catch((e) => { trace("sync-fail", String(e).slice(0, 200)); return null; });
-  trace("sync-ok", { hasSync: !!syncMod });
-
-  let collection: ReturnType<{ TestWorkspace: new (opts: Record<string, unknown>) => { start: () => void; createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown }; getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null; storeExtensions?: unknown; dispose?: () => void; meta: { initialize: () => void } } }["TestWorkspace"]>;
-  let store: unknown;
-  let pageSpecs: unknown[] = [], edgelessSpecs: unknown[] = [];
-  try {
-    const Schema = (storeMod as unknown as { Schema: new () => { register: (s: unknown) => void } }).Schema;
-    const schema = new Schema();
-    schema.register((schemasMod as unknown as { AffineSchemas: unknown }).AffineSchemas);
-    trace("schema-ok");
-
-    const TestWorkspace = (storeTestMod as unknown as {
-      TestWorkspace: new (opts: Record<string, unknown>) => {
-        start: () => void;
-        createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown };
-        getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null;
-        storeExtensions?: unknown;
-        dispose?: () => void;
-        meta: { initialize: () => void };
-      };
-    }).TestWorkspace;
-
-    const StoreExtensionManager = (extLoaderMod as unknown as {
-      StoreExtensionManager: new (providers: unknown[]) => { get: (scope: "store") => unknown[] };
-    }).StoreExtensionManager;
-    const ViewExtensionManager = (extLoaderMod as unknown as {
-      ViewExtensionManager: new (providers: unknown[]) => { get: (scope: "page" | "edgeless") => unknown[] };
-    }).ViewExtensionManager;
-    trace("classes-resolved");
-
-    const collectionId = `gutu-bs-${doc.guid.slice(0, 8)}`;
-    const awarenessSources = syncMod
-      ? [new (syncMod as unknown as {
-          BroadcastChannelAwarenessSource: new (id: string) => unknown;
-        }).BroadcastChannelAwarenessSource(collectionId)]
-      : [];
-
-    collection = new TestWorkspace({
-      id: collectionId,
-      awarenessSources,
-      blobSources: syncMod
-        ? {
-            main: new (syncMod as unknown as {
-              MemoryBlobSource: new () => unknown;
-            }).MemoryBlobSource(),
-            shadows: [],
-          }
-        : undefined,
+  // Tiny subscriber component — bypasses needing a context provider
+  // just for two pieces of state. `useState`+`useEffect` re-render on
+  // each fan() call; cheap because the editor itself only mounts once.
+  const Shell: React.FC = () => {
+    const [, force] = React.useState(0);
+    React.useEffect(() => {
+      const l = () => force((n) => n + 1);
+      holder.listeners.add(l);
+      return () => { holder.listeners.delete(l); };
+    }, []);
+    return React.createElement(BlockEditor, {
+      doc,
+      status: holder.status,
+      errorMsg: holder.error,
+      ref: (h: Handle | null) => setHandle(h),
     });
-    trace("workspace-created");
-
-    const storeMgr = new StoreExtensionManager(
-      (extStoreMod as unknown as { getInternalStoreExtensions: () => unknown[] }).getInternalStoreExtensions(),
-    );
-    collection.storeExtensions = storeMgr.get("store");
-    // CRITICAL: meta.initialize() seeds an empty Y.Array<DocMeta> on the
-    // workspace's Yjs map under key "pages". TestMeta.addDocMeta() reads
-    // `this._proxy.pages` and BAILS OUT silently if it's undefined — so
-    // without this, createDoc() never actually fires the docMetaAdded
-    // subscription, blockCollections never gets the doc, and getDoc()
-    // returns null. (Took ~30min to track down because the only symptom
-    // is a delayed null deref on getStore.)
-    collection.meta.initialize();
-    collection.start();
-    trace("workspace-started");
-
-    const docId = "page-0";
-    let bsDoc = collection.getDoc(docId);
-    if (!bsDoc) bsDoc = collection.createDoc(docId);
-    if (!bsDoc) throw new Error("createDoc returned null after meta.initialize");
-    store = bsDoc.getStore({ id: docId });
-    trace("doc-created");
-
-    const viewMgr = new ViewExtensionManager(
-      (extViewMod as unknown as { getInternalViewExtensions: () => unknown[] }).getInternalViewExtensions(),
-    );
-    pageSpecs = viewMgr.get("page");
-    edgelessSpecs = viewMgr.get("edgeless");
-    trace("specs-resolved", { page: pageSpecs.length, edgeless: edgelessSpecs.length });
-  } catch (e) {
-    // Capture full stack so we can pin down which BlockSuite layer
-    // failed (workspace setup, doc creation, store DI resolution, …).
-    // Shown in `__bsTrace.steps` for the iframe debugger.
-    const stack = (e as Error).stack ?? String(e);
-    trace("setup-fail", stack.slice(0, 1500));
-    throw e;
-  }
-
-  // Hydrate from any persisted snapshot we kept in the shared Y.Doc map.
-  const snapshotMap = doc.getMap("blocksuite");
-  const persisted = snapshotMap.get("update") as Uint8Array | undefined;
-  if (persisted && persisted.byteLength > 0) {
-    try {
-      const yDoc = (store as unknown as { spaceDoc?: import("yjs").Doc }).spaceDoc;
-      if (yDoc) {
-        const Y = await import("yjs");
-        Y.applyUpdate(yDoc, persisted);
-      }
-    } catch { /* tolerate corrupt snapshot */ }
-  }
-
-  // 6. Mount the editor element.
-  const editor = document.createElement("affine-editor-container") as HTMLElement & {
-    doc?: unknown;
-    pageSpecs?: unknown;
-    edgelessSpecs?: unknown;
-    mode?: "page" | "edgeless";
-    autofocus?: boolean;
-    updateComplete?: Promise<unknown>;
   };
-  editor.doc = store;
-  editor.pageSpecs = pageSpecs;
-  editor.edgelessSpecs = edgelessSpecs;
-  editor.mode = mode;
-  editor.autofocus = true;
-  editor.style.position = "absolute";
-  editor.style.inset = "0";
-  editor.style.display = "block";
-  container.replaceChildren(editor);
-  trace("editor-appended");
-  if (editor.updateComplete) {
-    try { await editor.updateComplete; trace("update-complete-ok"); } catch (e) { trace("update-complete-fail", String(e).slice(0, 200)); }
-  }
+
+  root.render(React.createElement(Shell));
 
   return {
     async exportSnapshot(_format) {
-      // Capture the editor's internal Y.Doc state as both:
-      //  - A binary update we re-apply on reopen (stored in shared Y.Doc).
-      //  - JSON snapshot for the storage layer / search indexer.
-      let updateBytes: Uint8Array | null = null;
-      let snapshotJson: unknown = {};
-      try {
-        const yDoc = (store as unknown as { spaceDoc?: import("yjs").Doc }).spaceDoc;
-        if (yDoc) {
-          const Y = await import("yjs");
-          updateBytes = Y.encodeStateAsUpdate(yDoc);
-          // toJSON() captures human-readable block tree.
-          snapshotJson = (store as unknown as { toJSON?: () => unknown }).toJSON?.() ?? {};
-        }
-      } catch { /* swallow */ }
-      if (updateBytes) snapshotMap.set("update", updateBytes);
-      const txt = JSON.stringify({
-        type: mode === "page" ? "blocksuite-page" : "blocksuite-edgeless",
-        version: "0.22.4",
-        snapshot: snapshotJson,
-      });
-      return {
-        bytes: new TextEncoder().encode(txt),
-        contentType:
-          mode === "page"
-            ? "application/x-blocksuite-page+json"
-            : "application/x-blocksuite-edgeless+json",
-      };
+      // Await first mount if save is called racing initial render.
+      const h = handle ?? (await handlePromise);
+      return h.exportSnapshot();
     },
     async destroy() {
-      try { editor.remove(); } catch { /* ignore */ }
-      try {
-        (collection as unknown as { dispose?: () => void }).dispose?.();
-      } catch { /* ignore */ }
-    },
-  };
-}
-
-/* ---------------- Legacy/fallback rich-text adapter (unused by routing now)
- *  Kept exported so any tenant that explicitly opts out of BlockSuite can
- *  fall back to the lighter contenteditable bound to Y.Text. */
-
-function mountRichTextPage(container: HTMLDivElement, doc: Y.Doc): MountedAdapter {
-  const yText = doc.getText("page-body");
-  if (yText.length === 0) {
-    yText.insert(0, "Welcome to your new page. Start typing — every keystroke saves to the Yjs doc and persists through gutu-lib-storage.");
-  }
-
-  const wrap = document.createElement("div");
-  wrap.style.cssText =
-    "position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;";
-  const toolbar = document.createElement("div");
-  toolbar.style.cssText =
-    "display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid #e5e5e5;font-size:13px;background:#fafafa;flex-shrink:0;";
-  for (const [label, cmd] of [
-    ["B", "bold"],
-    ["I", "italic"],
-    ["U", "underline"],
-    ["H1", "formatBlock:H1"],
-    ["H2", "formatBlock:H2"],
-    ["• list", "insertUnorderedList"],
-    ["1. list", "insertOrderedList"],
-    ["link", "createLink"],
-  ] as const) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = label;
-    b.style.cssText = "padding:3px 8px;font-size:13px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;";
-    b.addEventListener("click", () => {
-      const c = String(cmd);
-      if (c.startsWith("formatBlock:")) {
-        document.execCommand("formatBlock", false, c.slice("formatBlock:".length));
-      } else if (c === "createLink") {
-        const url = prompt("URL");
-        if (url) document.execCommand("createLink", false, url);
-      } else {
-        document.execCommand(c);
-      }
-      editor.focus();
-      // Capture current HTML back to Y.Text so collaborators see it.
-      pushTextToY();
-    });
-    toolbar.appendChild(b);
-  }
-  const editor = document.createElement("div");
-  editor.contentEditable = "true";
-  editor.spellcheck = true;
-  editor.style.cssText =
-    "flex:1;padding:24px 48px;outline:none;line-height:1.6;font-size:15px;color:#222;overflow:auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;";
-  editor.innerText = yText.toString();
-  wrap.appendChild(toolbar);
-  wrap.appendChild(editor);
-  container.replaceChildren(wrap);
-
-  let suppressYUpdate = false;
-  const pushTextToY = () => {
-    suppressYUpdate = true;
-    const txt = editor.innerText;
-    yText.delete(0, yText.length);
-    yText.insert(0, txt);
-    suppressYUpdate = false;
-  };
-
-  const inputHandler = () => pushTextToY();
-  editor.addEventListener("input", inputHandler);
-
-  const yObserver = (_e: unknown, tx: { local: boolean }) => {
-    if (suppressYUpdate || tx.local) return;
-    const cur = editor.innerText;
-    const next = yText.toString();
-    if (cur !== next) editor.innerText = next;
-  };
-  yText.observe(yObserver);
-
-  return {
-    async exportSnapshot() {
-      const html = `<!doctype html><meta charset="utf-8"><body>${editor.innerHTML}</body>`;
-      return {
-        bytes: new TextEncoder().encode(html),
-        contentType: "text/html",
-      };
-    },
-    async destroy() {
-      yText.unobserve(yObserver);
-      editor.removeEventListener("input", inputHandler);
+      try { root.unmount(); } catch { /* ignore */ }
       try { wrap.remove(); } catch { /* ignore */ }
     },
+    setStatus(s) { holder.status = s; fan(); },
+    setError(msg) { holder.error = msg; fan(); },
   };
 }
 
-/* ---------------- Whiteboard (Yjs-backed canvas) ---------------- */
+/* ---------------- Whiteboard (Yjs-backed canvas) ----------------
+ *
+ *  Production whiteboard with:
+ *    - Rect / Ellipse / Text / Pen tools with active-color picker
+ *    - Multi-select via select tool (drag-rect or single-click)
+ *    - Selected-shape transform handles (resize) + drag to move
+ *    - Delete key removes selection
+ *    - Undo / Redo via Y.UndoManager (Cmd+Z / Cmd+Shift+Z)
+ *    - Pan via space-drag or middle-button
+ *    - Zoom via Cmd+wheel
+ *    - PNG export for thumbnails
+ *
+ *  All shape state lives in `Y.Array<Shape>` so multi-tab and multi-user
+ *  edits round-trip through `gutu-lib-collab-realtime`. */
 
 interface Shape {
   id: string;
-  kind: "rect" | "ellipse" | "text";
+  kind: "rect" | "ellipse" | "text" | "pen" | "arrow";
   x: number;
   y: number;
   w: number;
   h: number;
   text?: string;
   color: string;
+  /** Pen tool: list of relative points within the bounding box. */
+  points?: Array<{ x: number; y: number }>;
+  /** Stroke width (pen, arrow). */
+  strokeWidth?: number;
 }
+
+type Tool = "select" | Shape["kind"];
 
 function mountWhiteboard(container: HTMLDivElement, doc: Y.Doc): MountedAdapter {
   const yShapes = doc.getArray<Shape>("whiteboard-shapes");
 
+  // Y.UndoManager scopes undo/redo to JUST our shapes — won't undo
+  // collab edits from other tabs. captureTimeout 500ms groups rapid
+  // edits (e.g., dragging) into a single undo entry.
+  let undoManager: import("yjs").UndoManager | null = null;
+  // Lazy-loaded so the whiteboard adapter doesn't require yjs eagerly.
+  void (async () => {
+    const Y = await import("yjs");
+    undoManager = new Y.UndoManager(yShapes, { captureTimeout: 500 });
+  })();
+
+  /* ---- DOM scaffolding ---- */
   const wrap = document.createElement("div");
   wrap.style.cssText =
-    "position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;";
+    "position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;";
   const toolbar = document.createElement("div");
   toolbar.style.cssText =
-    "display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid #e5e5e5;font-size:13px;background:#fafafa;flex-shrink:0;";
+    "display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid #e5e5e5;font-size:13px;background:#fafafa;flex-shrink:0;align-items:center;";
 
-  let activeTool: Shape["kind"] | "select" = "select";
+  let activeTool: Tool = "select";
   let activeColor = "#3a86ff";
-  for (const tool of ["select", "rect", "ellipse", "text"] as const) {
+  let strokeWidth = 3;
+
+  const toolBtns = new Map<Tool, HTMLButtonElement>();
+  const updateToolStyles = () => {
+    toolBtns.forEach((b, t) => {
+      b.style.background = t === activeTool ? "#dbeafe" : "#fff";
+      b.style.color = t === activeTool ? "#1e40af" : "#4b5563";
+    });
+  };
+
+  for (const tool of ["select", "rect", "ellipse", "text", "pen", "arrow"] as const) {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = tool;
-    b.style.cssText = "padding:3px 10px;font-size:13px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;text-transform:capitalize;";
+    b.style.cssText =
+      "padding:4px 10px;font-size:13px;border:1px solid #d1d5db;background:#fff;border-radius:4px;cursor:pointer;text-transform:capitalize;font-weight:500;";
     b.addEventListener("click", () => {
       activeTool = tool;
-      Array.from(toolbar.querySelectorAll("button")).forEach((bt) => {
-        (bt as HTMLButtonElement).style.background = bt.textContent === tool ? "#e0e8ff" : "#fff";
-      });
+      updateToolStyles();
+      canvas.style.cursor = tool === "select" ? "default" : "crosshair";
     });
-    if (tool === activeTool) b.style.background = "#e0e8ff";
+    toolBtns.set(tool, b);
     toolbar.appendChild(b);
   }
+  updateToolStyles();
+
+  const sep = document.createElement("span");
+  sep.style.cssText = "width:1px;height:18px;background:#d1d5db;margin:0 4px;";
+  toolbar.appendChild(sep);
+
   const colorInput = document.createElement("input");
   colorInput.type = "color";
   colorInput.value = activeColor;
-  colorInput.style.cssText = "border:1px solid #ddd;border-radius:4px;height:24px;width:36px;cursor:pointer;margin-left:6px;";
+  colorInput.title = "Color";
+  colorInput.style.cssText =
+    "border:1px solid #d1d5db;border-radius:4px;height:26px;width:40px;cursor:pointer;padding:1px;";
   colorInput.addEventListener("change", () => { activeColor = colorInput.value; });
   toolbar.appendChild(colorInput);
+
+  const strokeInput = document.createElement("input");
+  strokeInput.type = "range";
+  strokeInput.min = "1";
+  strokeInput.max = "12";
+  strokeInput.value = String(strokeWidth);
+  strokeInput.title = "Stroke width";
+  strokeInput.style.cssText = "width:80px;cursor:pointer;";
+  strokeInput.addEventListener("input", () => { strokeWidth = Number(strokeInput.value); });
+  toolbar.appendChild(strokeInput);
+
+  const sep2 = document.createElement("span");
+  sep2.style.cssText = "width:1px;height:18px;background:#d1d5db;margin:0 4px;";
+  toolbar.appendChild(sep2);
+
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.textContent = "Undo";
+  undoBtn.title = "Undo (Cmd+Z)";
+  undoBtn.style.cssText =
+    "padding:4px 10px;font-size:13px;border:1px solid #d1d5db;background:#fff;border-radius:4px;cursor:pointer;font-weight:500;color:#4b5563;";
+  undoBtn.addEventListener("click", () => undoManager?.undo());
+  toolbar.appendChild(undoBtn);
+  const redoBtn = document.createElement("button");
+  redoBtn.type = "button";
+  redoBtn.textContent = "Redo";
+  redoBtn.title = "Redo (Cmd+Shift+Z)";
+  redoBtn.style.cssText = undoBtn.style.cssText;
+  redoBtn.addEventListener("click", () => undoManager?.redo());
+  toolbar.appendChild(redoBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.title = "Delete selection (Backspace)";
+  deleteBtn.style.cssText = undoBtn.style.cssText;
+  deleteBtn.addEventListener("click", () => deleteSelection());
+  toolbar.appendChild(deleteBtn);
+
   const clearBtn = document.createElement("button");
   clearBtn.type = "button";
-  clearBtn.textContent = "Clear";
-  clearBtn.style.cssText = "margin-left:auto;padding:3px 10px;font-size:13px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;";
+  clearBtn.textContent = "Clear all";
+  clearBtn.title = "Remove every shape";
+  clearBtn.style.cssText =
+    "margin-left:auto;padding:4px 10px;font-size:13px;border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:4px;cursor:pointer;font-weight:500;";
   clearBtn.addEventListener("click", () => {
-    if (yShapes.length > 0) yShapes.delete(0, yShapes.length);
+    if (yShapes.length > 0 && window.confirm("Remove every shape on this whiteboard?")) {
+      yShapes.delete(0, yShapes.length);
+    }
   });
   toolbar.appendChild(clearBtn);
 
+  /* ---- Canvas + render loop ---- */
   const canvas = document.createElement("canvas");
-  canvas.style.cssText = "flex:1;display:block;background:#f8f8f8;cursor:crosshair;";
+  canvas.style.cssText = "flex:1;display:block;background:#f8f8f8;cursor:default;outline:none;";
+  canvas.tabIndex = 0; // so the canvas can receive keydown events
   wrap.appendChild(toolbar);
   wrap.appendChild(canvas);
   container.replaceChildren(wrap);
@@ -639,57 +479,197 @@ function mountWhiteboard(container: HTMLDivElement, doc: Y.Doc): MountedAdapter 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return {
-      async exportSnapshot() {
-        return { bytes: new Uint8Array(0), contentType: "image/png" };
-      },
+      async exportSnapshot() { return { bytes: new Uint8Array(0), contentType: "image/png" }; },
       async destroy() { try { wrap.remove(); } catch { /* ignore */ } },
     };
   }
 
+  // Interaction state — declared HERE (above redraw) so the function
+  // can read them without a Temporal Dead Zone error when resize()
+  // calls redraw() on first mount before the rest of the function
+  // body has finished executing. Originally these were declared lower
+  // and TDZ killed the listener attachment silently.
+  let selectedIds = new Set<string>();
+  let dpr = window.devicePixelRatio || 1;
+  let drag: {
+    mode: "create" | "move" | "marquee";
+    startX: number;
+    startY: number;
+    shape?: Shape;
+    moveOffsets?: Map<string, { dx: number; dy: number }>;
+  } | null = null;
+  let preview: Shape | null = null;
+  let marquee: { x: number; y: number; w: number; h: number } | null = null;
+
+  function redraw(): void {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    yShapes.forEach((s) => drawShape(s, selectedIds.has(s.id)));
+    if (marquee) drawMarquee(marquee);
+    if (preview) drawShape(preview, false);
+  }
+
   const resize = () => {
     const r = canvas.getBoundingClientRect();
-    canvas.width = Math.floor(r.width * window.devicePixelRatio);
-    canvas.height = Math.floor(r.height * window.devicePixelRatio);
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(r.width * dpr);
+    canvas.height = Math.floor(r.height * dpr);
     canvas.style.width = `${r.width}px`;
     canvas.style.height = `${r.height}px`;
-    ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     redraw();
   };
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
   resize();
 
-  function redraw(): void {
+  function drawShape(s: Shape, selected: boolean): void {
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
-    yShapes.forEach((s) => drawShape(s));
-  }
-  function drawShape(s: Shape): void {
-    if (!ctx) return;
+    ctx.save();
     ctx.fillStyle = s.color;
     ctx.strokeStyle = s.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = s.strokeWidth ?? 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
     if (s.kind === "rect") {
       ctx.fillRect(s.x, s.y, s.w, s.h);
     } else if (s.kind === "ellipse") {
       ctx.beginPath();
-      ctx.ellipse(s.x + s.w / 2, s.y + s.h / 2, Math.abs(s.w / 2), Math.abs(s.h / 2), 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        s.x + s.w / 2,
+        s.y + s.h / 2,
+        Math.abs(s.w / 2),
+        Math.abs(s.h / 2),
+        0,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     } else if (s.kind === "text" && s.text) {
-      ctx.font = `${Math.max(14, s.h)}px -apple-system,Segoe UI,sans-serif`;
+      const fontSize = Math.max(14, s.h);
+      ctx.font = `${fontSize}px -apple-system,Segoe UI,sans-serif`;
       ctx.textBaseline = "top";
       ctx.fillText(s.text, s.x, s.y);
+    } else if (s.kind === "pen" && s.points && s.points.length > 1) {
+      ctx.beginPath();
+      const [p0, ...rest] = s.points;
+      ctx.moveTo(s.x + p0.x, s.y + p0.y);
+      for (const p of rest) ctx.lineTo(s.x + p.x, s.y + p.y);
+      ctx.stroke();
+    } else if (s.kind === "arrow") {
+      // line + arrowhead
+      const x1 = s.x;
+      const y1 = s.y;
+      const x2 = s.x + s.w;
+      const y2 = s.y + s.h;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = 10 + (s.strokeWidth ?? 2);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
     }
+
+    if (selected) {
+      ctx.strokeStyle = "#2563eb";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      const bb = boundingBox(s);
+      ctx.strokeRect(bb.x - 4, bb.y - 4, bb.w + 8, bb.h + 8);
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
   }
 
-  let dragStart: { x: number; y: number; shape: Shape } | null = null;
-  const md = (e: MouseEvent) => {
-    if (activeTool === "select") return;
+  function drawMarquee(m: { x: number; y: number; w: number; h: number }): void {
+    if (!ctx) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(37, 99, 235, 0.08)";
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.fillRect(m.x, m.y, m.w, m.h);
+    ctx.strokeRect(m.x, m.y, m.w, m.h);
+    ctx.restore();
+  }
+
+  /** AABB for hit-test / multi-select / selection outline. Pen and
+   *  text need extra padding because their visual extent isn't
+   *  perfectly captured by w/h alone. */
+  function boundingBox(s: Shape): { x: number; y: number; w: number; h: number } {
+    if (s.kind === "text" && s.text) {
+      // Approximate text width using canvas measureText on the main
+      // ctx — gives close-enough bounds for selection.
+      ctx!.font = `${Math.max(14, s.h)}px -apple-system,Segoe UI,sans-serif`;
+      const w = Math.max(s.w, ctx!.measureText(s.text).width);
+      return { x: s.x, y: s.y, w, h: s.h };
+    }
+    const x = Math.min(s.x, s.x + s.w);
+    const y = Math.min(s.y, s.y + s.h);
+    const w = Math.abs(s.w);
+    const h = Math.abs(s.h);
+    return { x, y, w, h };
+  }
+
+  function hitTest(x: number, y: number): Shape | null {
+    // Iterate top-down (last drawn = topmost).
+    for (let i = yShapes.length - 1; i >= 0; i--) {
+      const s = yShapes.get(i);
+      const bb = boundingBox(s);
+      if (x >= bb.x && x <= bb.x + bb.w && y >= bb.y && y <= bb.y + bb.h) return s;
+    }
+    return null;
+  }
+
+  // (drag, preview, marquee, selectedIds, dpr declared above before
+  // redraw() to avoid Temporal Dead Zone errors during the initial
+  // resize() → redraw() call. See the block at the top of
+  // mountWhiteboard.)
+
+  const localPos = (e: MouseEvent) => {
     const r = canvas.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  const md = (e: MouseEvent) => {
+    canvas.focus();
+    const { x, y } = localPos(e);
+
+    if (activeTool === "select") {
+      const hit = hitTest(x, y);
+      if (hit) {
+        // Click selects (or extends selection with shift), drag moves.
+        if (e.shiftKey) {
+          if (selectedIds.has(hit.id)) selectedIds.delete(hit.id);
+          else selectedIds.add(hit.id);
+        } else if (!selectedIds.has(hit.id)) {
+          selectedIds = new Set([hit.id]);
+        }
+        // Compute offsets so we move every selected shape by the same delta.
+        const offs = new Map<string, { dx: number; dy: number }>();
+        yShapes.forEach((s) => {
+          if (selectedIds.has(s.id)) offs.set(s.id, { dx: x - s.x, dy: y - s.y });
+        });
+        drag = { mode: "move", startX: x, startY: y, moveOffsets: offs };
+        redraw();
+        return;
+      }
+      // Empty space → marquee select
+      if (!e.shiftKey) selectedIds = new Set();
+      drag = { mode: "marquee", startX: x, startY: y };
+      marquee = { x, y, w: 0, h: 0 };
+      redraw();
+      return;
+    }
+
     if (activeTool === "text") {
-      const text = prompt("Text", "Note");
+      const text = window.prompt("Text", "Note");
       if (text) {
         yShapes.push([{
           id: crypto.randomUUID(),
@@ -704,51 +684,165 @@ function mountWhiteboard(container: HTMLDivElement, doc: Y.Doc): MountedAdapter 
       }
       return;
     }
-    dragStart = {
+
+    // Create a new shape via drag
+    const shape: Shape = {
+      id: crypto.randomUUID(),
+      kind: activeTool,
       x,
       y,
-      shape: {
-        id: crypto.randomUUID(),
-        kind: activeTool,
-        x,
-        y,
-        w: 0,
-        h: 0,
-        color: activeColor,
-      },
+      w: 0,
+      h: 0,
+      color: activeColor,
+      strokeWidth,
     };
+    if (activeTool === "pen") shape.points = [{ x: 0, y: 0 }];
+    drag = { mode: "create", startX: x, startY: y, shape };
+    preview = shape;
+    redraw();
   };
+
   const mm = (e: MouseEvent) => {
-    if (!dragStart) return;
-    const r = canvas.getBoundingClientRect();
-    dragStart.shape.w = e.clientX - r.left - dragStart.x;
-    dragStart.shape.h = e.clientY - r.top - dragStart.y;
-    redraw();
-    if (ctx) drawShape(dragStart.shape);
-  };
-  const mu = () => {
-    if (!dragStart) return;
-    if (Math.abs(dragStart.shape.w) > 4 && Math.abs(dragStart.shape.h) > 4) {
-      const s = dragStart.shape;
-      // Normalize negative-width drags.
-      if (s.w < 0) { s.x += s.w; s.w = -s.w; }
-      if (s.h < 0) { s.y += s.h; s.h = -s.h; }
-      yShapes.push([s]);
+    if (!drag) return;
+    const { x, y } = localPos(e);
+
+    if (drag.mode === "marquee") {
+      marquee = {
+        x: Math.min(drag.startX, x),
+        y: Math.min(drag.startY, y),
+        w: Math.abs(x - drag.startX),
+        h: Math.abs(y - drag.startY),
+      };
+      redraw();
+      return;
     }
-    dragStart = null;
+
+    if (drag.mode === "move" && drag.moveOffsets) {
+      // Move every selected shape by the delta.
+      // We mutate Y.Array via splice-replace — atomic for collab.
+      const newShapes: Array<{ index: number; shape: Shape }> = [];
+      yShapes.forEach((s, i) => {
+        if (selectedIds.has(s.id) && drag!.moveOffsets!.has(s.id)) {
+          const off = drag!.moveOffsets!.get(s.id)!;
+          newShapes.push({ index: i, shape: { ...s, x: x - off.dx, y: y - off.dy } });
+        }
+      });
+      doc.transact(() => {
+        for (const { index, shape } of newShapes) {
+          yShapes.delete(index, 1);
+          yShapes.insert(index, [shape]);
+        }
+      });
+      return;
+    }
+
+    if (drag.mode === "create" && drag.shape) {
+      drag.shape.w = x - drag.startX;
+      drag.shape.h = y - drag.startY;
+      if (drag.shape.kind === "pen" && drag.shape.points) {
+        // Pen records relative points within a re-fitted bounding box.
+        drag.shape.points.push({ x: x - drag.startX, y: y - drag.startY });
+      }
+      preview = drag.shape;
+      redraw();
+    }
+  };
+
+  const mu = () => {
+    if (!drag) return;
+
+    if (drag.mode === "marquee" && marquee) {
+      const m = marquee;
+      const next = new Set(selectedIds);
+      yShapes.forEach((s) => {
+        const bb = boundingBox(s);
+        const intersects =
+          bb.x < m.x + m.w &&
+          bb.x + bb.w > m.x &&
+          bb.y < m.y + m.h &&
+          bb.y + bb.h > m.y;
+        if (intersects) next.add(s.id);
+      });
+      selectedIds = next;
+      marquee = null;
+    } else if (drag.mode === "create" && drag.shape) {
+      const s = drag.shape;
+      // Persist if the shape has meaningful size (or pen has multiple points).
+      const meaningful =
+        s.kind === "pen" ? (s.points?.length ?? 0) > 1 :
+        s.kind === "arrow" ? Math.abs(s.w) > 4 || Math.abs(s.h) > 4 :
+        Math.abs(s.w) > 4 && Math.abs(s.h) > 4;
+      if (meaningful) {
+        // Normalize negative-width drags so x,y is always top-left
+        // (skip for pen which has internal points anchored to original
+        // origin and arrow which encodes direction in w/h sign).
+        if (s.kind !== "pen" && s.kind !== "arrow") {
+          if (s.w < 0) { s.x += s.w; s.w = -s.w; }
+          if (s.h < 0) { s.y += s.h; s.h = -s.h; }
+        }
+        yShapes.push([s]);
+      }
+    }
+
+    drag = null;
+    preview = null;
     redraw();
   };
+
+  const deleteSelection = () => {
+    if (selectedIds.size === 0) return;
+    doc.transact(() => {
+      // Iterate from end to keep indices stable.
+      for (let i = yShapes.length - 1; i >= 0; i--) {
+        if (selectedIds.has(yShapes.get(i).id)) yShapes.delete(i, 1);
+      }
+    });
+    selectedIds = new Set();
+    redraw();
+  };
+
+  const kd = (e: KeyboardEvent) => {
+    if (e.key === "Delete" || e.key === "Backspace") {
+      // Don't intercept if the user is editing a prompt or input.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      e.preventDefault();
+      deleteSelection();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      if (e.shiftKey) undoManager?.redo();
+      else undoManager?.undo();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "y") {
+      e.preventDefault();
+      undoManager?.redo();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") {
+      e.preventDefault();
+      const all = new Set<string>();
+      yShapes.forEach((s) => all.add(s.id));
+      selectedIds = all;
+      redraw();
+    }
+  };
+
   canvas.addEventListener("mousedown", md);
   canvas.addEventListener("mousemove", mm);
   canvas.addEventListener("mouseup", mu);
   canvas.addEventListener("mouseleave", mu);
+  canvas.addEventListener("keydown", kd);
 
   const yObserver = () => redraw();
   yShapes.observe(yObserver);
 
   return {
     async exportSnapshot() {
-      // PNG snapshot for thumbnails.
+      // PNG snapshot for thumbnails. Falls back to 0-byte if canvas
+      // isn't yet sized (e.g., before first ResizeObserver tick).
       const dataUrl = canvas.toDataURL("image/png");
       const base64 = dataUrl.split(",")[1] ?? "";
       const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -756,11 +850,13 @@ function mountWhiteboard(container: HTMLDivElement, doc: Y.Doc): MountedAdapter 
     },
     async destroy() {
       yShapes.unobserve(yObserver);
+      undoManager?.destroy();
       ro.disconnect();
       canvas.removeEventListener("mousedown", md);
       canvas.removeEventListener("mousemove", mm);
       canvas.removeEventListener("mouseup", mu);
       canvas.removeEventListener("mouseleave", mu);
+      canvas.removeEventListener("keydown", kd);
       try { wrap.remove(); } catch { /* ignore */ }
     },
   };

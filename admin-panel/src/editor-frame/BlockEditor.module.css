@@ -1,0 +1,411 @@
+/* BlockEditor styles — designed to match the admin shell tokens.
+ *
+ *  Single source of styling for the TipTap-based page editor. Avoids
+ *  vanilla-extract for portability (this file ships in the iframe entry
+ *  which doesn't pull the rest of our token system). Values come from
+ *  src/tokens/tokens.css where possible. */
+
+.shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafafa;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 2px;
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid #e5e7eb;
+}
+.toolbarGroup:last-of-type {
+  border-right: none;
+}
+
+.toolbarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 100ms ease, color 100ms ease;
+  user-select: none;
+}
+.toolbarButton:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+.toolbarButton[data-active="true"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.toolbarButton:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.toolbarButton:disabled:hover {
+  background: transparent;
+}
+.toolbarSelect {
+  height: 28px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.statusBar {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+  font-size: 11px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.statusItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.statusDot[data-status="loading"] { background: #fbbf24; }
+.statusDot[data-status="ready"] { background: #10b981; }
+.statusDot[data-status="saving"] { background: #3b82f6; }
+.statusDot[data-status="saved"] { background: #10b981; }
+.statusDot[data-status="retrying"] { background: #f59e0b; animation: pulse 1.2s infinite; }
+.statusDot[data-status="error"] { background: #ef4444; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.canvas {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.editor {
+  width: 100%;
+  max-width: 800px;
+  padding: 48px 64px 96px;
+  outline: none;
+}
+
+.editor :global(.ProseMirror) {
+  outline: none;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1f2937;
+  min-height: calc(100vh - 200px);
+}
+
+.editor :global(.ProseMirror p) {
+  margin: 0.5em 0;
+}
+
+.editor :global(.ProseMirror h1) {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.75em 0 0.4em;
+  color: #111827;
+}
+
+.editor :global(.ProseMirror h2) {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0.7em 0 0.35em;
+  color: #111827;
+}
+
+.editor :global(.ProseMirror h3) {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.65em 0 0.3em;
+  color: #111827;
+}
+
+.editor :global(.ProseMirror ul),
+.editor :global(.ProseMirror ol) {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.editor :global(.ProseMirror li) {
+  margin: 0.2em 0;
+}
+
+.editor :global(.ProseMirror li > p) {
+  margin: 0;
+}
+
+.editor :global(.ProseMirror blockquote) {
+  border-left: 3px solid #d1d5db;
+  margin: 0.8em 0;
+  padding-left: 1em;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.editor :global(.ProseMirror pre) {
+  background: #1f2937;
+  color: #f3f4f6;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+
+.editor :global(.ProseMirror pre code) {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+.editor :global(.ProseMirror code) {
+  background: #f3f4f6;
+  color: #be185d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.editor :global(.ProseMirror hr) {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 1.5em 0;
+}
+
+.editor :global(.ProseMirror a) {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.editor :global(.ProseMirror img) {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 0.5em 0;
+}
+
+.editor :global(.ProseMirror mark) {
+  background: #fef3c7;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.editor :global(.ProseMirror table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+.editor :global(.ProseMirror th),
+.editor :global(.ProseMirror td) {
+  border: 1px solid #d1d5db;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  position: relative;
+  min-width: 60px;
+}
+
+.editor :global(.ProseMirror th) {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"]) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"] li) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"] li > label) {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"] li > div) {
+  flex: 1;
+}
+
+/* Placeholder shown only when document is empty AND focused */
+.editor :global(.ProseMirror .is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Slash menu suggestion popup */
+.slashMenu {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.slashMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1f2937;
+  user-select: none;
+}
+.slashMenuItem:hover,
+.slashMenuItem[data-selected="true"] {
+  background: #f3f4f6;
+}
+.slashMenuItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #4b5563;
+  flex-shrink: 0;
+}
+.slashMenuItemText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.slashMenuItemTitle {
+  font-weight: 500;
+  color: #111827;
+}
+.slashMenuItemDescription {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.slashMenuEmpty {
+  padding: 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.slashMenuGroup {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+}
+
+/* Floating bubble menu for inline formatting */
+.bubbleMenu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #1f2937;
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.bubbleMenuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bubbleMenuButton:hover {
+  background: #374151;
+  color: #fff;
+}
+.bubbleMenuButton[data-active="true"] {
+  background: #2563eb;
+  color: #fff;
+}
+
+.bubbleMenuDivider {
+  width: 1px;
+  height: 18px;
+  background: #4b5563;
+  margin: 0 2px;
+}
+
+.error {
+  padding: 10px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-top: 1px solid #fecaca;
+  font-size: 13px;
+}

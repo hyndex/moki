@@ -2,14 +2,23 @@
  *
  *  Same lifecycle as the inline EditorHost (load Y.Doc from server, mount
  *  adapter, debounced auto-save) — but without StrictMode and with the
- *  full viewport for the editor canvas, so Univer / BlockSuite render
- *  correctly. */
+ *  full viewport for the editor canvas, so Univer / TipTap render
+ *  correctly.
+ *
+ *  Save status flows BOTH ways so the page editor's built-in status
+ *  pill stays in sync:
+ *    - Local edits → debounced saveNow() → setStatus("saving") →
+ *      adapter.setStatus → BlockEditor's status bar
+ *    - On success: setStatus("saved") → adapter.setStatus
+ *    - On error: setStatus("error") + setError(msg) → adapter.setError
+ *  Univer adapters ignore setStatus/setError (they don't render their
+ *  own status UI; the FrameEditor's outer banner covers them). */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { fetchSnapshot, postSnapshot } from "@/editor-host/api";
 import type { EditorKind } from "@/editor-host/types";
-import { mountAdapter, type MountedAdapter } from "./mount";
+import { mountAdapter, type MountedAdapter, type SaveStatus } from "./mount";
 
 // CSS bundles for the embedded editors.
 import "@univerjs/design/lib/index.css";
@@ -18,12 +27,15 @@ import "@univerjs/sheets-ui/lib/index.css";
 import "@univerjs/docs-ui/lib/index.css";
 import "@univerjs/slides-ui/lib/index.css";
 
+// tippy.js base styles for the slash-menu popup. Kept here (rather than
+// in BlockEditor) so it runs even before the lazy BlockEditor chunk
+// resolves — avoids an unstyled flash on first / press.
+import "tippy.js/dist/tippy.css";
+
 interface Props {
   kind: EditorKind;
   id: string;
 }
-
-type SaveStatus = "loading" | "ready" | "saving" | "saved" | "retrying" | "error";
 
 const SAVE_DEBOUNCE_MS = 1500;
 const MAX_SAVE_RETRIES = 5;
@@ -74,11 +86,18 @@ export function FrameEditor({ kind, id }: Props): React.JSX.Element {
 
       try {
         adapterRef.current = await mountAdapter(kind, containerRef.current, doc, initialBytes);
+        // Sync the adapter's internal status with our state. The page
+        // editor renders this; Univer ignores. (No-op if the adapter
+        // didn't implement setStatus.)
+        adapterRef.current.setStatus?.("ready");
         setStatus("ready");
         postToParent("editor-frame-ready", { kind, id });
       } catch (err) {
         setStatus("error");
-        setErrorMsg(`mount failed: ${(err as Error).message}`);
+        const msg = `mount failed: ${(err as Error).message}`;
+        setErrorMsg(msg);
+        adapterRef.current?.setError?.(msg);
+        adapterRef.current?.setStatus?.("error");
         postToParent("editor-frame-status", { status: "error", error: (err as Error).message });
       }
     })();
@@ -105,6 +124,7 @@ export function FrameEditor({ kind, id }: Props): React.JSX.Element {
       attempt++;
       const next: SaveStatus = attempt === 1 ? "saving" : "retrying";
       setStatus(next);
+      adapterRef.current?.setStatus?.(next);
       postToParent("editor-frame-status", { status: next });
       try {
         const update = Y.encodeStateAsUpdate(doc);
@@ -118,6 +138,8 @@ export function FrameEditor({ kind, id }: Props): React.JSX.Element {
           } catch { /* tolerate */ }
         }
         setStatus("saved");
+        adapterRef.current?.setStatus?.("saved");
+        adapterRef.current?.setError?.(null);
         setErrorMsg(null);
         dirtyRef.current = false;
         postToParent("editor-frame-status", { status: "saved" });
@@ -133,7 +155,10 @@ export function FrameEditor({ kind, id }: Props): React.JSX.Element {
       }
     }
     setStatus("error");
-    setErrorMsg(`save failed: ${lastErr?.message ?? "unknown"}`);
+    const msg = `save failed: ${lastErr?.message ?? "unknown"}`;
+    setErrorMsg(msg);
+    adapterRef.current?.setStatus?.("error");
+    adapterRef.current?.setError?.(msg);
     postToParent("editor-frame-status", { status: "error", error: lastErr?.message });
     inFlightAbortRef.current = null;
   }, [kind, id]);
