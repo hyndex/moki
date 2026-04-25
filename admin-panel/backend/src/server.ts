@@ -10,6 +10,10 @@ import { storageRoutes } from "./routes/storage";
 import { editorRoutes } from "./routes/editors";
 import { tenantRoutes } from "./routes/tenants";
 import { configRoutes } from "./routes/config";
+import { savedViewsRoutes } from "./routes/saved-views";
+import { searchRoutes } from "./routes/search";
+import { webhookRoutes } from "./routes/webhooks";
+import { apiTokenRoutes } from "./routes/api-tokens";
 import { tenantMiddleware } from "./tenancy/middleware";
 import { loadConfig } from "./config";
 
@@ -58,6 +62,10 @@ export function createApp() {
   app.route("/api/files", filesRoutes);
   app.route("/api/storage", storageRoutes);
   app.route("/api/editors", editorRoutes);
+  app.route("/api/saved-views", savedViewsRoutes);
+  app.route("/api/search", searchRoutes);
+  app.route("/api/webhooks", webhookRoutes);
+  app.route("/api/api-tokens", apiTokenRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

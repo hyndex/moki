@@ -6,6 +6,8 @@ import { loadConfig } from "./config";
 import { migrateGlobal, migrateTenantSchema } from "./tenancy/migrations";
 import { ensureDefaultTenant, listTenants } from "./tenancy/provisioner";
 import { bootstrapStorage } from "./storage";
+import { startWorkflowEngine } from "./lib/workflow/engine";
+import { workflowRoutes } from "./routes/workflows";
 
 const cfg = loadConfig();
 
@@ -47,6 +49,17 @@ bootstrapStorage({
 });
 
 const app = createApp();
+// Mount the workflows router. Hono's tenant + auth middleware
+// registered inside `createApp()` for `/api/*` still applies to
+// routes added after the fact, so order is fine.
+app.route("/api/workflows", workflowRoutes);
+
+// Boot the workflow engine — subscribes to the in-process record
+// event bus, starts the cron tick, and spins up the run worker pool.
+// Must run AFTER migrations so the `workflows` / `workflow_runs`
+// tables exist for the cron + worker to query.
+startWorkflowEngine();
+
 await seedAll({ force: process.env.SEED_FORCE === "1" });
 
 const port = cfg.port;
@@ -65,6 +78,13 @@ import {
   type YjsSocketData,
 } from "./lib/yjs-room";
 import { db } from "./db";
+import { startWebhookDispatcher } from "./lib/webhook-dispatcher";
+
+// Start the in-process integrations: outbound webhooks and the
+// workflow engine. Both subscribe to the record event bus that the
+// generic resource router emits to. They register handlers; the bus
+// fans events out asynchronously so the request path stays fast.
+startWebhookDispatcher();
 
 /** Resolve a WebSocket upgrade's session + tenant. Returns null if the token
  *  is missing, unknown, or expired — caller refuses the upgrade in that case. */
