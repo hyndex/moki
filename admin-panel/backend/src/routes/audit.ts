@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db } from "../db";
 import { requireAuth } from "../middleware/auth";
 
@@ -12,7 +13,7 @@ auditRoutes.get("/", (c) => {
   const search = url.searchParams.get("search") ?? "";
 
   const where: string[] = [];
-  const bindings: unknown[] = [];
+  const bindings: SQLQueryBindings[] = [];
   if (search) {
     where.push("(action LIKE ? OR actor LIKE ? OR resource LIKE ?)");
     const q = `%${search}%`;

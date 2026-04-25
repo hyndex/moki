@@ -21,6 +21,18 @@ export interface MountedAdapter {
   exportSnapshot(format?: string): Promise<{ bytes: Uint8Array; contentType: string }>;
 }
 
+function importRuntimeModule(specifier: string): Promise<unknown> {
+  const runtimeImport = new Function("specifier", "return import(specifier)") as (
+    specifier: string,
+  ) => Promise<unknown>;
+  return runtimeImport(specifier);
+}
+
+function univerTheme(design: unknown): unknown {
+  const mod = design as { defaultTheme?: unknown; default?: { defaultTheme?: unknown } };
+  return mod.defaultTheme ?? mod.default?.defaultTheme;
+}
+
 /** Page + whiteboard ship two parallel implementations:
  *
  *    - **Default**: a Yjs-backed minimal editor (rich-text page,
@@ -94,9 +106,9 @@ async function mountUniverSheet(
     asLocale(docsLocale),
   ]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: univerTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as unknown as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(formula.UniverFormulaEnginePlugin);
@@ -144,9 +156,9 @@ async function mountUniverDoc(
   ]);
   const enUS = mergeLocales([asLocale(uiLocale), asLocale(designLocale), asLocale(docsLocale)]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: univerTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as unknown as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(ui.UniverUIPlugin, { container });
@@ -196,9 +208,9 @@ async function mountUniverSlides(
     asLocale(uiLocale), asLocale(designLocale), asLocale(docsLocale), asLocale(slidesLocale),
   ]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: univerTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as unknown as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(ui.UniverUIPlugin, { container });
@@ -269,7 +281,7 @@ async function mountBlockSuite(
   // 1a. Register effects (custom elements for blocks). Idempotent.
   let effectsMod: unknown;
   try {
-    effectsMod = await import("@blocksuite/affine/effects");
+    effectsMod = await importRuntimeModule("@blocksuite/affine/effects");
     trace("effects-import-ok");
   } catch (e) {
     trace("effects-import-fail", String(e));
@@ -281,7 +293,7 @@ async function mountBlockSuite(
   // 1b. Register the editor host element.
   try {
     const { registerAffineEditorContainer } = await import("./affine-editor-container");
-    registerAffineEditorContainer();
+    await registerAffineEditorContainer();
     trace("container-registered", { defined: !!customElements.get("affine-editor-container") });
   } catch (e) {
     trace("container-register-fail", String(e));
@@ -292,12 +304,12 @@ async function mountBlockSuite(
   let storeMod: unknown, storeTestMod: unknown, schemasMod: unknown, extLoaderMod: unknown, extStoreMod: unknown, extViewMod: unknown;
   try {
     [storeMod, storeTestMod, schemasMod, extLoaderMod, extStoreMod, extViewMod] = await Promise.all([
-      import("@blocksuite/affine/store"),
-      import("@blocksuite/affine/store/test"),
-      import("@blocksuite/affine/schemas"),
-      import("@blocksuite/affine/ext-loader"),
-      import("@blocksuite/affine/extensions/store"),
-      import("@blocksuite/affine/extensions/view"),
+      importRuntimeModule("@blocksuite/affine/store"),
+      importRuntimeModule("@blocksuite/affine/store/test"),
+      importRuntimeModule("@blocksuite/affine/schemas"),
+      importRuntimeModule("@blocksuite/affine/ext-loader"),
+      importRuntimeModule("@blocksuite/affine/extensions/store"),
+      importRuntimeModule("@blocksuite/affine/extensions/view"),
     ]);
     trace("imports-ok");
   } catch (e) {
@@ -305,10 +317,16 @@ async function mountBlockSuite(
     throw e;
   }
 
-  const syncMod = await import("@blocksuite/affine/sync").catch((e) => { trace("sync-fail", String(e).slice(0, 200)); return null; });
+  const syncMod = await importRuntimeModule("@blocksuite/affine/sync").catch((e) => { trace("sync-fail", String(e).slice(0, 200)); return null; });
   trace("sync-ok", { hasSync: !!syncMod });
 
-  let collection: ReturnType<{ TestWorkspace: new (opts: Record<string, unknown>) => { start: () => void; createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown }; getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null; storeExtensions?: unknown; dispose?: () => void } }["TestWorkspace"]>;
+  let collection: {
+    start: () => void;
+    createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown };
+    getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null;
+    storeExtensions?: unknown;
+    dispose?: () => void;
+  };
   let store: unknown;
   let pageSpecs: unknown[] = [], edgelessSpecs: unknown[] = [];
   try {

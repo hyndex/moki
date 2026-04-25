@@ -10,6 +10,8 @@ import { storageRoutes } from "./routes/storage";
 import { editorRoutes } from "./routes/editors";
 import { tenantRoutes } from "./routes/tenants";
 import { configRoutes } from "./routes/config";
+import { analyticsRoutes } from "./routes/analytics";
+import { analyticsBiRoutes } from "./routes/analytics-bi";
 import { tenantMiddleware } from "./tenancy/middleware";
 import { loadConfig } from "./config";
 
@@ -58,6 +60,8 @@ export function createApp() {
   app.route("/api/files", filesRoutes);
   app.route("/api/storage", storageRoutes);
   app.route("/api/editors", editorRoutes);
+  app.route("/api/analytics", analyticsRoutes);
+  app.route("/api/analytics-bi", analyticsBiRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

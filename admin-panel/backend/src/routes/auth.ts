@@ -23,6 +23,10 @@ import { loadConfig } from "../config";
 
 export const authRoutes = new Hono();
 
+function contextToken(c: { get: (key: never) => unknown }): string | undefined {
+  return c.get("token" as never) as string | undefined;
+}
+
 const LoginBody = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -143,7 +147,8 @@ authRoutes.get("/me", requireAuth, (c) => {
 });
 
 authRoutes.post("/logout", requireAuth, (c) => {
-  const t = c.get("token") as string;
+  const t = contextToken(c);
+  if (!t) return c.json({ error: "invalid or expired session" }, 401);
   deleteSession(t);
   return c.json({ ok: true });
 });
@@ -336,7 +341,7 @@ authRoutes.get("/mfa/status", requireAuth, (c) => {
 authRoutes.get("/memberships", requireAuth, async (c) => {
   const user = currentUser(c);
   const memberships = await listMembershipsForUser(user.id);
-  const token = c.get("token") as string | undefined;
+  const token = contextToken(c);
   let active: Awaited<ReturnType<typeof getTenant>> = null;
   if (token) {
     const db = dbx();
@@ -378,7 +383,8 @@ authRoutes.post("/switch-tenant", requireAuth, async (c) => {
 
   const db = dbx();
   const prefix = db.kind === "postgres" ? "public." : "";
-  const token = c.get("token") as string;
+  const token = contextToken(c);
+  if (!token) return c.json({ error: "invalid or expired session" }, 401);
   await db.run(
     `UPDATE ${prefix}sessions SET tenant_id = ? WHERE token = ?`,
     [target.id, token],

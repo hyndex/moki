@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireAuth, currentUser } from "../middleware/auth";
 import {
@@ -30,6 +30,10 @@ function requireAdmin(c: Parameters<Parameters<typeof Hono.prototype.use>[1]>[0]
   return false;
 }
 
+function routeParam(c: Context, name: string): string {
+  return c.req.param(name) ?? "";
+}
+
 /* ---------------- list + read ---------------- */
 
 tenantRoutes.get("/", requireAuth, async (c) => {
@@ -44,7 +48,7 @@ tenantRoutes.get("/", requireAuth, async (c) => {
 });
 
 tenantRoutes.get("/:id", requireAuth, async (c) => {
-  const t = await getTenant(c.req.param("id"));
+  const t = await getTenant(routeParam(c, "id"));
   if (!t) return c.json({ error: "not_found" }, 404);
   return c.json(t);
 });
@@ -103,7 +107,7 @@ tenantRoutes.patch("/:id", requireAuth, async (c) => {
   if (!parsed.success)
     return c.json({ error: "invalid body", issues: parsed.error.issues }, 400);
   try {
-    const t = await updateTenant(c.req.param("id"), parsed.data);
+    const t = await updateTenant(routeParam(c, "id"), parsed.data);
     recordAudit({
       actor: user.email,
       action: "tenant.updated",
@@ -121,12 +125,13 @@ tenantRoutes.patch("/:id", requireAuth, async (c) => {
 tenantRoutes.post("/:id/archive", requireAuth, async (c) => {
   if (!requireAdmin(c)) return c.json({ error: "forbidden" }, 403);
   const user = currentUser(c);
-  await archiveTenant(c.req.param("id"));
+  const tenantId = routeParam(c, "id");
+  await archiveTenant(tenantId);
   recordAudit({
     actor: user.email,
     action: "tenant.archived",
     resource: "platform.tenant",
-    recordId: c.req.param("id"),
+    recordId: tenantId,
     level: "warn",
   });
   return c.json({ ok: true });
@@ -140,7 +145,7 @@ tenantRoutes.post("/:id/delete-hard", requireAuth, async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = HardDeleteBody.safeParse(body);
   if (!parsed.success) return c.json({ error: "confirmation_required" }, 400);
-  const t = await getTenant(c.req.param("id"));
+  const t = await getTenant(routeParam(c, "id"));
   if (!t) return c.json({ error: "not_found" }, 404);
   if (t.slug !== parsed.data.slug) return c.json({ error: "slug_mismatch" }, 400);
   if (t.slug === loadConfig().defaultTenantSlug)
@@ -174,12 +179,13 @@ tenantRoutes.post("/:id/members", requireAuth, async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = MembershipBody.safeParse(body);
   if (!parsed.success) return c.json({ error: "invalid body" }, 400);
-  await addMembership(c.req.param("id"), parsed.data.userId, parsed.data.role);
+  const tenantId = routeParam(c, "id");
+  await addMembership(tenantId, parsed.data.userId, parsed.data.role);
   recordAudit({
     actor: user.email,
     action: "tenant.member.added",
     resource: "platform.tenant",
-    recordId: c.req.param("id"),
+    recordId: tenantId,
     payload: parsed.data,
   });
   return c.json({ ok: true });
@@ -188,12 +194,13 @@ tenantRoutes.post("/:id/members", requireAuth, async (c) => {
 tenantRoutes.delete("/:id/members/:userId", requireAuth, async (c) => {
   if (!requireAdmin(c)) return c.json({ error: "forbidden" }, 403);
   const user = currentUser(c);
-  await removeMembership(c.req.param("id"), c.req.param("userId"));
+  const tenantId = routeParam(c, "id");
+  await removeMembership(tenantId, routeParam(c, "userId"));
   recordAudit({
     actor: user.email,
     action: "tenant.member.removed",
     resource: "platform.tenant",
-    recordId: c.req.param("id"),
+    recordId: tenantId,
   });
   return c.json({ ok: true });
 });
@@ -213,7 +220,7 @@ tenantRoutes.get("/:id/members", requireAuth, async (c) => {
      JOIN ${prefix}users u ON u.id = m.user_id
      WHERE m.tenant_id = ?
      ORDER BY m.joined_at ASC`,
-    [c.req.param("id")],
+    [routeParam(c, "id")],
   );
   return c.json({ members: rows });
 });
@@ -230,12 +237,13 @@ tenantRoutes.post("/:id/domains", requireAuth, async (c) => {
   if (!parsed.success) return c.json({ error: "invalid body" }, 400);
   if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(parsed.data.domain))
     return c.json({ error: "invalid_domain" }, 400);
-  await setPrimaryDomain(c.req.param("id"), parsed.data.domain);
+  const tenantId = routeParam(c, "id");
+  await setPrimaryDomain(tenantId, parsed.data.domain);
   recordAudit({
     actor: user.email,
     action: "tenant.domain.set",
     resource: "platform.tenant",
-    recordId: c.req.param("id"),
+    recordId: tenantId,
     payload: parsed.data,
   });
   return c.json({ ok: true });

@@ -84,6 +84,7 @@ export default defineConfig({
   // unable to be assigned to a file".
   plugins: [vanillaExtractPlugin(), react()],
   resolve: {
+    extensions: [".mjs", ".ts", ".tsx", ".js", ".jsx", ".json"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@gutu/admin-shell-next": path.resolve(__dirname, "./packages/admin-shell-next/src/index.ts"),

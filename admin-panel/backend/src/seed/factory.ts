@@ -747,6 +747,249 @@ export function seedFactory(): Record<string, number> {
       updatedAt: daysAgo(i),
     })),
   );
+  const biExplores = [
+    {
+      id: "sales-deals",
+      label: "Sales deals",
+      resource: "sales.deal",
+      description: "Pipeline, bookings, probability, and owner performance.",
+      owner: "revenue-ops@gutu.dev",
+      tags: ["revenue", "pipeline"],
+      dimensions: [
+        { id: "stage", label: "Stage", type: "string", sourceField: "stage", group: "Deal" },
+        { id: "owner", label: "Owner", type: "string", sourceField: "owner", group: "People" },
+        { id: "account", label: "Account", type: "string", sourceField: "account", group: "Deal" },
+        { id: "closeAt", label: "Close date", type: "date", sourceField: "closeAt", group: "Time" },
+      ],
+      metrics: [
+        { id: "deal_count", label: "Deals", aggregation: "count", unit: "count", format: "number" },
+        { id: "pipeline_amount", label: "Pipeline", aggregation: "sum", sourceField: "amount", unit: "currency", format: "currency", currency: "USD" },
+        { id: "avg_probability", label: "Avg probability", aggregation: "avg", sourceField: "probability", unit: "percent", format: "percent" },
+      ],
+      defaultQuery: { dimensions: ["stage"], metrics: ["pipeline_amount", "deal_count"], sorts: [{ fieldId: "pipeline_amount", dir: "desc" }], limit: 50 },
+      updatedAt: daysAgo(0.1),
+    },
+    {
+      id: "subscriptions",
+      label: "Subscriptions",
+      resource: "subscriptions.subscription",
+      description: "Recurring revenue by plan, customer, and subscription status.",
+      owner: "finance@gutu.dev",
+      tags: ["revenue", "mrr"],
+      dimensions: [
+        { id: "plan", label: "Plan", type: "string", sourceField: "plan" },
+        { id: "status", label: "Status", type: "string", sourceField: "status" },
+        { id: "customer", label: "Customer", type: "string", sourceField: "customer" },
+        { id: "renewsAt", label: "Renews at", type: "date", sourceField: "renewsAt" },
+      ],
+      metrics: [
+        { id: "subscriptions", label: "Subscriptions", aggregation: "count", unit: "count", format: "number" },
+        { id: "mrr", label: "MRR", aggregation: "sum", sourceField: "mrr", unit: "currency", format: "currency", currency: "USD" },
+      ],
+      defaultQuery: { dimensions: ["plan"], metrics: ["mrr", "subscriptions"], sorts: [{ fieldId: "mrr", dir: "desc" }], limit: 50 },
+      updatedAt: daysAgo(0.2),
+    },
+    {
+      id: "support-tickets",
+      label: "Support tickets",
+      resource: "support-service.ticket",
+      description: "Ticket volume, priority mix, and operational workload.",
+      owner: "support-ops@gutu.dev",
+      tags: ["support", "sla"],
+      dimensions: [
+        { id: "status", label: "Status", type: "string", sourceField: "status" },
+        { id: "priority", label: "Priority", type: "string", sourceField: "priority" },
+        { id: "assignee", label: "Assignee", type: "string", sourceField: "assignee" },
+        { id: "updatedAt", label: "Updated at", type: "datetime", sourceField: "updatedAt" },
+      ],
+      metrics: [
+        { id: "tickets", label: "Tickets", aggregation: "count", unit: "count", format: "number" },
+      ],
+      defaultQuery: { dimensions: ["priority"], metrics: ["tickets"], sorts: [{ fieldId: "tickets", dir: "desc" }], limit: 50 },
+      updatedAt: daysAgo(0.3),
+    },
+    {
+      id: "inventory-items",
+      label: "Inventory items",
+      resource: "inventory.item",
+      description: "Stock position, category mix, and replenishment risk.",
+      owner: "ops@gutu.dev",
+      tags: ["operations", "inventory"],
+      dimensions: [
+        { id: "category", label: "Category", type: "string", sourceField: "category" },
+        { id: "name", label: "Item", type: "string", sourceField: "name" },
+        { id: "sku", label: "SKU", type: "string", sourceField: "sku" },
+      ],
+      metrics: [
+        { id: "items", label: "Items", aggregation: "count", unit: "count", format: "number" },
+        { id: "on_hand", label: "On hand", aggregation: "sum", sourceField: "onHand", unit: "number", format: "number" },
+        { id: "inventory_value", label: "Inventory value", aggregation: "sum", sourceField: "unitCost", unit: "currency", format: "currency", currency: "USD" },
+      ],
+      defaultQuery: { dimensions: ["category"], metrics: ["on_hand", "items"], sorts: [{ fieldId: "on_hand", dir: "desc" }], limit: 50 },
+      updatedAt: daysAgo(0.4),
+    },
+  ];
+  put("analytics-bi.explore", biExplores);
+
+  const biCharts = [
+    {
+      id: "chart_pipeline_by_stage",
+      name: "Pipeline by stage",
+      description: "Weighted sales pipeline grouped by current deal stage.",
+      exploreId: "sales-deals",
+      query: { exploreId: "sales-deals", dimensions: ["stage"], metrics: ["pipeline_amount", "deal_count"], sorts: [{ fieldId: "pipeline_amount", dir: "desc" }], limit: 50 },
+      config: { kind: "bar", xField: "stage", yFields: ["pipeline_amount"], showLegend: false, showValues: true },
+      spaceId: "space_revenue",
+      pinned: true,
+      favorite: true,
+      version: 1,
+      createdBy: "sam@gutu.dev",
+      updatedBy: "sam@gutu.dev",
+      createdAt: daysAgo(7),
+      updatedAt: daysAgo(1),
+    },
+    {
+      id: "chart_mrr_by_plan",
+      name: "MRR by plan",
+      description: "Recurring revenue split by active commercial plan.",
+      exploreId: "subscriptions",
+      query: { exploreId: "subscriptions", dimensions: ["plan"], metrics: ["mrr", "subscriptions"], sorts: [{ fieldId: "mrr", dir: "desc" }], limit: 50 },
+      config: { kind: "donut", labelField: "plan", valueField: "mrr", showLegend: true, showValues: true },
+      spaceId: "space_finance",
+      pinned: true,
+      favorite: false,
+      version: 1,
+      createdBy: "alex@gutu.dev",
+      updatedBy: "alex@gutu.dev",
+      createdAt: daysAgo(6),
+      updatedAt: daysAgo(1),
+    },
+    {
+      id: "chart_ticket_priority",
+      name: "Tickets by priority",
+      description: "Support ticket load by escalation priority.",
+      exploreId: "support-tickets",
+      query: { exploreId: "support-tickets", dimensions: ["priority"], metrics: ["tickets"], sorts: [{ fieldId: "tickets", dir: "desc" }], limit: 50 },
+      config: { kind: "bar", xField: "priority", yFields: ["tickets"], showValues: true },
+      spaceId: "space_ops",
+      pinned: false,
+      favorite: true,
+      version: 1,
+      createdBy: "taylor@gutu.dev",
+      updatedBy: "taylor@gutu.dev",
+      createdAt: daysAgo(5),
+      updatedAt: daysAgo(1),
+    },
+    {
+      id: "chart_inventory_category",
+      name: "Inventory on hand by category",
+      description: "Stock position across inventory categories.",
+      exploreId: "inventory-items",
+      query: { exploreId: "inventory-items", dimensions: ["category"], metrics: ["on_hand", "items"], sorts: [{ fieldId: "on_hand", dir: "desc" }], limit: 50 },
+      config: { kind: "area", xField: "category", yFields: ["on_hand"], showLegend: false },
+      spaceId: "space_ops",
+      pinned: false,
+      favorite: false,
+      version: 1,
+      createdBy: "ops@gutu.dev",
+      updatedBy: "ops@gutu.dev",
+      createdAt: daysAgo(4),
+      updatedAt: daysAgo(1),
+    },
+  ];
+  put("analytics-bi.chart", biCharts);
+  put(
+    "analytics-bi.chart-version",
+    biCharts.map((chart) => ({
+      id: `${chart.id}:v1`,
+      chartId: chart.id,
+      version: 1,
+      chart,
+      createdBy: chart.createdBy,
+      createdAt: chart.createdAt,
+      reason: "seed",
+    })),
+  );
+  const biSpaces = [
+    { id: "space_revenue", name: "Revenue", description: "Sales and recurring revenue analytics.", access: "team", createdBy: "sam@gutu.dev", updatedAt: daysAgo(1) },
+    { id: "space_finance", name: "Finance", description: "Finance-owned BI content and executive reporting.", access: "team", createdBy: "alex@gutu.dev", updatedAt: daysAgo(1) },
+    { id: "space_ops", name: "Operations", description: "Support, inventory, and operations health.", access: "organization", createdBy: "ops@gutu.dev", updatedAt: daysAgo(1) },
+  ];
+  put("analytics-bi.space", biSpaces);
+  const biDashboards = [
+    {
+      id: "dash_exec_bi",
+      name: "Executive BI command center",
+      description: "Board-ready revenue, support, and operations scorecard.",
+      spaceId: "space_revenue",
+      tabs: [{ id: "main", label: "Overview", order: 0 }, { id: "ops", label: "Operations", order: 1 }],
+      filters: [{ id: "owner", label: "Owner", fieldId: "owner" }],
+      tiles: [
+        { id: "tile_pipeline", kind: "chart", chartId: "chart_pipeline_by_stage", title: "Pipeline", x: 0, y: 0, w: 6, h: 4, tabId: "main" },
+        { id: "tile_mrr", kind: "chart", chartId: "chart_mrr_by_plan", title: "MRR", x: 6, y: 0, w: 6, h: 4, tabId: "main" },
+        { id: "tile_tickets", kind: "chart", chartId: "chart_ticket_priority", title: "Support", x: 0, y: 4, w: 6, h: 4, tabId: "ops" },
+        { id: "tile_inventory", kind: "chart", chartId: "chart_inventory_category", title: "Inventory", x: 6, y: 4, w: 6, h: 4, tabId: "ops" },
+        { id: "tile_note", kind: "markdown", title: "Operating note", markdown: "Review support priority mix before the next exec readout.", x: 0, y: 8, w: 12, h: 2, tabId: "main" },
+      ],
+      pinned: true,
+      favorite: true,
+      version: 1,
+      createdBy: "sam@gutu.dev",
+      updatedBy: "sam@gutu.dev",
+      createdAt: daysAgo(7),
+      updatedAt: daysAgo(1),
+    },
+  ];
+  put("analytics-bi.dashboard-content", biDashboards);
+  put(
+    "analytics-bi.dashboard-version",
+    biDashboards.map((dashboard) => ({
+      id: `${dashboard.id}:v1`,
+      dashboardId: dashboard.id,
+      version: 1,
+      dashboard,
+      createdBy: dashboard.createdBy,
+      createdAt: dashboard.createdAt,
+      reason: "seed",
+    })),
+  );
+  put("analytics-bi.schedule", [
+    {
+      id: "sched_exec_weekly",
+      name: "Weekly executive BI digest",
+      targetKind: "dashboard",
+      targetId: "dash_exec_bi",
+      cron: "every 1w",
+      timezone: "UTC",
+      format: "pdf",
+      enabled: true,
+      includeLinks: true,
+      targets: [{ kind: "email", address: "exec@gutu.dev" }],
+      createdBy: "sam@gutu.dev",
+      updatedAt: daysAgo(1),
+    },
+  ]);
+  put("analytics-bi.share-url", [
+    {
+      id: "share_exec_bi",
+      token: "execbi1",
+      targetKind: "dashboard",
+      targetId: "dash_exec_bi",
+      includeFilters: true,
+      createdBy: "sam@gutu.dev",
+      createdAt: daysAgo(1),
+    },
+  ]);
+  put("analytics-bi.delivery-run", [
+    {
+      id: "run_exec_weekly_seed",
+      scheduleId: "sched_exec_weekly",
+      status: "sent",
+      message: "Seed delivery log for the weekly executive BI digest.",
+      startedAt: daysAgo(1),
+      finishedAt: daysAgo(1),
+    },
+  ]);
 
   /* Platform ----------------------------------------------------------- */
   put(

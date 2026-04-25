@@ -1,7 +1,7 @@
 import { migrate } from "./migrations";
 import { createApp } from "./server";
 import { seedAll } from "./seed/run";
-import { registerSocket, unregisterSocket } from "./lib/ws";
+import { registerSocket, unregisterSocket, type SocketData } from "./lib/ws";
 import { loadConfig } from "./config";
 import { migrateGlobal, migrateTenantSchema } from "./tenancy/migrations";
 import { ensureDefaultTenant, listTenants } from "./tenancy/provisioner";
@@ -97,7 +97,7 @@ async function resolveWsSession(req: Request): Promise<{
   return { userId: row.user_id, tenantId: tenant.id };
 }
 
-Bun.serve({
+Bun.serve<SocketData>({
   port,
   hostname: "127.0.0.1",
   async fetch(req, server) {
