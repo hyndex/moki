@@ -164,28 +164,12 @@ export function RichDealDetailPage({
     [auditPage, fullResourceId, id],
   );
 
-  if (!record && !loading) {
-    return (
-      <RichDetailPage
-        loading={false}
-        error={new Error(`${resource.singular} ${id} not found`)}
-        onRetry={() => navigateTo(resource.path)}
-        title=""
-        tabs={[]}
-      />
-    );
-  }
-
-  // Guard — we expect `record` after loading settles.
+  // ALL hooks must run before any early return — moving the
+  // view-extensions resolver up above the missing-record short-circuit
+  // keeps React's hook count stable across renders. Otherwise navigating
+  // to a non-existent id would crash the plugin with "Rendered fewer
+  // hooks than expected."
   const rec = (record ?? {}) as Record<string, unknown>;
-
-  const identifier = displayName(rec, resource);
-  const status = resolveStatus(rec, resource);
-  const metrics = pickMetrics(rec, resource);
-
-  const editPath = `${resource.path}/${id}/edit`;
-
-  /* View extensions — other plugins can augment this detail view. */
   const detailViewId = `${fullResourceId}-detail.view`;
   const ext = React.useMemo(
     () =>
@@ -198,6 +182,28 @@ export function RichDealDetailPage({
       } as unknown as Parameters<typeof resolveViewExtensions>[1]),
     [host, detailViewId, fullResourceId, resource.singular],
   );
+
+  if (!record && !loading) {
+    return (
+      <RichDetailPage
+        loading={false}
+        error={new Error(`${resource.singular} ${id} not found`)}
+        onRetry={() => navigateTo(resource.path)}
+        title=""
+        tabs={[]}
+      />
+    );
+  }
+
+  // After early-return guard: derived view data.
+  const identifier = displayName(rec, resource);
+  const status = resolveStatus(rec, resource);
+  const metrics = pickMetrics(rec, resource);
+
+  const editPath = `${resource.path}/${id}/edit`;
+
+  // `ext` already computed above (kept here as a no-op reference for
+  // readers tracing the original layout).
 
   return (
     <RichDetailPage
