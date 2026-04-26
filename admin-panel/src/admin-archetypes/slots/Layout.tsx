@@ -28,8 +28,16 @@ export function BodyLayout({
   const [collapsed, setCollapsed] = React.useState(false);
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return;
     const el = containerRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el || typeof ResizeObserver === "undefined") {
+      // Fall back to a media query when ResizeObserver is unavailable.
+      const mq = window.matchMedia(`(max-width: ${collapseAt - 1}px)`);
+      const sync = () => setCollapsed(mq.matches);
+      sync();
+      mq.addEventListener?.("change", sync);
+      return () => mq.removeEventListener?.("change", sync);
+    }
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setCollapsed(entry.contentRect.width < collapseAt);

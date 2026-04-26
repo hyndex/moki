@@ -33,6 +33,12 @@ export * from "./hooks/useDensity";
 export * from "./hooks/useSwr";
 export * from "./hooks/useFilterChips";
 export * from "./hooks/useSelection";
+export * from "./hooks/usePrefersReducedMotion";
+export * from "./hooks/useArchetypeTelemetry";
+
+// Inference (used by the shell + plugin authors who want to introspect)
+export { inferArchetype } from "./inferArchetype";
+export type { InferableView, InferredArchetype } from "./inferArchetype";
 
 // Widgets
 export * from "./widgets/Sparkline";

@@ -29,6 +29,7 @@ import {
   installPluginUiIfNeeded,
   startPluginUi,
 } from "@/host/plugin-ui-loader";
+import { archetypesCatalogView } from "./archetypes-catalog";
 
 // Decentralized discovery: Vite's `import.meta.glob` (eager) walks
 // every `host-plugin/ui/index.ts` under `plugins/gutu-plugin-*` at
@@ -188,6 +189,15 @@ const pluginsConsoleResource = defineResource({
   icon: "Boxes",
 });
 
+const archetypesCatalogResource = defineResource({
+  id: "platform.archetypes-catalog",
+  singular: "Archetype",
+  plural: "Archetypes",
+  schema: z.object({ id: z.string() }).passthrough(),
+  displayField: "id",
+  icon: "Layout",
+});
+
 const pluginsConsoleView = defineCustomView({
   id: "admin-tools.plugins-console.view",
   title: "Plugins",
@@ -245,6 +255,15 @@ const builtInNav = [
     section: "settings",
     order: 5,
   },
+  {
+    id: "admin-tools.nav.archetypes-catalog",
+    label: "Archetypes catalog",
+    icon: "Layout",
+    path: "/settings/archetypes",
+    view: "admin-tools.archetypes-catalog.view",
+    section: "settings",
+    order: 6,
+  },
 ];
 
 /* -- The plugin surface itself ------------------------------------------- */
@@ -267,8 +286,8 @@ export const adminToolsPlugin = definePlugin({
   async activate(ctx) {
     ctx.contribute.navSections([{ id: "settings", label: "Settings", order: 200 }]);
     ctx.contribute.nav([...builtInNav, ...adminToolsNav]);
-    ctx.contribute.resources([pluginsConsoleResource, ...pluginResources]);
-    ctx.contribute.views([pluginsConsoleView, ...pluginViews]);
+    ctx.contribute.resources([pluginsConsoleResource, archetypesCatalogResource, ...pluginResources]);
+    ctx.contribute.views([pluginsConsoleView, archetypesCatalogView, ...pluginViews]);
     if (adminToolsCommands.length > 0) ctx.contribute.commands(adminToolsCommands);
   },
 });

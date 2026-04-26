@@ -18,8 +18,13 @@ export function comboMatches(
   options: { mac?: boolean } = {},
 ): boolean {
   const onMac = options.mac ?? isMac;
-  const parts = combo.toLowerCase().split("+").map((p) => p.trim());
-  const key = parts.pop()!;
+  const parts = combo.toLowerCase().split("+").map((p, i, arr) =>
+    // Trim non-terminal parts (modifiers); leave the last part raw so a
+    // bare " " key combo isn't trimmed to empty string.
+    i === arr.length - 1 ? p : p.trim(),
+  );
+  const rawKey = parts.pop()!;
+  const key = rawKey === " " || rawKey.trim() === "" && rawKey.length > 0 ? " " : rawKey.trim();
   const wantCmd = parts.includes("cmd") || parts.includes("meta");
   const wantCtrl = parts.includes("ctrl");
   const wantShift = parts.includes("shift");

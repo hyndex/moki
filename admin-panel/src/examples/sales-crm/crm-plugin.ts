@@ -17,6 +17,8 @@ import CrmArchetypeDashboard from "./crm-archetype-dashboard";
 import CrmArchetypeList from "./crm-archetype-list";
 import { salesArchetypePipelineView } from "../sales-archetype";
 import { crmArchetypeCompanyHubView } from "./crm-archetype-company-hub";
+import { crmArchetypePersonHubView } from "./crm-archetype-person-hub";
+import { crmArchetypeRelationsView } from "./crm-archetype-relations";
 import { CONTACTS } from "./data";
 
 // Reference pages using the new admin-archetypes runtime end-to-end.
@@ -77,6 +79,8 @@ const crmNav = [
   { id: "crm.archetype-list", label: "People (new)", icon: "Users", path: "/crm/archetype-list", view: "crm.archetype-list.view", section: "sales", order: 9.6 },
   { id: "sales.archetype-pipeline", label: "Pipeline (archetype)", icon: "Layers", path: "/sales/archetype-pipeline", view: "sales.archetype-pipeline.view", section: "sales", order: 9.7 },
   { id: "crm.archetype-company-hub", label: "Company 360 (archetype)", icon: "Building2", path: "/crm/archetype-company-hub", view: "crm.archetype-company-hub.view", section: "sales", order: 9.8 },
+  { id: "crm.archetype-person-hub", label: "Person 360 (archetype)", icon: "User", path: "/crm/archetype-person-hub", view: "crm.archetype-person-hub.view", section: "sales", order: 9.85 },
+  { id: "crm.archetype-relations", label: "Relations (archetype)", icon: "Network", path: "/crm/archetype-relations", view: "crm.archetype-relations.view", section: "sales", order: 9.9 },
   { id: "crm.overview", label: "Overview", icon: "LayoutDashboard", path: "/contacts/overview", view: "crm.overview.view", section: "sales", order: 10 },
   { id: "crm.control-room", label: "CRM Control Room", icon: "Gauge", path: "/crm/control-room", view: "crm.control-room.view", section: "sales", order: 10.5 },
   { id: "crm.contacts", label: "Contacts", icon: "Users", path: "/contacts", view: "crm.contacts.view", section: "sales", order: 11 },
@@ -101,6 +105,8 @@ const crmViews = [
   crmArchetypeListView,
   salesArchetypePipelineView,
   crmArchetypeCompanyHubView,
+  crmArchetypePersonHubView,
+  crmArchetypeRelationsView,
   crmOverviewView,
   crmContactsView,
   crmPipelineView,

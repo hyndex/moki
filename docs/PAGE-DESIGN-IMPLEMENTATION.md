@@ -450,7 +450,63 @@ working reference page.
 
 ---
 
-## 12. Versioning
+## 12. Production hardening
+
+### useSwr — stale-while-revalidate, hardened
+
+The fetcher has been built for the realities of production:
+
+- **AbortController on every fetch.** Explicit `invalidateSwr(prefix)` aborts in-flight requests for matching keys before clearing the cache, preventing stale responses from poisoning state.
+- **Per-fetch timeout** (default 15s) wrapping the fetcher; the controller aborts on timeout and reports a typed error.
+- **In-flight dedup.** Multiple `useSwr` instances reading the same key share a single network call.
+- **Retry with exponential backoff + full jitter** on automatic (non-user-triggered) failures. `refetch()` from the consumer always retries from scratch.
+- **Refresh-on-focus** and **refresh-on-online** by default, configurable per call.
+- **Polling** opt-in via `pollMs` for live-tail tiles.
+- **Telemetry hook** (`onEvent`) that emits `fetch-start | fetch-success | fetch-error | abort | retry` events for every state transition.
+
+### Widgets — error isolation and observability
+
+`<WidgetErrorBoundary>` now:
+
+- Tags every error surface with `data-widget-id` + `data-archetype` so a global listener can attribute failures.
+- Dispatches a `gutu:widget-error` `CustomEvent` on `window` so the shell, audit-core, or a Sentry-style provider can subscribe centrally.
+- Shows the original error stack in development; only the message + retry in production.
+- Re-keys children on retry so a previously-broken subtree mounts cleanly instead of immediately re-throwing stale state.
+
+### Telemetry — `useArchetypeTelemetry`
+
+Pages call `useArchetypeTelemetry({ id, archetype })` near the top of the component. The hook emits `page-mount` / `page-unmount` events automatically and exposes an `event(...)` helper for ad-hoc emissions (`widget-render`, `interaction`).
+
+Events are dispatched as `gutu:archetype-event` `CustomEvents`. Subscribe with `onArchetypeEvent(handler)` to forward to any sink.
+
+### Auto-archetype inference
+
+`inferArchetype(view)` reads `archetype` first, then `mode`, then keyword heuristics over `title + id + resource + path`, then falls back to `detail-rich`. The shell's `ArchetypeAwareMain` calls it for every plugin page so even pre-existing pages (no descriptor changes) get a meaningful `data-archetype` attribute and full-bleed behaviour where applicable.
+
+### Accessibility & motion
+
+- `usePrefersReducedMotion()` is a reactive media-query hook for any animated widget. Slots also use Tailwind's `motion-reduce:` modifier so transitions disable themselves automatically.
+- `BodyLayout` falls back to `matchMedia` when `ResizeObserver` is unavailable.
+- All hooks guard `typeof window === "undefined"` to keep the runtime SSR-safe.
+
+### Test suite
+
+```
+src/admin-archetypes/__tests__/
+├── filterCodec.test.ts      (chip codec round-trip + escapes)
+├── keyMatcher.test.ts       (combo matcher)
+├── keyMatcherEdge.test.ts   (alt/option, meta/cmd, ?, space, ctrl independence)
+├── inferArchetype.test.ts   (explicit precedence, mode, keywords, fallback)
+└── swrCore.test.ts          (cache reset + invalidate idempotence)
+```
+
+49 tests / 95 expects, all passing under `bun test`.
+
+### The Archetypes Catalog
+
+`/settings/archetypes` is an in-app, author-facing showcase — every archetype + every widget rendered with realistic data. Use it to find the page you want to copy from. Source: `admin-panel/src/examples/admin-tools/archetypes-catalog.tsx`.
+
+## 13. Versioning
 
 The runtime version is exported via the design-system version in
 [`PAGE-DESIGN-SYSTEM.md` §15](./PAGE-DESIGN-SYSTEM.md#15-versioning).

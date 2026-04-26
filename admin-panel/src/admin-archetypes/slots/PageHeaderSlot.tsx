@@ -34,6 +34,7 @@ export function PageHeaderSlot({
   const [collapsed, setCollapsed] = React.useState(false);
   React.useEffect(() => {
     if (!collapsing) return;
+    if (typeof window === "undefined") return;
     const onScroll = () => {
       setCollapsed(window.scrollY > 32);
     };
@@ -48,7 +49,7 @@ export function PageHeaderSlot({
       data-slot="page-header"
       data-collapsed={collapsed ? "true" : "false"}
       className={cn(
-        "flex flex-col gap-1.5 transition-[padding,height] duration-200",
+        "flex flex-col gap-1.5 transition-[padding,height] duration-200 motion-reduce:transition-none",
         sticky &&
           "sticky top-0 z-20 bg-surface-canvas/80 backdrop-blur supports-[backdrop-filter]:bg-surface-canvas/60",
         collapsed ? "py-2 border-b border-border" : "pb-3 pt-1",

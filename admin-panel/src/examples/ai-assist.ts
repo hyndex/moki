@@ -4,6 +4,10 @@ import {
   aiAssistArchetypeDashboardView,
   aiAssistArchetypeNav,
 } from "./ai-assist-archetype";
+import {
+  aiAssistChatArchetypeView,
+  aiAssistChatArchetypeNav,
+} from "./ai-assist-chat-archetype";
 import { daysAgo, hoursAgo, pick } from "./_factory/seeds";
 import { buildCompactControlRoom } from "./_factory/compactDashboard";
 import { buildReportLibrary } from "./_factory/reportLibraryHelper";
@@ -191,11 +195,13 @@ export const aiAssistPlugin = buildDomainPlugin({
   ],
   extraNav: [
     ...aiAssistArchetypeNav,
+    ...aiAssistChatArchetypeNav,
     { id: "ai-assist.control-room.nav", label: "AI Assist Control Room", icon: "LayoutDashboard", path: "/ai/assist/control-room", view: "ai-assist.control-room.view", order: 0 },
     { id: "ai-assist.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/assist/reports", view: "ai-assist.reports.view" },
   ],
   extraViews: [
     aiAssistArchetypeDashboardView,
+    aiAssistChatArchetypeView,
     controlRoomView,
     reportsIndex,
     reportsDetail,
