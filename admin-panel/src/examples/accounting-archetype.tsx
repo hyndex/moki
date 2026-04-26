@@ -20,10 +20,11 @@ import {
   WidgetShell,
   useUrlState,
   useArchetypeKeyboard,
-  useSwr,
   type DriftPoint,
   type DrillTarget,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 
 const HINTS = [
   { keys: "R", label: "Refresh" },
@@ -46,11 +47,7 @@ function mockSeries(base: number, amp: number, n: number): DriftPoint[] {
   }));
 }
 
-async function fetchKpis(period: string): Promise<Kpis> {
-  try {
-    const res = await fetch(`/api/accounting/dashboard/kpis?period=${period}`);
-    if (res.ok) return (await res.json()) as Kpis;
-  } catch {/* fall through */}
+function mockKpis(period: string): Kpis {
   const scale = period === "7d" ? 0.25 : period === "30d" ? 1 : period === "qtd" ? 3 : 12;
   return {
     cashOnHand: {
@@ -81,11 +78,7 @@ interface Attention {
   }>;
 }
 
-async function fetchAttention(): Promise<Attention> {
-  try {
-    const res = await fetch("/api/accounting/dashboard/attention");
-    if (res.ok) return (await res.json()) as Attention;
-  } catch {/* fall through */}
+function mockAttention(): Attention {
   return {
     items: [
       {
@@ -116,25 +109,141 @@ async function fetchAttention(): Promise<Attention> {
   };
 }
 
+interface InvoiceRow {
+  id: string;
+  status?: "draft" | "sent" | "paid" | "overdue" | "void" | "partial";
+  amount?: number;
+  dueAt?: string;
+  issuedAt?: string;
+}
+
+interface BillRow {
+  id: string;
+  status?: "draft" | "approved" | "paid" | "overdue";
+  amount?: number;
+  dueAt?: string;
+}
+
+interface JournalRow {
+  id: string;
+  status?: "draft" | "posted";
+  postedAt?: string;
+}
+
 export function AccountingArchetypeDashboard() {
   const [params, setParams] = useUrlState(["period"] as const);
   const period = (params.period as PeriodKey | undefined) ?? "30d";
 
-  const kpis = useSwr<Kpis>(
-    `accounting.kpis?period=${period}`,
-    () => fetchKpis(period),
-    { ttlMs: 30_000 },
-  );
-  const attention = useSwr<Attention>(
-    `accounting.attention`,
-    fetchAttention,
-    { ttlMs: 30_000 },
-  );
+  // Real backend reads.
+  const invoices = useAllRecords<InvoiceRow>("accounting.invoice");
+  const bills = useAllRecords<BillRow>("accounting.bill");
+  const journals = useAllRecords<JournalRow>("accounting.journal-entry");
 
-  const refresh = React.useCallback(() => {
-    void kpis.refetch();
-    void attention.refetch();
-  }, [kpis, attention]);
+  const kpisData = React.useMemo<Kpis>(() => {
+    if (!invoices.data.length && !bills.data.length) return mockKpis(period);
+    const arOpen = invoices.data
+      .filter((i) => i.status !== "paid" && i.status !== "void")
+      .reduce((s, i) => s + (i.amount ?? 0), 0);
+    const apDue7 = bills.data
+      .filter((b) => {
+        if (b.status === "paid") return false;
+        if (!b.dueAt) return false;
+        const d = (Date.parse(b.dueAt) - Date.now()) / 86_400_000;
+        return d >= 0 && d <= 7;
+      })
+      .reduce((s, b) => s + (b.amount ?? 0), 0);
+    const draftJournals = journals.data.filter((j) => j.status === "draft").length;
+    const periodDays = period === "7d" ? 7 : period === "30d" ? 30 : period === "qtd" ? 90 : 365;
+    const since = Date.now() - periodDays * 86_400_000;
+    const netPeriod = invoices.data
+      .filter((i) => {
+        if (i.status !== "paid") return false;
+        return i.issuedAt ? Date.parse(i.issuedAt) >= since : false;
+      })
+      .reduce((s, i) => s + (i.amount ?? 0), 0)
+      - bills.data
+        .filter((b) => {
+          if (b.status !== "paid") return false;
+          return b.dueAt ? Date.parse(b.dueAt) >= since : false;
+        })
+        .reduce((s, b) => s + (b.amount ?? 0), 0);
+    const fallback = mockKpis(period);
+    return {
+      cashOnHand: fallback.cashOnHand,
+      netPeriod: { value: netPeriod, deltaPct: 0, series: fallback.netPeriod.series },
+      burnRunwayDays: fallback.burnRunwayDays,
+      arOpen: { value: arOpen, deltaPct: 0 },
+      apDue7d: { value: apDue7 },
+      glAnomalyCount: draftJournals,
+    };
+  }, [invoices.data, bills.data, journals.data, period]);
+
+  const kpisState: LoadState = (invoices.error || bills.error || journals.error)
+    ? { status: "error", error: invoices.error ?? bills.error ?? journals.error }
+    : (invoices.loading && bills.loading && invoices.data.length === 0)
+      ? { status: "loading" }
+      : { status: "ready" };
+
+  const kpis = {
+    data: kpisData,
+    state: kpisState,
+    refetch: () => {
+      invoices.refetch();
+      bills.refetch();
+      journals.refetch();
+    },
+  };
+
+  const attentionData = React.useMemo<Attention>(() => {
+    if (!invoices.data.length && !bills.data.length) return mockAttention();
+    const items: Attention["items"] = [];
+    const now = Date.now();
+    const overdueInvoices = invoices.data.filter((i) => {
+      if (i.status === "paid" || i.status === "void") return false;
+      if (!i.dueAt) return false;
+      return Date.parse(i.dueAt) < now;
+    });
+    if (overdueInvoices.length > 0) {
+      const total = overdueInvoices.reduce((s, i) => s + (i.amount ?? 0), 0);
+      items.push({
+        id: "overdue",
+        icon: "Clock",
+        severity: "danger",
+        title: `${overdueInvoices.length} invoice${overdueInvoices.length === 1 ? "" : "s"} overdue`,
+        description: `Total ${new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(total)}`,
+        drillTo: { kind: "hash", hash: "/accounting/invoices" },
+      });
+    }
+    const billsDue = bills.data.filter((b) => {
+      if (b.status === "paid") return false;
+      if (!b.dueAt) return false;
+      const d = (Date.parse(b.dueAt) - now) / 86_400_000;
+      return d >= 0 && d <= 3;
+    });
+    if (billsDue.length > 0) {
+      items.push({
+        id: "bills",
+        icon: "ShieldAlert",
+        severity: "warning",
+        title: `${billsDue.length} bill${billsDue.length === 1 ? "" : "s"} due in 3 days`,
+      });
+    }
+    const draftJournals = journals.data.filter((j) => j.status === "draft").slice(0, 5);
+    if (draftJournals.length > 0) {
+      items.push({
+        id: "journals",
+        icon: "AlertTriangle",
+        severity: "info",
+        title: `${draftJournals.length} journal entr${draftJournals.length === 1 ? "y" : "ies"} pending post`,
+      });
+    }
+    if (items.length === 0) return mockAttention();
+    return { items };
+  }, [invoices.data, bills.data, journals.data]);
+
+  const attention = { data: attentionData, state: kpisState, refetch: kpis.refetch };
+
+  const refresh = kpis.refetch;
 
   useArchetypeKeyboard([
     { label: "Refresh", combo: "r", run: refresh },

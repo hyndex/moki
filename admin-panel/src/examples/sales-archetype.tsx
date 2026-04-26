@@ -11,12 +11,13 @@ import {
   WidgetShell,
   useUrlState,
   useArchetypeKeyboard,
-  useSwr,
   KanbanDndBoard,
   type KanbanCard,
   type KanbanColumn,
   useArchetypeToast,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
+import { useRuntime } from "@/runtime/context";
 import { cn } from "@/lib/cn";
 
 interface Deal {
@@ -39,25 +40,6 @@ const STAGES: { id: Deal["stage"]; label: string; tone: string }[] = [
   { id: "lost", label: "Lost", tone: "bg-surface-2 text-text-muted" },
 ];
 
-const SAMPLE_DEALS: Deal[] = Array.from({ length: 32 }, (_, i) => ({
-  id: `deal-${i}`,
-  name: ["Q3 Renewal", "Pilot Expansion", "Enterprise Deal", "Trial Conversion", "Upgrade", "Custom Tier"][i % 6] + ` ${i + 1}`,
-  customer: ["Acme", "Globex", "Initech", "Soylent", "Hooli", "Massive Dynamic", "Pied Piper"][i % 7],
-  amount: 5_000 + ((i * 1300) % 60_000),
-  stage: STAGES[i % STAGES.length].id,
-  ageDays: (i * 3) % 28,
-  owner: ["Maya", "Devon", "Riya", "Sam"][i % 4],
-  priority: (["low", "med", "high"] as const)[i % 3],
-}));
-
-async function fetchDeals(): Promise<Deal[]> {
-  try {
-    const res = await fetch("/api/sales/deals");
-    if (res.ok) return (await res.json()) as Deal[];
-  } catch {/* fall through */}
-  return SAMPLE_DEALS;
-}
-
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -75,16 +57,25 @@ const PRIORITY_DOT: Record<Deal["priority"], string> = {
 export function SalesArchetypePipeline() {
   const [params, setParams] = useUrlState(["color"] as const);
   const colorMode = (params.color as "priority" | "owner" | undefined) ?? "priority";
-  const data = useSwr<Deal[]>("sales.deals", fetchDeals);
-  const [localDeals, setLocalDeals] = React.useState<Deal[]>([]);
+  // Real backend read via the framework's resource client.
+  const { data: liveDeals, loading, error, refetch } = useAllRecords<Deal>("sales.deal");
+  const runtime = useRuntime();
   const toast = useArchetypeToast();
+  // Optimistic local state — applies the move immediately, rolls back
+  // if the persisted update fails. Synced with realtime invalidations.
+  const [optimistic, setOptimistic] = React.useState<Deal[] | null>(null);
   React.useEffect(() => {
-    if (data.data) setLocalDeals(data.data);
-  }, [data.data]);
-  const deals = localDeals;
+    setOptimistic(null);
+  }, [liveDeals]);
+  const deals = optimistic ?? liveDeals;
+  const dataState = error
+    ? { status: "error" as const, error }
+    : loading && deals.length === 0
+      ? { status: "loading" as const }
+      : { status: "ready" as const };
 
   useArchetypeKeyboard([
-    { label: "Refresh", combo: "r", run: () => { void data.refetch(); } },
+    { label: "Refresh", combo: "r", run: () => { refetch(); } },
   ]);
 
   const dndColumns = React.useMemo<readonly KanbanColumn[]>(
@@ -127,24 +118,43 @@ export function SalesArchetypePipeline() {
 
   const handleMove = React.useCallback(
     async (cardId: string, next: { columnId: string; order: number }) => {
-      setLocalDeals((prev) => {
-        const map = new Map(prev.map((d) => [d.id, d]));
-        const target = map.get(cardId);
-        if (!target) return prev;
-        map.set(cardId, {
-          ...target,
-          stage: next.columnId as Deal["stage"],
-          ageDays: next.columnId === target.stage ? target.ageDays : 0,
+      const before = liveDeals;
+      // Optimistic in-place update.
+      setOptimistic(
+        before.map((d) =>
+          d.id === cardId
+            ? {
+                ...d,
+                stage: next.columnId as Deal["stage"],
+                ageDays: next.columnId === d.stage ? d.ageDays : 0,
+              }
+            : d,
+        ),
+      );
+      try {
+        // Real persistence via the framework's action runtime — server
+        // updates the row, the resource cache invalidates, and the
+        // realtime channel re-emits the changed list.
+        await runtime.actions.update("sales.deal", cardId, {
+          stage: next.columnId,
         });
-        return Array.from(map.values());
-      });
-      toast({
-        title: `Moved to ${next.columnId}`,
-        intent: "success",
-        durationMs: 2200,
-      });
+        toast({
+          title: `Moved to ${next.columnId}`,
+          intent: "success",
+          durationMs: 2000,
+        });
+      } catch (err) {
+        // Roll back optimistic state on failure.
+        setOptimistic(null);
+        toast({
+          title: "Move failed",
+          description: err instanceof Error ? err.message : undefined,
+          intent: "danger",
+        });
+        throw err;
+      }
     },
-    [toast],
+    [liveDeals, runtime, toast],
   );
 
   return (
@@ -176,7 +186,7 @@ export function SalesArchetypePipeline() {
         </>
       }
     >
-      <WidgetShell label="Pipeline" state={data.state} skeleton="kpi" onRetry={data.refetch}>
+      <WidgetShell label="Pipeline" state={dataState} skeleton="kpi" onRetry={refetch}>
         <KanbanDndBoard<Deal>
           columns={dndColumns}
           cards={dndCards}

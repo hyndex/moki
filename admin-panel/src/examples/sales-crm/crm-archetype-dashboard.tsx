@@ -28,11 +28,11 @@ import {
   WidgetShell,
   useUrlState,
   useArchetypeKeyboard,
-  useSwr,
   type DriftPoint,
   type AttentionItem,
   type DrillTarget,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 
 const REFRESH_HINTS = [
   { keys: "R", label: "Refresh" },
@@ -153,25 +153,165 @@ function mockAttention(): CrmAttention {
 
 /** The page. Roughly 200 lines of business code; the design system carries
  *  the rest of the chrome. */
+interface CrmContactRow {
+  id: string;
+  stage?: "lead" | "prospect" | "customer" | "churned";
+  lifetimeValue?: number;
+  createdAt?: string;
+  lastActivityAt?: string;
+}
+
+interface SalesDealRow {
+  id: string;
+  stage?: string;
+  amount?: number;
+  expectedCloseDate?: string;
+  ageInStageDays?: number;
+  status?: string;
+}
+
 export default function CrmArchetypeDashboard() {
   const [params, setParams] = useUrlState(["period"] as const);
   const period = (params.period as PeriodKey | undefined) ?? "30d";
 
-  const kpis = useSwr<CrmKpis>(
-    `crm.dashboard.kpis?period=${period}`,
-    () => fetchKpis(period),
-    { ttlMs: 30_000 },
-  );
-  const attention = useSwr<CrmAttention>(
-    `crm.dashboard.attention`,
-    () => fetchAttention(),
-    { ttlMs: 30_000 },
-  );
+  // Real backend reads via the framework's resource client. Auto-refetch
+  // on the realtime channel; cached + deduplicated across pages.
+  const contacts = useAllRecords<CrmContactRow>("crm.contact");
+  const deals = useAllRecords<SalesDealRow>("sales.deal");
+
+  // Derive KPIs from live data when present, fall back to mock when
+  // both resources are still loading or empty (e.g., a fresh tenant).
+  const kpisData = React.useMemo<CrmKpis>(() => {
+    if (!contacts.data.length && !deals.data.length) return mockKpis(period);
+    const periodDays = period === "7d" ? 7 : period === "30d" ? 30 : period === "qtd" ? 90 : 365;
+    const since = Date.now() - periodDays * 86_400_000;
+    const newLeadsCount = contacts.data.filter((c) => {
+      const t = c.createdAt ? Date.parse(c.createdAt) : 0;
+      return t >= since && c.stage === "lead";
+    }).length;
+    const openDeals = deals.data.filter(
+      (d) => d.stage !== "won" && d.stage !== "lost" && d.status !== "closed",
+    );
+    const pipelineOpen = openDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
+    const wonInPeriod = deals.data.filter((d) => {
+      if (d.stage !== "won") return false;
+      const t = d.expectedCloseDate ? Date.parse(d.expectedCloseDate) : 0;
+      return t >= since;
+    });
+    const lostInPeriod = deals.data.filter((d) => {
+      if (d.stage !== "lost") return false;
+      const t = d.expectedCloseDate ? Date.parse(d.expectedCloseDate) : 0;
+      return t >= since;
+    });
+    const closed = wonInPeriod.length + lostInPeriod.length;
+    const winRate = closed === 0 ? 0 : wonInPeriod.length / closed;
+    const stalled = openDeals.filter((d) => (d.ageInStageDays ?? 0) >= 14).length;
+    const forecastTotal = openDeals.reduce(
+      (s, d) => s + (d.amount ?? 0) * (d.stage === "negotiate" ? 0.6 : 0.3),
+      0,
+    );
+    const fallback = mockKpis(period);
+    return {
+      newLeads: { value: newLeadsCount, deltaPct: 0, series: fallback.newLeads.series },
+      pipelineOpen: {
+        value: pipelineOpen,
+        deltaPct: 0,
+        series: fallback.pipelineOpen.series,
+      },
+      winRate: { current: winRate, target: 0.4 },
+      cycleDays: fallback.cycleDays,
+      stalled: {
+        value: stalled,
+        reason:
+          stalled === 0
+            ? "No stalled deals — pipeline is moving."
+            : `${stalled} deals stuck in stage ≥14d`,
+      },
+      forecast30: {
+        current: forecastTotal,
+        p10: forecastTotal * 0.6,
+        p50: forecastTotal,
+        p90: forecastTotal * 1.4,
+      },
+    };
+  }, [contacts.data, deals.data, period]);
+
+  // Derive attention queue from the same live data (overdue follow-ups,
+  // stalled deals, hot leads).
+  const attentionData = React.useMemo<CrmAttention>(() => {
+    if (!contacts.data.length && !deals.data.length) return mockAttention();
+    const items: AttentionItem[] = [];
+    const stalled = deals.data.filter(
+      (d) => d.stage !== "won" && d.stage !== "lost" && (d.ageInStageDays ?? 0) >= 14,
+    );
+    if (stalled.length > 0) {
+      items.push({
+        id: "stalled",
+        icon: "AlertTriangle",
+        severity: "warning",
+        title: `${stalled.length} stalled deal${stalled.length === 1 ? "" : "s"} over 14 days`,
+        description: stalled
+          .slice(0, 3)
+          .map((d) => d.id)
+          .join(" · "),
+        drillTo: { kind: "hash", hash: "/sales/archetype-pipeline" },
+      });
+    }
+    const noTouch = contacts.data
+      .filter((c) => {
+        if (!c.lastActivityAt) return false;
+        const days = (Date.now() - Date.parse(c.lastActivityAt)) / 86_400_000;
+        return days >= 30;
+      })
+      .slice(0, 5);
+    if (noTouch.length > 0) {
+      items.push({
+        id: "no-touch",
+        icon: "Clock",
+        severity: "danger",
+        title: `${noTouch.length} contact${noTouch.length === 1 ? "" : "s"} with no touch 30+ days`,
+        drillTo: { kind: "hash", hash: "/crm/archetype-list" },
+      });
+    }
+    const hotLeads = contacts.data
+      .filter((c) => c.stage === "lead" && (c.lifetimeValue ?? 0) > 50_000)
+      .slice(0, 3);
+    if (hotLeads.length > 0) {
+      items.push({
+        id: "hot-leads",
+        icon: "Flame",
+        severity: "info",
+        title: `${hotLeads.length} hot lead${hotLeads.length === 1 ? "" : "s"} unreached`,
+        description: "High LTV potential",
+        drillTo: { kind: "hash", hash: "/crm/archetype-list?filter=stage:eq:lead" },
+      });
+    }
+    if (items.length === 0) return mockAttention();
+    return { items };
+  }, [contacts.data, deals.data]);
+
+  const kpis = {
+    data: kpisData,
+    state: contacts.error || deals.error
+      ? { status: "error" as const, error: contacts.error ?? deals.error }
+      : contacts.loading && deals.loading && contacts.data.length === 0
+        ? { status: "loading" as const }
+        : { status: "ready" as const },
+    refetch: () => {
+      contacts.refetch();
+      deals.refetch();
+    },
+  };
+  const attention = {
+    data: attentionData,
+    state: kpis.state,
+    refetch: kpis.refetch,
+  };
 
   const refresh = React.useCallback(() => {
-    void kpis.refetch();
-    void attention.refetch();
-  }, [kpis, attention]);
+    contacts.refetch();
+    deals.refetch();
+  }, [contacts, deals]);
 
   useArchetypeKeyboard([
     {

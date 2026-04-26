@@ -10,6 +10,7 @@ import type { AnyPlugin } from "@/contracts/plugin-v2";
 import { discoverAllPlugins } from "./pluginLoaders";
 import { PermissionsProvider } from "@/admin-archetypes/permissions/PermissionsContext";
 import { authStore } from "@/runtime/auth";
+import { ArchetypeServiceProviders } from "./archetypeServiceProviders";
 
 export interface AdminRootProps {
   /** Plugins passed explicitly from the consumer's App. Optional — the
@@ -100,7 +101,9 @@ function AdminInner({
     <PluginHostContext.Provider value={host}>
       <ActivationEngineContext.Provider value={activation}>
         <PermissionsRoot>
-          <AppShell registry={registry} />
+          <ArchetypeServiceProviders>
+            <AppShell registry={registry} />
+          </ArchetypeServiceProviders>
         </PermissionsRoot>
       </ActivationEngineContext.Provider>
     </PluginHostContext.Provider>

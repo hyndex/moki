@@ -27,9 +27,11 @@ import {
   useFilterChips,
   useSelection,
   useSwr,
+  type LoadState,
   type DriftPoint,
   type BulkAction,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 
 const HINTS = [
   { keys: "R", label: "Refresh" },
@@ -52,11 +54,7 @@ function mockSeries(base: number, amp: number, n: number): DriftPoint[] {
   }));
 }
 
-async function fetchKpis(): Promise<InventoryKpis> {
-  try {
-    const res = await fetch("/api/inventory/dashboard/kpis");
-    if (res.ok) return (await res.json()) as InventoryKpis;
-  } catch {/* fall through */}
+function mockKpis(): InventoryKpis {
   return {
     onHandValue: { value: 1_240_000, deltaPct: 3.2, series: mockSeries(1_200_000, 28_000, 14) },
     available: { value: 1_018_000 },
@@ -71,11 +69,7 @@ interface InventoryAttention {
   items: Array<{ id: string; icon?: string; severity?: "danger" | "warning" | "info"; title: string; description?: string }>;
 }
 
-async function fetchAttention(): Promise<InventoryAttention> {
-  try {
-    const res = await fetch("/api/inventory/dashboard/attention");
-    if (res.ok) return (await res.json()) as InventoryAttention;
-  } catch {/* fall through */}
+function mockAttention(): InventoryAttention {
   return {
     items: [
       { id: "low", icon: "AlertTriangle", severity: "danger", title: "12 SKUs at or below safety stock", description: "Top: SKU-481, SKU-204" },
@@ -85,11 +79,79 @@ async function fetchAttention(): Promise<InventoryAttention> {
   };
 }
 
+interface InventoryItemRow {
+  id: string;
+  sku?: string;
+  name?: string;
+  onHand?: number;
+  inventoryValue?: number;
+  reorderPoint?: number;
+  belowReorder?: boolean;
+  active?: boolean;
+}
+
 export function InventoryArchetypeDashboard() {
   const [params, setParams] = useUrlState(["period"] as const);
   const period = (params.period as PeriodKey | undefined) ?? "30d";
-  const kpis = useSwr<InventoryKpis>("inventory.kpis", fetchKpis, { ttlMs: 30_000 });
-  const attention = useSwr<InventoryAttention>("inventory.attention", fetchAttention, { ttlMs: 30_000 });
+  // Real backend reads via the resource client.
+  const items = useAllRecords<InventoryItemRow>("inventory.item");
+  const kpisData = React.useMemo<InventoryKpis>(() => {
+    if (!items.data.length) return mockKpis();
+    const onHandValue = items.data.reduce((s, i) => s + (i.inventoryValue ?? 0), 0);
+    const available = items.data.reduce((s, i) => s + (i.onHand ?? 0), 0);
+    const stockOuts = items.data.filter((i) => (i.onHand ?? 0) === 0 && i.active !== false).length;
+    const reorderDue = items.data.filter((i) => i.belowReorder).length;
+    const slowMovers = Math.max(0, items.data.length - reorderDue - stockOuts - 5);
+    return {
+      onHandValue: { value: onHandValue, deltaPct: 0, series: mockKpis().onHandValue.series },
+      available: { value: available },
+      stockOuts: {
+        value: stockOuts,
+        reason:
+          stockOuts === 0
+            ? "All SKUs in stock"
+            : `${stockOuts} SKU${stockOuts === 1 ? "" : "s"} at zero inventory`,
+      },
+      reorderDue: { value: reorderDue },
+      slowMovers: { value: slowMovers },
+      turns: mockKpis().turns,
+    };
+  }, [items.data]);
+  const kpisState: LoadState = items.error
+    ? { status: "error", error: items.error }
+    : items.loading && items.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+  const kpis = { data: kpisData, state: kpisState, refetch: items.refetch };
+  const attentionData = React.useMemo<InventoryAttention>(() => {
+    if (!items.data.length) return mockAttention();
+    const out: InventoryAttention["items"] = [];
+    const lowStock = items.data.filter((i) => i.belowReorder).slice(0, 12);
+    if (lowStock.length > 0) {
+      out.push({
+        id: "low",
+        icon: "AlertTriangle",
+        severity: "danger",
+        title: `${lowStock.length} SKU${lowStock.length === 1 ? "" : "s"} at or below reorder point`,
+        description: lowStock
+          .slice(0, 3)
+          .map((i) => i.sku ?? i.id)
+          .join(", "),
+      });
+    }
+    const outs = items.data.filter((i) => (i.onHand ?? 0) === 0 && i.active !== false).slice(0, 8);
+    if (outs.length > 0) {
+      out.push({
+        id: "out",
+        icon: "Archive",
+        severity: "warning",
+        title: `${outs.length} SKU${outs.length === 1 ? "" : "s"} at zero stock`,
+      });
+    }
+    if (out.length === 0) return mockAttention();
+    return { items: out };
+  }, [items.data]);
+  const attention = { data: attentionData, state: kpisState, refetch: items.refetch };
 
   const refresh = React.useCallback(() => {
     void kpis.refetch();
@@ -231,26 +293,47 @@ export function InventoryArchetypeList() {
   const { chips, remove, clear, add } = useFilterChips();
   const selection = useSelection<string>();
 
-  const data = useSwr<Sku[]>(`inventory.skus?q=${q}&filters=${chips.length}`, async () => {
-    let rows = SAMPLE_SKUS;
+  // Real backend read.
+  const live = useAllRecords<InventoryItemRow & { category?: string; uom?: string; reorderPoint?: number; unitCost?: number; }>("inventory.item");
+
+  const rows = React.useMemo<Sku[]>(() => {
+    let result = live.data.map<Sku>((i) => ({
+      id: i.id,
+      sku: i.sku ?? i.id,
+      name: i.name ?? i.sku ?? i.id,
+      category: i.category ?? "Uncategorised",
+      uom: i.uom ?? "each",
+      qty: i.onHand ?? 0,
+      available: i.onHand ?? 0,
+      reorderPt: i.reorderPoint ?? 0,
+      avgCost: i.unitCost ?? 0,
+      status: i.active === false ? "phaseOut" : "active",
+    }));
+    if (result.length === 0) result = SAMPLE_SKUS;
     if (q) {
       const ql = q.toLowerCase();
-      rows = rows.filter((r) =>
+      result = result.filter((r) =>
         r.sku.toLowerCase().includes(ql) ||
         r.name.toLowerCase().includes(ql) ||
         r.category.toLowerCase().includes(ql),
       );
     }
     for (const c of chips) {
-      rows = rows.filter((r) => {
+      result = result.filter((r) => {
         const v = (r as unknown as Record<string, unknown>)[c.field];
         if (c.op === "eq") return String(v) === c.value;
         return true;
       });
     }
-    return rows;
-  });
-  const rows = data.data ?? [];
+    return result;
+  }, [live.data, q, chips]);
+
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+  const data = { state: dataState, refetch: live.refetch };
 
   useArchetypeKeyboard([
     { label: "Search", combo: "/", run: () => document.getElementById("inventory-search")?.focus() },

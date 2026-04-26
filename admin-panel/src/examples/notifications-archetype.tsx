@@ -10,8 +10,9 @@ import {
   WidgetShell,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { cn } from "@/lib/cn";
 
 interface Notif {
@@ -59,10 +60,51 @@ async function fetchNotifs(): Promise<Notif[]> {
   return SAMPLE;
 }
 
+interface DeliveryRow {
+  id: string;
+  channel?: string;
+  template?: string;
+  recipient?: string;
+  status?: "queued" | "sent" | "delivered" | "bounced" | "failed";
+  subject?: string;
+  preview?: string;
+  body?: string;
+  createdAt?: string;
+}
+
 export function NotificationsArchetypeInbox() {
   const [params, setParams] = useUrlState(["sel", "q"] as const);
-  const data = useSwr<Notif[]>("notifications.inbox", fetchNotifs, { ttlMs: 15_000 });
-  const all = data.data ?? [];
+  // Real backend read.
+  const live = useAllRecords<DeliveryRow>("notifications.delivery");
+  const data: { data: Notif[]; refetch: () => void; state: LoadState } = {
+    data: live.data.length
+      ? live.data.map<Notif>((d) => ({
+          id: d.id,
+          source: d.channel ?? "system",
+          title: d.subject ?? d.template ?? d.id,
+          body: d.body ?? d.preview ?? "",
+          ts: d.createdAt
+            ? new Date(d.createdAt).toLocaleString()
+            : "now",
+          unread: d.status !== "delivered",
+          severity:
+            d.status === "bounced" || d.status === "failed"
+              ? "danger"
+              : d.status === "queued"
+                ? "warning"
+                : d.status === "sent"
+                  ? "info"
+                  : "success",
+        }))
+      : SAMPLE,
+    refetch: live.refetch,
+    state: live.error
+      ? { status: "error", error: live.error }
+      : live.loading && live.data.length === 0
+        ? { status: "loading" }
+        : { status: "ready" },
+  };
+  const all = data.data;
   const q = params.q ?? "";
   const filtered = q
     ? all.filter((n) =>

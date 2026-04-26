@@ -10,8 +10,9 @@ import {
   CommandHints,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { cn } from "@/lib/cn";
 
 interface AuditEntry {
@@ -55,11 +56,43 @@ async function fetchAudit(): Promise<AuditEntry[]> {
   return SAMPLE;
 }
 
+interface AuditEventRow {
+  id: string;
+  action?: string;
+  actor?: string;
+  user?: string;
+  resource?: string;
+  resourceId?: string;
+  recordId?: string;
+  level?: "info" | "warn" | "error";
+  ts?: string;
+  createdAt?: string;
+  hashOk?: boolean;
+}
+
 export function AuditArchetypeTimeline() {
   const [params, setParams] = useUrlState(["action"] as const);
-  const data = useSwr<AuditEntry[]>("audit.recent", fetchAudit, { ttlMs: 5_000 });
-  const all = data.data ?? [];
+  // Real backend read.
+  const live = useAllRecords<AuditEventRow>("audit.event");
+  const all = React.useMemo<AuditEntry[]>(() => {
+    if (live.data.length === 0) return SAMPLE;
+    return live.data.map<AuditEntry>((e) => ({
+      id: e.id,
+      ts: e.ts ?? e.createdAt ?? new Date().toISOString(),
+      action: e.action ?? "unknown",
+      actor: e.actor ?? e.user ?? "system",
+      target: `${e.resource ?? "?"}:${e.resourceId ?? e.recordId ?? "?"}`,
+      verified: e.hashOk !== false,
+      level: e.level ?? "info",
+    }));
+  }, [live.data]);
   const filtered = params.action ? all.filter((e) => e.action === params.action) : all;
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+  const data = { state: dataState, refetch: live.refetch };
 
   useArchetypeKeyboard([
     { label: "Refresh", combo: "r", run: () => data.refetch() },

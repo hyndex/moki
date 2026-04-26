@@ -21,14 +21,15 @@ import {
   useFilterChips,
   useSelection,
   useUrlState,
-  useSwr,
   type BulkAction,
+  type LoadState,
   SavedViewSwitcher,
   type SavedView,
   KeyboardHelpOverlay,
   useKeyboardHelp,
 } from "@/admin-archetypes";
-import { CONTACTS } from "./data";
+import { useAllRecords } from "@/runtime/hooks";
+import { useRuntime } from "@/runtime/context";
 
 interface Person {
   id: string;
@@ -63,35 +64,44 @@ export default function CrmArchetypeList() {
     { id: "new", label: "New (7d)", description: "Recently added." },
   ]);
 
-  const data = useSwr<Person[]>(
-    `crm.people?q=${q}&filters=${chips.length}`,
-    async () => {
-      // No backend in dev — read from the seeded CONTACTS dataset.
-      let rows = CONTACTS as unknown as Person[];
-      if (q) {
-        const ql = q.toLowerCase();
-        rows = rows.filter(
-          (r) =>
-            r.name.toLowerCase().includes(ql) ||
-            r.company.toLowerCase().includes(ql) ||
-            r.email.toLowerCase().includes(ql),
-        );
-      }
-      for (const c of chips) {
-        rows = rows.filter((r) => {
-          const v = (r as unknown as Record<string, unknown>)[c.field];
-          if (c.op === "eq") return String(v) === c.value;
-          if (c.op === "neq") return String(v) !== c.value;
-          if (c.op === "contains") return String(v ?? "").toLowerCase().includes(c.value.toLowerCase());
-          return true;
-        });
-      }
-      return rows;
-    },
-    { ttlMs: 15_000 },
-  );
+  // Real backend read via the framework's resource client. Auto-
+  // refetches on `realtime:resource-changed` events.
+  const { data: live, loading, error, refetch } = useAllRecords<Person>("crm.contact");
+  const runtime = useRuntime();
 
-  const rows = data.data ?? [];
+  const rows = React.useMemo(() => {
+    let result = live;
+    if (q) {
+      const ql = q.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.name.toLowerCase().includes(ql) ||
+          r.company.toLowerCase().includes(ql) ||
+          r.email.toLowerCase().includes(ql),
+      );
+    }
+    for (const c of chips) {
+      result = result.filter((r) => {
+        const v = (r as unknown as Record<string, unknown>)[c.field];
+        if (c.op === "eq") return String(v) === c.value;
+        if (c.op === "neq") return String(v) !== c.value;
+        if (c.op === "contains")
+          return String(v ?? "").toLowerCase().includes(c.value.toLowerCase());
+        return true;
+      });
+    }
+    return result;
+  }, [live, q, chips]);
+
+  const dataState = React.useMemo<LoadState>(
+    () =>
+      error
+        ? { status: "error", error }
+        : loading
+          ? { status: "loading" }
+          : { status: "ready" },
+    [error, loading],
+  );
   const totalSelected = selection.size;
 
   const bindings = useArchetypeKeyboard([
@@ -153,11 +163,16 @@ export default function CrmArchetypeList() {
       icon: <Trash2 className="h-3.5 w-3.5 mr-1" aria-hidden />,
       confirm: {
         title: `Archive ${totalSelected} contacts?`,
-        description: "They will be hidden from the active list. You can restore them anytime.",
+        description: "They will be removed from the active list.",
       },
-      onAction: () => {
-        console.info("[crm.list] Archive", Array.from(selection.ids));
+      toast: (n) => ({ success: `Archived ${n} contact${n === 1 ? "" : "s"}`, error: "Archive failed" }),
+      onAction: async () => {
+        const ids = Array.from(selection.ids);
+        // Use the framework's action runtime — real DELETE through
+        // the resource client; cache + realtime sub auto-refresh.
+        await Promise.all(ids.map((id) => runtime.actions.delete("crm.contact", id)));
         selection.clear();
+        refetch();
       },
     },
   ];
@@ -238,9 +253,9 @@ export default function CrmArchetypeList() {
     >
       <WidgetShell
         label="People"
-        state={data.state}
+        state={dataState}
         skeleton="table"
-        onRetry={data.refetch}
+        onRetry={refetch}
         empty={{
           title: "No people match your filters",
           description: "Clear filters or add a new person.",
