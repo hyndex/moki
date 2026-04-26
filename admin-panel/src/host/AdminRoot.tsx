@@ -8,6 +8,8 @@ import { ErrorState } from "@/admin-primitives/ErrorState";
 import { PluginHostContext, ActivationEngineContext } from "./pluginHostContext";
 import type { AnyPlugin } from "@/contracts/plugin-v2";
 import { discoverAllPlugins } from "./pluginLoaders";
+import { PermissionsProvider } from "@/admin-archetypes/permissions/PermissionsContext";
+import { authStore } from "@/runtime/auth";
 
 export interface AdminRootProps {
   /** Plugins passed explicitly from the consumer's App. Optional — the
@@ -97,8 +99,42 @@ function AdminInner({
   return (
     <PluginHostContext.Provider value={host}>
       <ActivationEngineContext.Provider value={activation}>
-        <AppShell registry={registry} />
+        <PermissionsRoot>
+          <AppShell registry={registry} />
+        </PermissionsRoot>
       </ActivationEngineContext.Provider>
     </PluginHostContext.Provider>
+  );
+}
+
+/** Bridges the `authStore` user → PermissionsProvider grants.
+ *
+ *  Two modes:
+ *    1. The signed-in user's `role` is derived to a set of grants
+ *       (e.g. role "admin" → all permissions; "viewer" → "*.read"
+ *       plus the explicit grants from a future user-roles plugin).
+ *    2. When no permission requirements are declared on the page, the
+ *       grants set is irrelevant — `RequirePermissions` short-circuits.
+ *
+ *  Production deployments wire `grants` from the user-roles plugin
+ *  (or the auth provider) by replacing this component. */
+function PermissionsRoot({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = React.useState(authStore.user);
+  React.useEffect(() => {
+    return authStore.emitter.on("change", () => setUser(authStore.user));
+  }, []);
+  const grants = React.useMemo(() => {
+    if (!user) return [] as readonly string[];
+    if (user.role === "admin" || user.role === "super") {
+      // No fine-grained system yet → admins bypass.
+      return [] as readonly string[];
+    }
+    return [user.role + ".read"] as readonly string[];
+  }, [user]);
+  const bypass = user?.role === "admin" || user?.role === "super" || !user;
+  return (
+    <PermissionsProvider grants={grants} bypass={bypass}>
+      {children}
+    </PermissionsProvider>
   );
 }

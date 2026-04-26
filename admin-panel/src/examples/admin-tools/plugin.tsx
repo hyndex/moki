@@ -86,6 +86,8 @@ interface ResolvedAdminUi {
     fullBleed?: boolean;
     /** Page default density. */
     density?: PluginPageDescriptor["density"];
+    /** Permissions requirement, propagated from the descriptor. */
+    permissions?: PluginPageDescriptor["permissions"];
   }>;
   resources: ReadonlyArray<{ id: string; singular: string; plural: string; icon?: string }>;
 }
@@ -120,6 +122,7 @@ function resolve(plugins: readonly AdminUiContribution[]): ResolvedAdminUi {
         archetype: p.archetype,
         fullBleed: p.fullBleed,
         density: p.density,
+        permissions: p.permissions,
       });
       resources.push({
         id: pageResourceId(p),
@@ -176,6 +179,7 @@ const pluginViews = resolved.views.map((v) =>
     archetype: v.archetype,
     fullBleed: v.fullBleed,
     density: v.density,
+    permissions: v.permissions,
   }),
 );
 

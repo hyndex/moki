@@ -130,6 +130,9 @@ export interface CustomView extends ViewBase {
   readonly fullBleed?: boolean;
   /** Default density for this view. User pref still wins. */
   readonly density?: "comfortable" | "cozy" | "compact";
+  /** Required permission(s) to view this page. The shell gates render
+   *  with <RequirePermissions> automatically. */
+  readonly permissions?: string | readonly string[] | { readonly anyOf: readonly string[] };
 }
 
 /** KanbanView — live drag-and-drop board bound to a resource. */

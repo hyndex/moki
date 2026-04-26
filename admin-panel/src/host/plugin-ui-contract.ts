@@ -96,6 +96,15 @@ export interface PluginPageDescriptor {
   savedViews?: PluginPageSavedViews;
   /** Quick actions surfaced in Cmd-K palette + `erp-actions-core`. */
   quickActions?: readonly PluginPageQuickAction[];
+  /** Required permission(s) to view this page. The shell gates render
+   *  with <RequirePermissions> automatically. Accepted shapes:
+   *
+   *    - `"crm.read"` (single permission)
+   *    - `["crm.read", "crm.write"]` (AND — all required)
+   *    - `{ anyOf: ["crm.read", "ops.read"] }` (OR — any one)
+   *
+   *  Pages that don't declare this default to "always allowed". */
+  permissions?: string | readonly string[] | { anyOf: readonly string[] };
 }
 
 export interface PluginNavEntry {

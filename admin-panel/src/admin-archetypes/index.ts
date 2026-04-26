@@ -45,6 +45,24 @@ export * from "./state/KeyboardHelpOverlay";
 
 // Widgets (cont.)
 export * from "./widgets/SavedViewSwitcher";
+export * from "./widgets/ArchetypeDataGrid";
+export * from "./widgets/charts";
+
+// Archetypes (cont.)
+export * from "./archetypes/FormArchetype";
+export * from "./archetypes/WizardArchetype";
+export * from "./archetypes/ComparatorArchetype";
+
+// Hooks (cont.)
+export * from "./hooks/useMutation";
+export * from "./hooks/useSavedViews";
+export * from "./hooks/useQuickActions";
+
+// Permissions
+export * from "./permissions/PermissionsContext";
+
+// Observability
+export * from "./observability/telemetrySink";
 
 // Widgets
 export * from "./widgets/Sparkline";

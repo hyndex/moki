@@ -1,7 +1,8 @@
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "@/primitives/Button";
 import { cn } from "@/lib/cn";
+import { useArchetypeToast } from "../hooks/useArchetypeToast";
 
 export interface BulkAction {
   id: string;
@@ -12,6 +13,10 @@ export interface BulkAction {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "link";
   /** When true, prompt for confirmation before invoking handler. */
   confirm?: { title: string; description?: string };
+  /** Toast on completion. Use to confirm async work. */
+  toast?:
+    | { success?: string; error?: string }
+    | ((selectedCount: number) => { success?: string; error?: string });
   onAction: () => void | Promise<void>;
 }
 
@@ -32,18 +37,35 @@ export function BulkActionBar({
 }: BulkActionBarProps) {
   const [pending, setPending] = React.useState<string | null>(null);
   const [confirming, setConfirming] = React.useState<BulkAction | null>(null);
+  const toast = useArchetypeToast();
+
+  const execute = async (a: BulkAction) => {
+    setPending(a.id);
+    try {
+      await a.onAction();
+      const t = typeof a.toast === "function" ? a.toast(selectedCount) : a.toast;
+      if (t?.success) {
+        toast({ title: t.success, intent: "success" });
+      }
+    } catch (err) {
+      const t = typeof a.toast === "function" ? a.toast(selectedCount) : a.toast;
+      toast({
+        title: t?.error ?? "Action failed",
+        description: err instanceof Error ? err.message : undefined,
+        intent: "danger",
+      });
+      throw err;
+    } finally {
+      setPending(null);
+    }
+  };
 
   const run = async (a: BulkAction) => {
     if (a.confirm) {
       setConfirming(a);
       return;
     }
-    setPending(a.id);
-    try {
-      await a.onAction();
-    } finally {
-      setPending(null);
-    }
+    await execute(a).catch(() => {/* surfaced via toast */});
   };
 
   return (
@@ -67,7 +89,11 @@ export function BulkActionBar({
           disabled={pending === a.id}
           onClick={() => run(a)}
         >
-          {a.icon}
+          {pending === a.id ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" aria-hidden />
+          ) : (
+            a.icon
+          )}
           {a.label}
         </Button>
       ))}
@@ -78,12 +104,7 @@ export function BulkActionBar({
           onConfirm={async () => {
             const a = confirming;
             setConfirming(null);
-            setPending(a.id);
-            try {
-              await a.onAction();
-            } finally {
-              setPending(null);
-            }
+            await execute(a).catch(() => {/* surfaced via toast */});
           }}
         />
       )}

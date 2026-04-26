@@ -23,6 +23,10 @@ import { TooltipProvider } from "@/primitives/Tooltip";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { inferArchetype } from "@/admin-archetypes/inferArchetype";
 import type { ArchetypeId } from "@/admin-archetypes/types";
+import {
+  RequirePermissions,
+  type PermissionRequirement,
+} from "@/admin-archetypes/permissions/PermissionsContext";
 
 type InferableArchetype = ArchetypeId | undefined;
 
@@ -275,6 +279,8 @@ function ArchetypeAwareMain({
   const fullBleed = inferred.fullBleed;
   const archetype = inferred.archetype;
 
+  const requiredPermissions = (view as { permissions?: PermissionRequirement } | undefined)?.permissions;
+
   const pluginId =
     view && "resource" in view
       ? registry.pluginByResource[view.resource as string] ?? "shell"
@@ -293,7 +299,9 @@ function ArchetypeAwareMain({
         <div className="h-full">
           <ErrorBoundary key={hash}>
             <PluginBoundary pluginId={pluginId} label={view?.title}>
-              <RouteView route={route} registry={registry} />
+              <RequirePermissions need={requiredPermissions}>
+                <RouteView route={route} registry={registry} />
+              </RequirePermissions>
             </PluginBoundary>
           </ErrorBoundary>
         </div>
@@ -301,7 +309,9 @@ function ArchetypeAwareMain({
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           <ErrorBoundary key={hash}>
             <PluginBoundary pluginId={pluginId} label={view?.title}>
-              <RouteView route={route} registry={registry} />
+              <RequirePermissions need={requiredPermissions}>
+                <RouteView route={route} registry={registry} />
+              </RequirePermissions>
             </PluginBoundary>
           </ErrorBoundary>
         </div>
