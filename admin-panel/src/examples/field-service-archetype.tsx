@@ -164,6 +164,12 @@ export function FieldServiceArchetypeMap() {
                 <Term label="ETA" value={selected.eta} />
                 <Term label="Status" value={selected.status} />
               </dl>
+              <a
+                href={`#/field-service/jobs/${encodeURIComponent(selected.id)}`}
+                className="text-xs font-medium text-info hover:underline pt-1 border-t border-border-subtle"
+              >
+                Open job detail →
+              </a>
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-border bg-surface-0/40 p-3 text-xs text-text-muted text-center">

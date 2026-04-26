@@ -219,17 +219,18 @@ export function MaintenanceArchetypeCalendar() {
                     <div key={isoDate + tech} className="px-1.5 py-1.5 border-t border-l border-border-subtle min-h-[60px]">
                       <div className="space-y-1">
                         {dayOrders.map((o) => (
-                          <div
+                          <a
                             key={o.id}
+                            href={`#/maintenance/work-orders/${encodeURIComponent(o.id)}`}
                             className={cn(
-                              "rounded px-1.5 py-0.5 border text-[11px] leading-tight",
+                              "block rounded px-1.5 py-0.5 border text-[11px] leading-tight cursor-pointer hover:ring-1 hover:ring-info focus:outline-none focus:ring-2 focus:ring-info",
                               PRIORITY_BG[o.priority],
                               STATUS_OPACITY[o.status],
                             )}
                             title={`${o.asset} · ${o.hour}:00 (${o.durationHours}h) · ${o.status}`}
                           >
                             <span className="font-medium">{o.hour}:00</span> {o.asset}
-                          </div>
+                          </a>
                         ))}
                       </div>
                     </div>

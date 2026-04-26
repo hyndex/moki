@@ -215,7 +215,12 @@ export function NotificationsArchetypeInbox() {
             </header>
             <p className="text-sm text-text-primary whitespace-pre-wrap">{selected.body}</p>
             <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border-subtle">
-              <Button size="sm">
+              <Button
+                size="sm"
+                onClick={() => {
+                  window.location.hash = `/notifications/log/${encodeURIComponent(selected.id)}`;
+                }}
+              >
                 <ArrowRight className="h-4 w-4 mr-1" aria-hidden /> Open record
               </Button>
               <Button size="sm" variant="outline">

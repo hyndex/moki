@@ -161,10 +161,10 @@ export function HrPayrollArchetypeDashboard() {
           <AttentionQueue
             title="Needs attention"
             items={[
-              { id: "probation", icon: "Hourglass", severity: "warning", title: "3 probation periods end this week", description: "Review with managers" },
-              { id: "i9", icon: "ShieldAlert", severity: "danger", title: "I-9 missing for 2 new hires" },
-              { id: "anniv", icon: "PartyPopper", severity: "info", title: "5 work anniversaries this week" },
-              { id: "comp", icon: "FileText", severity: "warning", title: "8 contracts expire in 30d" },
+              { id: "probation", icon: "Hourglass", severity: "warning", title: "3 probation periods end this week", description: "Review with managers", drillTo: { kind: "hash", hash: "/hr/people?filter=probation:eq:true" } },
+              { id: "i9", icon: "ShieldAlert", severity: "danger", title: "I-9 missing for 2 new hires", drillTo: { kind: "hash", hash: "/hr/people?filter=i9:eq:missing" } },
+              { id: "anniv", icon: "PartyPopper", severity: "info", title: "5 work anniversaries this week", drillTo: { kind: "hash", hash: "/hr/people" } },
+              { id: "comp", icon: "FileText", severity: "warning", title: "8 contracts expire in 30d", drillTo: { kind: "hash", hash: "/hr/contracts?filter=expires_in:lte:30d" } },
             ]}
           />
         </WidgetShell>

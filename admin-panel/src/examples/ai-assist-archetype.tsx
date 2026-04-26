@@ -165,9 +165,9 @@ export function AiAssistArchetypeDashboard() {
           <AttentionQueue
             title="Needs attention"
             items={[
-              { id: "regression", icon: "AlertOctagon", severity: "danger", title: "Regression detected on skill 'classify'", description: "Pass rate dropped 8% w/w" },
-              { id: "budget", icon: "TrendingUp", severity: "warning", title: "Budget at 78% with 12 days left", description: "Projected to overrun by 9%" },
-              { id: "model-drift", icon: "Activity", severity: "info", title: "Model X p99 latency tripled", description: "Consider failover" },
+              { id: "regression", icon: "AlertOctagon", severity: "danger", title: "Regression detected on skill 'classify'", description: "Pass rate dropped 8% w/w", drillTo: { kind: "hash", hash: "/ai/skills?filter=name:eq:classify" } },
+              { id: "budget", icon: "TrendingUp", severity: "warning", title: "Budget at 78% with 12 days left", description: "Projected to overrun by 9%", drillTo: { kind: "hash", hash: "/ai/budgets" } },
+              { id: "model-drift", icon: "Activity", severity: "info", title: "Model X p99 latency tripled", description: "Consider failover", drillTo: { kind: "hash", hash: "/ai/runs" } },
             ]}
           />
         </WidgetShell>

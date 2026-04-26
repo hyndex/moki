@@ -226,6 +226,7 @@ export function AccountingArchetypeDashboard() {
         icon: "ShieldAlert",
         severity: "warning",
         title: `${billsDue.length} bill${billsDue.length === 1 ? "" : "s"} due in 3 days`,
+        drillTo: { kind: "hash", hash: "/accounting/bills?filter=status:neq:paid" },
       });
     }
     const draftJournals = journals.data.filter((j) => j.status === "draft").slice(0, 5);
@@ -235,6 +236,7 @@ export function AccountingArchetypeDashboard() {
         icon: "AlertTriangle",
         severity: "info",
         title: `${draftJournals.length} journal entr${draftJournals.length === 1 ? "y" : "ies"} pending post`,
+        drillTo: { kind: "hash", hash: "/accounting/journal-entries?filter=status:eq:draft" },
       });
     }
     if (items.length === 0) return mockAttention();

@@ -448,7 +448,23 @@ export function InventoryArchetypeList() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border-subtle hover:bg-surface-1">
+                <tr
+                  key={r.id}
+                  className="border-t border-border-subtle hover:bg-surface-1 cursor-pointer"
+                  onClick={(e) => {
+                    const tgt = e.target as HTMLElement;
+                    if (tgt.closest('input,button,a')) return;
+                    window.location.hash = `/inventory/items/${encodeURIComponent(r.id)}`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      window.location.hash = `/inventory/items/${encodeURIComponent(r.id)}`;
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open ${r.sku}`}
+                >
                   <td className="px-2 py-2">
                     <input
                       type="checkbox"

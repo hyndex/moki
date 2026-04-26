@@ -259,6 +259,14 @@ export function ManufacturingArchetypeBom() {
               { label: "Lead time", value: `${selected.leadDays}d` },
               { label: "Children", value: selected.children?.length ?? 0 },
             ]}
+            footer={
+              <a
+                href={`#/manufacturing/bom-lines/${encodeURIComponent(selected.id)}`}
+                className="text-xs font-medium text-info hover:underline"
+              >
+                Open BOM line detail →
+              </a>
+            }
           />
           <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted px-1">
             Where used

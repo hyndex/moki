@@ -200,8 +200,29 @@ export function SalesArchetypePipeline() {
           dangerAgingDays={14}
           renderCard={(card) => {
             const d = card.data;
+            // Click (no drag) opens the deal's detail. The Kanban
+            // PointerSensor only fires drag past 5px so a normal click
+            // still propagates as a click event — `onClick` here is
+            // safe even with the surrounding sortable listeners.
+            const open = () => {
+              window.location.hash = `/sales/deals/${encodeURIComponent(card.id)}`;
+            };
             return (
-              <>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  open();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    open();
+                  }
+                }}
+                aria-label={`Open ${d.name}`}
+              >
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="text-sm font-medium text-text-primary truncate">{d.name}</div>
                   {colorMode === "priority" && (
@@ -223,7 +244,7 @@ export function SalesArchetypePipeline() {
                     {d.ageDays}d
                   </span>
                 </div>
-              </>
+              </div>
             );
           }}
         />

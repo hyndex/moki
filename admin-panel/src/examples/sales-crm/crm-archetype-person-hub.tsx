@@ -242,6 +242,14 @@ export function CrmArchetypePersonHub() {
               { label: "LTV", value: fmtCurrency(p.ltv) },
               { label: "Last touch", value: `${p.lastTouchDays}d` },
             ]}
+            footer={
+              <a
+                href={`#/contacts/${encodeURIComponent(p.id)}`}
+                className="text-xs font-medium text-info hover:underline"
+              >
+                Open canonical record →
+              </a>
+            }
           />
         )
       }

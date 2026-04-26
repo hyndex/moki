@@ -22,6 +22,10 @@ export interface RailEntityCardProps {
   facts?: readonly RailEntityFact[];
   /** Action shown on the right of the title (e.g., Edit). */
   action?: React.ReactNode;
+  /** Slot rendered under the facts grid — typically a "Open detail" link
+   *  so the rail card drives a drill-through into the canonical detail
+   *  page for the focused entity. */
+  footer?: React.ReactNode;
   className?: string;
 }
 
@@ -42,6 +46,7 @@ export function RailEntityCard({
   status,
   facts,
   action,
+  footer,
   className,
 }: RailEntityCardProps) {
   return (
@@ -101,6 +106,7 @@ export function RailEntityCard({
           ))}
         </dl>
       )}
+      {footer && <div className="pt-1 border-t border-border-subtle">{footer}</div>}
     </div>
   );
 }

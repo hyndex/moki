@@ -289,8 +289,26 @@ export default function CrmArchetypeList() {
               {rows.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-t border-border-subtle hover:bg-surface-1"
+                  className="border-t border-border-subtle hover:bg-surface-1 cursor-pointer"
                   data-selected={selection.has(r.id) ? "true" : "false"}
+                  onClick={(e) => {
+                    // Don't drill in when the click landed on an interactive
+                    // element inside the row (checkbox, link, button). We
+                    // explicitly exclude the row itself even though it has
+                    // role="button" — `closest()` matches the row first
+                    // and would always early-return otherwise.
+                    const tgt = e.target as HTMLElement;
+                    if (tgt.closest('input,button,a')) return;
+                    window.location.hash = `/crm/archetype-person-hub?id=${encodeURIComponent(r.id)}`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      window.location.hash = `/crm/archetype-person-hub?id=${encodeURIComponent(r.id)}`;
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open ${r.name}`}
                 >
                   <td className="px-2 py-2">
                     <input

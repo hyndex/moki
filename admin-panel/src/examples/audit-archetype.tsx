@@ -146,6 +146,17 @@ export function AuditArchetypeTimeline() {
             <li
               key={e.id}
               className="px-4 py-2.5 flex items-center gap-3 font-mono text-xs hover:bg-surface-1 cursor-pointer"
+              onClick={() => {
+                window.location.hash = `/audit/log/${encodeURIComponent(e.id)}`;
+              }}
+              onKeyDown={(ev) => {
+                if (ev.key === "Enter") {
+                  window.location.hash = `/audit/log/${encodeURIComponent(e.id)}`;
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Open audit entry ${e.action}`}
             >
               <span className="tabular-nums text-text-muted whitespace-nowrap">
                 {new Date(e.ts).toISOString().slice(11, 19)}
