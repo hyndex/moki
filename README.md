@@ -61,6 +61,24 @@ flowchart LR
 | `catalogs/gutu-libraries/` | Library ecosystem index and maturity map |
 | `integrations/gutu-ecosystem-integration/` | Cross-repo certification harness |
 
+## Documentation
+
+Complete end-to-end documentation lives in `docs/`:
+
+| Doc | What's in it |
+| --- | --- |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System overview, repo layout, shell vs plugin boundary, lifecycle, middleware stack, ACL/event-bus/storage layers, observability surfaces |
+| [docs/PLUGIN-DEVELOPMENT.md](./docs/PLUGIN-DEVELOPMENT.md) | End-to-end plugin walkthrough: scaffold, backend, schema, frontend, UI/UX, registry pattern, workers, permissions, testing, distribution, common pitfalls, author checklist |
+| [docs/HOST-SDK-REFERENCE.md](./docs/HOST-SDK-REFERENCE.md) | Every export from `@gutu-host` and sub-paths documented with type signatures and usage notes |
+| [docs/UI-UX-GUIDELINES.md](./docs/UI-UX-GUIDELINES.md) | Design principles, layout, typography, color tokens, density, motion, components, forms, empty/loading/error states, accessibility, the polish checklist |
+| [docs/SECURITY.md](./docs/SECURITY.md) | Threat model, auth flow, RBAC, ACL, GDPR, audit hash chain, secrets, headers, rate limiting, tenancy isolation, plugin permissions, defense-in-depth checklist |
+| [docs/OBSERVABILITY.md](./docs/OBSERVABILITY.md) | Liveness/readiness probes, structured logs, metrics, plugin status, leases, audit verification, alert recipes, troubleshooting flow |
+| [docs/TESTING.md](./docs/TESTING.md) | Four shell suites (149 probes), plugin-author harness patterns, CI integration, debugging tips, the test pyramid |
+| [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) | Commit format, code style, PR template, defensive-coding rules, review process, releasing |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Production deploy guide: env, k8s probes, scaling, graceful shutdown, backup/restore, security checklist |
+| [RUNBOOK.md](./RUNBOOK.md) | Day-to-day operations: triaging plugin/worker/audit/rate-limit, GDPR fulfilment, plugin enablement, deploying new plugins |
+| [PLUGIN_AUTHORING.md](./PLUGIN_AUTHORING.md) | Plugin author quickstart (legacy — see `docs/PLUGIN-DEVELOPMENT.md` for the deeper version) |
+
 ## Best Starting Points
 
 - Read [gutu-core/README.md](./gutu-core/README.md) for the foundation runtime and CLI.
