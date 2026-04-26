@@ -4,6 +4,10 @@ import { CURRENCY } from "./_factory/options";
 import { daysAgo, daysFromNow, personEmail, personName, pick, money, code } from "./_factory/seeds";
 import { hrHeadcountView } from "./hr-payroll-pages";
 import {
+  hrPayrollArchetypeDashboardView,
+  hrPayrollArchetypeNav,
+} from "./hr-payroll-archetype";
+import {
   hrPayrollControlRoomView,
   hrPayrollReportsIndexView,
   hrPayrollReportsDetailView,
@@ -750,11 +754,13 @@ export const hrPayrollPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...hrPayrollArchetypeNav,
     { id: "hr.control-room.nav", label: "HR Control Room", icon: "LayoutDashboard", path: "/hr/control-room", view: "hr-payroll.control-room.view", order: 0 },
     { id: "hr.reports.nav", label: "Reports", icon: "BarChart3", path: "/hr/reports", view: "hr-payroll.reports.view" },
     { id: "hr.headcount.nav", label: "Headcount", icon: "Users", path: "/hr/headcount", view: "hr-payroll.headcount.view" },
   ],
   extraViews: [
+    hrPayrollArchetypeDashboardView,
     hrPayrollControlRoomView,
     hrPayrollReportsIndexView,
     hrPayrollReportsDetailView,

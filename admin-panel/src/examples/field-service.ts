@@ -4,6 +4,10 @@ import { STATUS_TICKET, PRIORITY, STATUS_ACTIVE } from "./_factory/options";
 import { CITIES, code, daysAgo, daysFromNow, personName, pick } from "./_factory/seeds";
 import { fieldServiceCalendarView } from "./field-service-pages";
 import {
+  fieldServiceArchetypeMapView,
+  fieldServiceArchetypeNav,
+} from "./field-service-archetype";
+import {
   fieldServiceControlRoomView,
   fieldServiceReportsIndexView,
   fieldServiceReportsDetailView,
@@ -364,11 +368,13 @@ export const fieldServicePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...fieldServiceArchetypeNav,
     { id: "field-service.control-room.nav", label: "Field Service Control Room", icon: "LayoutDashboard", path: "/field-service/control-room", view: "field-service.control-room.view", order: 0 },
     { id: "field-service.reports.nav", label: "Reports", icon: "BarChart3", path: "/field-service/reports", view: "field-service.reports.view" },
     { id: "field-service.calendar.nav", label: "Calendar", icon: "Calendar", path: "/field-service/calendar", view: "field-service.calendar.view" },
   ],
   extraViews: [
+    fieldServiceArchetypeMapView,
     fieldServiceControlRoomView,
     fieldServiceReportsIndexView,
     fieldServiceReportsDetailView,

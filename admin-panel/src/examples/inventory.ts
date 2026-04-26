@@ -8,6 +8,11 @@ import {
   inventoryReportsIndexView,
   inventoryReportsDetailView,
 } from "./inventory-dashboard";
+import {
+  inventoryArchetypeDashboardView,
+  inventoryArchetypeListView,
+  inventoryArchetypeNav,
+} from "./inventory-archetype";
 
 const ITEMS = [
   "Widget A", "Gizmo B", "Part C", "Bracket D", "Screw E", "Nut F", "Bolt G", "Washer H",
@@ -931,11 +936,14 @@ export const inventoryPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...inventoryArchetypeNav,
     { id: "inventory.control-room.nav", label: "Inventory Control Room", icon: "LayoutDashboard", path: "/inventory/control-room", view: "inventory.control-room.view", order: 0 },
     { id: "inventory.reports.nav", label: "Reports", icon: "BarChart3", path: "/inventory/reports", view: "inventory.reports.view" },
     { id: "inventory.alerts.nav", label: "Low stock", icon: "AlertTriangle", path: "/inventory/alerts", view: "inventory.alerts.view" },
   ],
   extraViews: [
+    inventoryArchetypeDashboardView,
+    inventoryArchetypeListView,
     inventoryControlRoomView,
     inventoryReportsIndexView,
     inventoryReportsDetailView,

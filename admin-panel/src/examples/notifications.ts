@@ -1,5 +1,9 @@
 import { buildDomainPlugin } from "./_factory/buildDomainPlugin";
 import { SECTIONS } from "./_factory/sections";
+import {
+  notificationsArchetypeInboxView,
+  notificationsArchetypeNav,
+} from "./notifications-archetype";
 import { STATUS_ACTIVE } from "./_factory/options";
 import { daysAgo, hoursAgo, pick } from "./_factory/seeds";
 import { buildCompactControlRoom } from "./_factory/compactDashboard";
@@ -199,10 +203,16 @@ export const notificationsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...notificationsArchetypeNav,
     { id: "notifications.control-room.nav", label: "Notifications Control Room", icon: "LayoutDashboard", path: "/notifications/control-room", view: "notifications.control-room.view", order: 0 },
     { id: "notifications.reports.nav", label: "Reports", icon: "BarChart3", path: "/notifications/reports", view: "notifications.reports.view" },
   ],
-  extraViews: [controlRoomView, reportsIndex, reportsDetail],
+  extraViews: [
+    notificationsArchetypeInboxView,
+    controlRoomView,
+    reportsIndex,
+    reportsDetail,
+  ],
   commands: [
     { id: "notif.go.control-room", label: "Notifications: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/notifications/control-room"; } },
     { id: "notif.new-template", label: "New template", icon: "Plus", run: () => { window.location.hash = "/notifications/templates/new"; } },

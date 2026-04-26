@@ -7,6 +7,10 @@ import {
   manufacturingReportsIndexView,
   manufacturingReportsDetailView,
 } from "./manufacturing-dashboard";
+import {
+  manufacturingArchetypeBomView,
+  manufacturingArchetypeNav,
+} from "./manufacturing-archetype";
 
 const PRODUCTS = ["Widget A", "Gizmo B", "Part C", "Bracket D", "Motor E", "Sensor F"];
 const OPERATORS = ["Sam Hopper", "Alex Knuth", "Taylor Turing", "Jordan Hamilton", "Casey Pappas"];
@@ -356,10 +360,12 @@ export const manufacturingPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...manufacturingArchetypeNav,
     { id: "manufacturing.control-room.nav", label: "Manufacturing Control Room", icon: "LayoutDashboard", path: "/manufacturing/control-room", view: "manufacturing.control-room.view", order: 0 },
     { id: "manufacturing.reports.nav", label: "Reports", icon: "BarChart3", path: "/manufacturing/reports", view: "manufacturing.reports.view" },
   ],
   extraViews: [
+    manufacturingArchetypeBomView,
     manufacturingControlRoomView,
     manufacturingReportsIndexView,
     manufacturingReportsDetailView,

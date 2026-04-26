@@ -1,5 +1,9 @@
 import { buildDomainPlugin } from "./_factory/buildDomainPlugin";
 import { SECTIONS } from "./_factory/sections";
+import {
+  aiAssistArchetypeDashboardView,
+  aiAssistArchetypeNav,
+} from "./ai-assist-archetype";
 import { daysAgo, hoursAgo, pick } from "./_factory/seeds";
 import { buildCompactControlRoom } from "./_factory/compactDashboard";
 import { buildReportLibrary } from "./_factory/reportLibraryHelper";
@@ -186,10 +190,16 @@ export const aiAssistPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...aiAssistArchetypeNav,
     { id: "ai-assist.control-room.nav", label: "AI Assist Control Room", icon: "LayoutDashboard", path: "/ai/assist/control-room", view: "ai-assist.control-room.view", order: 0 },
     { id: "ai-assist.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/assist/reports", view: "ai-assist.reports.view" },
   ],
-  extraViews: [controlRoomView, reportsIndex, reportsDetail],
+  extraViews: [
+    aiAssistArchetypeDashboardView,
+    controlRoomView,
+    reportsIndex,
+    reportsDetail,
+  ],
   commands: [
     { id: "assist.go.control-room", label: "Assist: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/ai/assist/control-room"; } },
     { id: "assist.new-thread", label: "New thread", icon: "Plus", run: () => { window.location.hash = "/ai/assist/threads/new"; } },

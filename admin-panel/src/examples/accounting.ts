@@ -8,6 +8,10 @@ import {
   accountingReportsIndexView,
   accountingReportsDetailView,
 } from "./accounting-dashboard";
+import {
+  accountingArchetypeDashboardView,
+  accountingArchetypeNav,
+} from "./accounting-archetype";
 
 const DEPARTMENTS = ["Engineering", "Sales", "Marketing", "Operations", "Finance", "Support", "HR"];
 const BANKS = ["Chase", "HSBC", "Barclays", "Wise", "Mercury"];
@@ -827,6 +831,7 @@ export const accountingPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    accountingArchetypeNav,
     {
       id: "accounting.control-room.nav",
       label: "Accounting Control Room",
@@ -851,6 +856,7 @@ export const accountingPlugin = buildDomainPlugin({
     },
   ],
   extraViews: [
+    accountingArchetypeDashboardView,
     accountingControlRoomView,
     accountingReportsIndexView,
     accountingReportsDetailView,

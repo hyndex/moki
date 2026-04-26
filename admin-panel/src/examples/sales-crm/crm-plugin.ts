@@ -15,6 +15,8 @@ import { crmControlRoomView } from "./crm-control-room";
 import { crmReportsIndexView, crmReportDetailView } from "./crm-reports";
 import CrmArchetypeDashboard from "./crm-archetype-dashboard";
 import CrmArchetypeList from "./crm-archetype-list";
+import { salesArchetypePipelineView } from "../sales-archetype";
+import { crmArchetypeCompanyHubView } from "./crm-archetype-company-hub";
 import { CONTACTS } from "./data";
 
 // Reference pages using the new admin-archetypes runtime end-to-end.
@@ -73,6 +75,8 @@ const crmNavSections = [{ id: "sales", label: "Sales & CRM", order: 10 }];
 const crmNav = [
   { id: "crm.archetype-dashboard", label: "Sales overview (new)", icon: "Activity", path: "/crm/archetype-dashboard", view: "crm.archetype-dashboard.view", section: "sales", order: 9.5 },
   { id: "crm.archetype-list", label: "People (new)", icon: "Users", path: "/crm/archetype-list", view: "crm.archetype-list.view", section: "sales", order: 9.6 },
+  { id: "sales.archetype-pipeline", label: "Pipeline (archetype)", icon: "Layers", path: "/sales/archetype-pipeline", view: "sales.archetype-pipeline.view", section: "sales", order: 9.7 },
+  { id: "crm.archetype-company-hub", label: "Company 360 (archetype)", icon: "Building2", path: "/crm/archetype-company-hub", view: "crm.archetype-company-hub.view", section: "sales", order: 9.8 },
   { id: "crm.overview", label: "Overview", icon: "LayoutDashboard", path: "/contacts/overview", view: "crm.overview.view", section: "sales", order: 10 },
   { id: "crm.control-room", label: "CRM Control Room", icon: "Gauge", path: "/crm/control-room", view: "crm.control-room.view", section: "sales", order: 10.5 },
   { id: "crm.contacts", label: "Contacts", icon: "Users", path: "/contacts", view: "crm.contacts.view", section: "sales", order: 11 },
@@ -95,6 +99,8 @@ const crmResources = [contactResource, ...CRM_EXTENDED_RESOURCES];
 const crmViews = [
   crmArchetypeDashboardView,
   crmArchetypeListView,
+  salesArchetypePipelineView,
+  crmArchetypeCompanyHubView,
   crmOverviewView,
   crmContactsView,
   crmPipelineView,

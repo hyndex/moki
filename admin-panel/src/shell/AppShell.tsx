@@ -21,6 +21,10 @@ import { KeyboardShortcutsOverlay, DEFAULT_SHORTCUTS } from "@/admin-primitives/
 import { useRuntime } from "@/runtime/context";
 import { TooltipProvider } from "@/primitives/Tooltip";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { inferArchetype } from "@/admin-archetypes/inferArchetype";
+import type { ArchetypeId } from "@/admin-archetypes/types";
+
+type InferableArchetype = ArchetypeId | undefined;
 
 export interface AppShellProps {
   registry: AdminRegistry;
@@ -251,17 +255,26 @@ function ArchetypeAwareMain({
   registry: AdminRegistry;
 }) {
   const view = route?.view;
-  const isCustom = view?.type === "custom";
-  const archetype = isCustom
-    ? (view as { archetype?: string }).archetype
-    : undefined;
-  const fullBleed = isCustom
-    ? Boolean((view as { fullBleed?: boolean }).fullBleed) ||
-      archetype === "editor-canvas"
-    : false;
-  const density = isCustom
-    ? (view as { density?: string }).density
-    : undefined;
+  const explicitArchetype = (view as { archetype?: string } | undefined)?.archetype;
+  const explicitFullBleed = (view as { fullBleed?: boolean } | undefined)?.fullBleed;
+  const explicitDensity = (view as { density?: string } | undefined)?.density;
+
+  // Auto-archetype inference: every page gets a meaningful data-archetype,
+  // even when the plugin descriptor has not opted in yet. Plugins that
+  // *do* set the field always win (see inferArchetype.ts).
+  const inferred = inferArchetype({
+    id: view?.id,
+    title: view?.title,
+    resource: (view as { resource?: string } | undefined)?.resource,
+    mode: (view as { type?: string } | undefined)?.type,
+    path: route?.path,
+    archetype: explicitArchetype as InferableArchetype,
+    fullBleed: explicitFullBleed,
+  });
+
+  const fullBleed = inferred.fullBleed;
+  const archetype = inferred.archetype;
+
   const pluginId =
     view && "resource" in view
       ? registry.pluginByResource[view.resource as string] ?? "shell"
@@ -271,9 +284,10 @@ function ArchetypeAwareMain({
       role="main"
       className="flex-1 min-w-0 overflow-auto"
       aria-live="polite"
-      data-archetype={archetype ?? null}
+      data-archetype={archetype}
+      data-archetype-source={inferred.explicit ? "explicit" : "inferred"}
       data-full-bleed={fullBleed ? "true" : "false"}
-      data-density={density ?? null}
+      data-density={explicitDensity ?? null}
     >
       {fullBleed ? (
         <div className="h-full">

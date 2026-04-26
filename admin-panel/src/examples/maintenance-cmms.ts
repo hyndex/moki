@@ -7,6 +7,10 @@ import {
   cmmsReportsIndexView,
   cmmsReportsDetailView,
 } from "./maintenance-cmms-dashboard";
+import {
+  maintenanceArchetypeCalendarView,
+  maintenanceArchetypeNav,
+} from "./maintenance-archetype";
 
 const ASSETS = ["Forklift #2", "HVAC-North", "Press A", "Conveyor 1", "Compressor B", "Pump 3", "Robot-R5", "CNC-01"];
 const TECHS = ["Taylor Turing", "Jordan Hamilton", "Casey Pappas", "Morgan Liskov", "Riley Perlman"];
@@ -232,10 +236,12 @@ export const maintenanceCmmsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
+    ...maintenanceArchetypeNav,
     { id: "maintenance-cmms.control-room.nav", label: "Maintenance Control Room", icon: "LayoutDashboard", path: "/cmms/control-room", view: "maintenance-cmms.control-room.view", order: 0 },
     { id: "maintenance-cmms.reports.nav", label: "Reports", icon: "BarChart3", path: "/cmms/reports", view: "maintenance-cmms.reports.view" },
   ],
   extraViews: [
+    maintenanceArchetypeCalendarView,
     cmmsControlRoomView,
     cmmsReportsIndexView,
     cmmsReportsDetailView,

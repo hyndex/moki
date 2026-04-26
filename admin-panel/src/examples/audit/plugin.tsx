@@ -11,6 +11,10 @@ import { EmptyState } from "@/admin-primitives/EmptyState";
 import { auditEventDetailView } from "./AuditEventDetailPage";
 import { LiveAuditPage } from "./LiveAuditPage";
 import {
+  auditArchetypeTimelineView,
+  auditArchetypeNav,
+} from "../audit-archetype";
+import {
   auditControlRoomView,
   auditReportsIndexView,
   auditReportsDetailView,
@@ -122,6 +126,7 @@ const liveLog = defineCustomView({
 
 const auditNavSections = [{ id: "platform", label: "Platform", order: 100 }];
 const auditNav = [
+  ...auditArchetypeNav.map((n) => ({ ...n, section: "platform" })),
   {
     id: "audit-events", label: "Audit log", icon: "History",
     path: "/audit", view: "audit.live.view", section: "platform", order: 10,
@@ -143,6 +148,7 @@ const auditNav = [
 ];
 const auditResources = [eventResource];
 const auditViews = [
+  auditArchetypeTimelineView,
   liveLog, eventsList, about, auditEventDetailView,
   auditControlRoomView, auditReportsIndexView, auditReportsDetailView,
 ];

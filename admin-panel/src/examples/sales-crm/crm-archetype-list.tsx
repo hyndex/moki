@@ -258,7 +258,7 @@ export default function CrmArchetypeList() {
                   </td>
                   <td className="px-2 py-2 text-text-primary">{r.company}</td>
                   <td className="px-2 py-2">
-                    <Badge variant={STAGE_TONE[r.stage] ?? "neutral"}>{r.stage}</Badge>
+                    <Badge intent={STAGE_TONE[r.stage] ?? "neutral"}>{r.stage}</Badge>
                   </td>
                   <td className="px-2 py-2 text-text-muted">{r.owner}</td>
                   <td className="px-2 py-2 text-right tabular-nums">
