@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { authRoutes } from "./routes/auth";
 import { resourceRoutes } from "./routes/resources";
+import { kpiRoutes } from "./routes/kpi";
 import { healthRoutes } from "./routes/health";
 import { readyRoutes } from "./routes/ready";
 import { metricsRoutes } from "./routes/_metrics";
@@ -94,6 +95,11 @@ export function createApp() {
   app.route("/api/tenants", tenantRoutes);
   app.route("/api/audit", auditRoutes);
   app.route("/api/resources", resourceRoutes);
+  // Server-side KPI aggregation. Pages declare a `KpiSpec` and the backend
+  // computes counts/sums/avgs over the same `records` table the resource
+  // CRUD uses, with the same ACL + tenant filters. Saves the client from
+  // shipping the entire dataset to the browser to compute one number.
+  app.route("/api/kpi", kpiRoutes);
   app.route("/api/files", filesRoutes);
   app.route("/api/storage", storageRoutes);
   // Mail plugin: kept as a shell-mounted route for now (mailRoutes lives

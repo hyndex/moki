@@ -20,8 +20,10 @@ import {
   LocalStorageSavedViewsAdapter,
   I18nProvider,
   installTelemetrySink,
+  YjsProvider,
 } from "@/admin-archetypes";
 import { useRuntime } from "@/runtime/context";
+import { createBrowserYjsAdapter } from "./yjsAdapter";
 
 /** Real adapter that reads record-links via the framework resource
  *  client. Backed by `crm.contact` (people/companies), `sales.deal`,
@@ -222,6 +224,7 @@ export function ArchetypeServiceProviders({
     () => new LocalStorageSavedViewsAdapter("anon"),
     [],
   );
+  const yjsAdapter = React.useMemo(() => createBrowserYjsAdapter(), []);
 
   // Install a development telemetry sink that logs to the console once.
   React.useEffect(() => {
@@ -241,11 +244,13 @@ export function ArchetypeServiceProviders({
   return (
     <I18nProvider>
       <SavedViewsProvider adapter={savedViewsAdapter}>
-        <RecordLinksProvider adapter={recordLinksAdapter}>
-          <TimelineEventsProvider adapter={timelineAdapter}>
-            {children}
-          </TimelineEventsProvider>
-        </RecordLinksProvider>
+        <YjsProvider adapter={yjsAdapter}>
+          <RecordLinksProvider adapter={recordLinksAdapter}>
+            <TimelineEventsProvider adapter={timelineAdapter}>
+              {children}
+            </TimelineEventsProvider>
+          </RecordLinksProvider>
+        </YjsProvider>
       </SavedViewsProvider>
     </I18nProvider>
   );

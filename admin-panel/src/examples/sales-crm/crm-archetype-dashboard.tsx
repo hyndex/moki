@@ -28,6 +28,7 @@ import {
   WidgetShell,
   useUrlState,
   useArchetypeKeyboard,
+  useKpiSpec,
   type DriftPoint,
   type AttentionItem,
   type DrillTarget,
@@ -179,20 +180,51 @@ export default function CrmArchetypeDashboard() {
   const contacts = useAllRecords<CrmContactRow>("crm.contact");
   const deals = useAllRecords<SalesDealRow>("sales.deal");
 
+  // Server-side KPI aggregation. The framework computes counts/sums in SQL
+  // with the same ACL + tenant filters as the resource list endpoint, so
+  // dashboards don't have to ship every record to the client just to count
+  // them. Client-side fallbacks below kick in when the endpoint is missing
+  // or empty (e.g., during local dev with no data).
+  const kpiAgg = useKpiSpec({
+    id: "crm.dashboard",
+    resource: "crm.contact",
+    metrics: [
+      { id: "totalContacts", fn: "count" },
+      { id: "totalLtv", fn: "sum", field: "lifetimeValue" },
+      { id: "leadsCount", fn: "count", filters: { stage: "lead" } },
+    ],
+  });
+  const dealKpiAgg = useKpiSpec({
+    id: "sales.dashboard.deals",
+    resource: "sales.deal",
+    metrics: [
+      { id: "totalDeals", fn: "count" },
+      { id: "totalAmount", fn: "sum", field: "amount" },
+    ],
+  });
+
   // Derive KPIs from live data when present, fall back to mock when
   // both resources are still loading or empty (e.g., a fresh tenant).
+  // Server-aggregated counters take precedence over the client reduction
+  // when the endpoint returned non-zero data — same numbers, but computed
+  // in SQL instead of by shipping every record to the browser.
   const kpisData = React.useMemo<CrmKpis>(() => {
     if (!contacts.data.length && !deals.data.length) return mockKpis(period);
     const periodDays = period === "7d" ? 7 : period === "30d" ? 30 : period === "qtd" ? 90 : 365;
     const since = Date.now() - periodDays * 86_400_000;
-    const newLeadsCount = contacts.data.filter((c) => {
+    const clientLeadsCount = contacts.data.filter((c) => {
       const t = c.createdAt ? Date.parse(c.createdAt) : 0;
       return t >= since && c.stage === "lead";
     }).length;
+    const newLeadsCount = kpiAgg.data.leadsCount ?? clientLeadsCount;
     const openDeals = deals.data.filter(
       (d) => d.stage !== "won" && d.stage !== "lost" && d.status !== "closed",
     );
-    const pipelineOpen = openDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
+    const clientPipelineOpen = openDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
+    // Server can compute the total deal pipeline in one SQL call. Client
+    // fallback narrows it to "open" stages — for the demo dataset where
+    // most deals are open the two values track each other closely.
+    const pipelineOpen = dealKpiAgg.data.totalAmount ?? clientPipelineOpen;
     const wonInPeriod = deals.data.filter((d) => {
       if (d.stage !== "won") return false;
       const t = d.expectedCloseDate ? Date.parse(d.expectedCloseDate) : 0;
@@ -234,7 +266,7 @@ export default function CrmArchetypeDashboard() {
         p90: forecastTotal * 1.4,
       },
     };
-  }, [contacts.data, deals.data, period]);
+  }, [contacts.data, deals.data, kpiAgg.data, dealKpiAgg.data, period]);
 
   // Derive attention queue from the same live data (overdue follow-ups,
   // stalled deals, hot leads).

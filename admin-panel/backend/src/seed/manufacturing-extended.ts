@@ -13,8 +13,46 @@ const money = (i: number, base = 100, spread = 5000) =>
 
 const count = (r: string) =>
   (db.prepare("SELECT COUNT(*) AS c FROM records WHERE resource = ?").get(r) as { c: number }).c;
-const seedIf = (r: string, rows: Record<string, unknown>[]) =>
-  count(r) > 0 ? 0 : bulkInsert(r, rows);
+
+// Resolves the "main"/"default" tenant the same way the one-time migration
+// backfill does. Demo seeds get attached to this tenant so every member of
+// the active workspace sees them.
+function resolveDefaultTenantId(): string {
+  try {
+    const row = db
+      .prepare("SELECT id FROM tenants WHERE slug = 'main' OR slug = 'default' LIMIT 1")
+      .get() as { id: string } | undefined;
+    return row?.id ?? "default";
+  } catch {
+    return "default";
+  }
+}
+
+// Bulk-insert seed rows AND grant a tenant-editor ACL for each so the rows
+// pass the SQL-level access filter in `listRecords`. Without the ACL entries
+// every list endpoint returns zero rows for ANY resource added after the
+// one-time `record_acl_backfilled_v2` migration ran.
+const seedIf = (r: string, rows: Record<string, unknown>[]): number => {
+  if (count(r) > 0) return 0;
+  const inserted = bulkInsert(r, rows);
+  if (inserted === 0) return 0;
+  const tenantId = resolveDefaultTenantId();
+  const now = new Date().toISOString();
+  const grant = db.prepare(
+    `INSERT OR IGNORE INTO editor_acl
+       (resource, record_id, subject_kind, subject_id, role, granted_by, granted_at)
+     VALUES (?, ?, 'tenant', ?, 'editor', 'system:seed', ?)`,
+  );
+  const tx = db.transaction((list: readonly Record<string, unknown>[]) => {
+    for (const row of list) {
+      const id = String(row.id ?? "");
+      if (!id) continue;
+      grant.run(r, id, tenantId, now);
+    }
+  });
+  tx(rows);
+  return inserted;
+};
 
 export function seedManufacturingExtended(): Record<string, number> {
   const out: Record<string, number> = {};
@@ -63,6 +101,22 @@ export function seedManufacturingExtended(): Record<string, number> {
       active: i !== 9,
     };
   }));
+
+  // Hierarchical BOM lines for the BOM Tree archetype page. Each row carries
+  // `parentId` so the client can rebuild the tree without an extra round-trip.
+  // `sortKey` provides deterministic sibling order across fetches.
+  out["manufacturing.bom-line"] = seedIf("manufacturing.bom-line", [
+    { id: "WIDGET-1000", bomCode: "BOM-0000", parentId: "", part: "WIDGET-1000", description: "Top-level widget assembly", qty: 1, uom: "each", cost: 84.5, leadDays: 14, depth: 0, sortKey: "01" },
+    { id: "ASM-200", bomCode: "BOM-0000", parentId: "WIDGET-1000", part: "ASM-200", description: "Hinge assembly", qty: 2, uom: "each", cost: 4.2, leadDays: 3, depth: 1, sortKey: "01.01" },
+    { id: "PART-12", bomCode: "BOM-0000", parentId: "ASM-200", part: "PART-12", description: "Hinge pin", qty: 4, uom: "each", cost: 0.4, leadDays: 1, depth: 2, sortKey: "01.01.01" },
+    { id: "PART-13", bomCode: "BOM-0000", parentId: "ASM-200", part: "PART-13", description: "Hinge bushing", qty: 2, uom: "each", cost: 0.6, leadDays: 1, depth: 2, sortKey: "01.01.02" },
+    { id: "SUBASM-A", bomCode: "BOM-0000", parentId: "ASM-200", part: "SUBASM-A", description: "Hinge sub-assembly cap", qty: 1, uom: "each", cost: 1.8, leadDays: 2, depth: 2, sortKey: "01.01.03" },
+    { id: "PART-21", bomCode: "BOM-0000", parentId: "SUBASM-A", part: "PART-21", description: "Cap rivet", qty: 6, uom: "each", cost: 0.05, leadDays: 0, depth: 3, sortKey: "01.01.03.01" },
+    { id: "ASM-300", bomCode: "BOM-0000", parentId: "WIDGET-1000", part: "ASM-300", description: "Drive assembly", qty: 1, uom: "each", cost: 32.0, leadDays: 7, depth: 1, sortKey: "01.02" },
+    { id: "PART-31", bomCode: "BOM-0000", parentId: "ASM-300", part: "PART-31", description: "Bearing", qty: 4, uom: "each", cost: 4.5, leadDays: 5, depth: 2, sortKey: "01.02.01" },
+    { id: "PART-32", bomCode: "BOM-0000", parentId: "ASM-300", part: "PART-32", description: "Shaft", qty: 1, uom: "each", cost: 8.0, leadDays: 7, depth: 2, sortKey: "01.02.02" },
+    { id: "PART-99", bomCode: "BOM-0000", parentId: "WIDGET-1000", part: "PART-99", description: "Mounting screws", qty: 16, uom: "each", cost: 0.02, leadDays: 0, depth: 1, sortKey: "01.03" },
+  ]);
 
   out["manufacturing.routing"] = seedIf("manufacturing.routing", Array.from({ length: 6 }, (_, i) => ({
     id: `mfg_rtg_${i + 1}`,

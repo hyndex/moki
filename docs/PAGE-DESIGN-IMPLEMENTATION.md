@@ -355,6 +355,45 @@ URL-backed filter chips encoded under `?filter=`. Methods: `add`,
 Set-typed selection. Methods: `has`, `toggle`, `add`, `remove`, `clear`,
 `setAll`.
 
+### `useKpiSpec(spec)`
+
+Server-side KPI aggregation. Posts a `KpiSpec` to `/api/kpi/aggregate` and
+returns `{ data: Record<string, number>, state, refetch }`. The backend
+computes counts/sums/avgs/min/max in SQL with the same ACL + tenant
+filters as the resource list endpoint — dashboards stop having to ship
+the entire dataset to the client just to count rows.
+
+```ts
+const kpis = useKpiSpec({
+  id: "crm.dashboard",
+  resource: "crm.contact",
+  metrics: [
+    { id: "totalContacts", fn: "count" },
+    { id: "leadsCount", fn: "count", filters: { stage: "lead" } },
+    { id: "totalLtv", fn: "sum", field: "lifetimeValue" },
+  ],
+});
+```
+
+Each metric supports `filters` (equality only) and `withinDays` (limits
+to recently-updated rows). Errors are surfaced via `state.error`; pages
+typically fall back to a client-side reduction so widgets keep rendering.
+Use `isKpiEndpointMissing(err)` to detect the case where the route is
+not deployed.
+
+### `useYjsRoom(room)`
+
+Cross-plugin Yjs room hook for collaborative archetypes (Slides,
+Whiteboard, Spreadsheet, Editor Canvas). Returns
+`{ doc, status, peers, destroy }` — `doc` is the Y.Doc when an adapter
+is wired, otherwise `null` with `status === "unavailable"`.
+
+The default `YjsProvider` adapter (mounted in `archetypeServiceProviders`)
+lazy-loads `yjs` and `y-websocket` on first room open, so dashboards that
+never need collab don't pay for the extra bundle weight. Plugins that
+ship their own collab transport can install a custom adapter via
+`<YjsProvider adapter={…}>`.
+
 ---
 
 ## 7. State surfaces — Widget Shell

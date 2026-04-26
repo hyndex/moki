@@ -198,6 +198,66 @@ export const manufacturingPlugin = buildDomainPlugin({
       },
     },
     {
+      id: "bom-line",
+      singular: "BOM Line",
+      plural: "BOM Lines",
+      icon: "Network",
+      path: "/manufacturing/bom-lines",
+      displayField: "part",
+      defaultSort: { field: "sortKey", dir: "asc" },
+      pageSize: 200,
+      fields: [
+        { name: "id", kind: "text", required: true, sortable: true },
+        { name: "bomCode", kind: "text", required: true, sortable: true, width: 120 },
+        { name: "parentId", kind: "text", sortable: true },
+        { name: "part", kind: "text", required: true, sortable: true, width: 140 },
+        { name: "description", kind: "text" },
+        { name: "qty", kind: "number", align: "right", required: true },
+        { name: "uom", kind: "text", width: 80 },
+        { name: "cost", kind: "currency", align: "right" },
+        { name: "leadDays", label: "Lead (days)", kind: "number", align: "right", width: 110 },
+        { name: "depth", kind: "number", align: "right", width: 80 },
+        { name: "sortKey", kind: "text" },
+      ],
+      // Hierarchical seed for the canonical demo BOM. Each row references its
+      // parent via parentId, and the tree page reconstructs the hierarchy
+      // client-side from this flat list. `sortKey` is a deterministic prefix
+      // used to keep siblings in stable insertion order across renders.
+      seed: (i: number) => {
+        const TREE: ReadonlyArray<{
+          id: string; parentId: string | null; part: string; description: string;
+          qty: number; uom: string; cost: number; leadDays: number;
+          depth: number; sortKey: string;
+        }> = [
+          { id: "WIDGET-1000", parentId: null, part: "WIDGET-1000", description: "Top-level widget assembly", qty: 1, uom: "each", cost: 84.5, leadDays: 14, depth: 0, sortKey: "01" },
+          { id: "ASM-200", parentId: "WIDGET-1000", part: "ASM-200", description: "Hinge assembly", qty: 2, uom: "each", cost: 4.2, leadDays: 3, depth: 1, sortKey: "01.01" },
+          { id: "PART-12", parentId: "ASM-200", part: "PART-12", description: "Hinge pin", qty: 4, uom: "each", cost: 0.4, leadDays: 1, depth: 2, sortKey: "01.01.01" },
+          { id: "PART-13", parentId: "ASM-200", part: "PART-13", description: "Hinge bushing", qty: 2, uom: "each", cost: 0.6, leadDays: 1, depth: 2, sortKey: "01.01.02" },
+          { id: "SUBASM-A", parentId: "ASM-200", part: "SUBASM-A", description: "Hinge sub-assembly cap", qty: 1, uom: "each", cost: 1.8, leadDays: 2, depth: 2, sortKey: "01.01.03" },
+          { id: "PART-21", parentId: "SUBASM-A", part: "PART-21", description: "Cap rivet", qty: 6, uom: "each", cost: 0.05, leadDays: 0, depth: 3, sortKey: "01.01.03.01" },
+          { id: "ASM-300", parentId: "WIDGET-1000", part: "ASM-300", description: "Drive assembly", qty: 1, uom: "each", cost: 32.0, leadDays: 7, depth: 1, sortKey: "01.02" },
+          { id: "PART-31", parentId: "ASM-300", part: "PART-31", description: "Bearing", qty: 4, uom: "each", cost: 4.5, leadDays: 5, depth: 2, sortKey: "01.02.01" },
+          { id: "PART-32", parentId: "ASM-300", part: "PART-32", description: "Shaft", qty: 1, uom: "each", cost: 8.0, leadDays: 7, depth: 2, sortKey: "01.02.02" },
+          { id: "PART-99", parentId: "WIDGET-1000", part: "PART-99", description: "Mounting screws", qty: 16, uom: "each", cost: 0.02, leadDays: 0, depth: 1, sortKey: "01.03" },
+        ];
+        const row = TREE[i];
+        return {
+          id: row.id,
+          bomCode: "BOM-0000",
+          parentId: row.parentId ?? "",
+          part: row.part,
+          description: row.description,
+          qty: row.qty,
+          uom: row.uom,
+          cost: row.cost,
+          leadDays: row.leadDays,
+          depth: row.depth,
+          sortKey: row.sortKey,
+        };
+      },
+      seedCount: 10,
+    },
+    {
       id: "routing",
       singular: "Routing",
       plural: "Routings",
