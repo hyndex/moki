@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": false,
@@ -18,11 +22,58 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@gutu/admin-shell-next": ["packages/admin-shell-next/src/index.ts"],
-      "@gutu/admin-shell-next/*": ["packages/admin-shell-next/src/*"]
+      "@/*": [
+        "src/*"
+      ],
+      "@gutu/admin-shell-next": [
+        "packages/admin-shell-next/src/index.ts"
+      ],
+      "@gutu/admin-shell-next/*": [
+        "packages/admin-shell-next/src/*"
+      ],
+      "@gutu-host/plugin-ui-contract": [
+        "src/host/plugin-ui-contract.ts"
+      ],
+      "@gutu-plugin-ui/forms-core": [
+        "../plugins/gutu-plugin-forms-core/framework/builtin-plugins/forms-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/template-core": [
+        "../plugins/gutu-plugin-template-core/framework/builtin-plugins/template-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/notifications-core": [
+        "../plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/integration-core": [
+        "../plugins/gutu-plugin-integration-core/framework/builtin-plugins/integration-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/webhooks-core": [
+        "../plugins/gutu-plugin-webhooks-core/framework/builtin-plugins/webhooks-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/auth-core": [
+        "../plugins/gutu-plugin-auth-core/framework/builtin-plugins/auth-core/src/host-plugin/ui/index.ts"
+      ],
+      "@gutu-plugin-ui/workflow-core": [
+        "../plugins/gutu-plugin-workflow-core/framework/builtin-plugins/workflow-core/src/host-plugin/ui/index.ts"
+      ],
+      "@dnd-kit/core": [
+        "node_modules/@dnd-kit/core/dist/index.d.ts"
+      ],
+      "@dnd-kit/sortable": [
+        "node_modules/@dnd-kit/sortable/dist/index.d.ts"
+      ],
+      "@dnd-kit/utilities": [
+        "node_modules/@dnd-kit/utilities/dist/index.d.ts"
+      ]
     }
   },
-  "include": ["src", "vite.config.ts", "packages/*/src"],
-  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "packages/*/src",
+    "../plugins/gutu-plugin-*/framework/builtin-plugins/*/src/host-plugin/ui/**/*"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

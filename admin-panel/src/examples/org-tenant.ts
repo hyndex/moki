@@ -101,7 +101,7 @@ export const orgTenantPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "org-tenant.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/platform/tenants/control-room", view: "org-tenant.control-room.view", order: 0 },
+    { id: "org-tenant.control-room.nav", label: "Tenants Control Room", icon: "LayoutDashboard", path: "/platform/tenants/control-room", view: "org-tenant.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

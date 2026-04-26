@@ -101,7 +101,7 @@ export const contractsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "contracts.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/contracts/control-room", view: "contracts.control-room.view", order: 0 },
+    { id: "contracts.control-room.nav", label: "Contracts Control Room", icon: "LayoutDashboard", path: "/contracts/control-room", view: "contracts.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

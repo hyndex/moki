@@ -7,6 +7,17 @@ export interface ListQueryParams {
   sort?: { field: string; dir: "asc" | "desc" };
   search?: string;
   filters: Record<string, unknown>;
+  /** Restrict to these record IDs at the SQL layer. When provided,
+   *  pagination + total count both reflect the filtered universe so
+   *  the caller doesn't have to over-fetch + post-slice. */
+  accessibleIds?: ReadonlySet<string>;
+  /** Tenant id; when set, drops rows from other tenants at SQL level
+   *  (cheaper than the previous JS post-filter). */
+  tenantId?: string | null;
+  /** When true, includeDeleted; when false, drop status='deleted'. */
+  includeDeleted?: boolean;
+  /** When true, only status='deleted' (Twenty-style trash view). */
+  deletedOnly?: boolean;
 }
 
 export interface ListResult {
@@ -16,10 +27,30 @@ export interface ListResult {
   pageSize: number;
 }
 
-/** Parse a URLSearchParams into a structured list query. */
+/** Parse a URLSearchParams into a structured list query.
+ *
+ *  Pagination accepts two equivalent shapes:
+ *    - `page` + `pageSize`           — 1-based page numbering
+ *    - `limit` + `offset`            — REST-classic; converted to page
+ *
+ *  Negative / non-numeric values are clamped to safe defaults rather
+ *  than 400'd, so a misbehaving client gets sensible results instead
+ *  of a hard error. `pageSize` is capped at 1000 to prevent memory
+ *  blow-ups. */
 export function parseListQuery(params: URLSearchParams): ListQueryParams {
-  const page = Math.max(1, Number(params.get("page") ?? 1));
-  const pageSize = Math.min(1000, Math.max(1, Number(params.get("pageSize") ?? 25)));
+  let page: number;
+  let pageSize: number;
+  const rawLimit = params.get("limit");
+  const rawOffset = params.get("offset");
+  if (rawLimit !== null || rawOffset !== null) {
+    const limit = Math.min(1000, Math.max(1, Number(rawLimit ?? 25) || 25));
+    const offset = Math.max(0, Number(rawOffset ?? 0) || 0);
+    pageSize = limit;
+    page = Math.floor(offset / limit) + 1;
+  } else {
+    page = Math.max(1, Number(params.get("page") ?? 1) || 1);
+    pageSize = Math.min(1000, Math.max(1, Number(params.get("pageSize") ?? 25) || 25));
+  }
   const sortField = params.get("sort");
   const sortDir = params.get("dir") === "desc" ? "desc" : "asc";
   const search = params.get("search") ?? undefined;
@@ -47,7 +78,9 @@ export function parseListQuery(params: URLSearchParams): ListQueryParams {
 }
 
 /** Translate the structured query into a SQL query against the `records` table.
- *  Uses json_extract() for filter/sort against JSON fields. */
+ *  Uses json_extract() for filter/sort against JSON fields, and an SQL-level
+ *  IN clause for ACL filtering when `accessibleIds` is provided so the
+ *  pagination + total are both correct without JS post-filtering. */
 export function listRecords(resource: string, q: ListQueryParams): ListResult {
   const whereClauses: string[] = ["resource = ?"];
   const bindings: SQLQueryBindings[] = [resource];
@@ -69,6 +102,32 @@ export function listRecords(resource: string, q: ListQueryParams): ListResult {
       whereClauses.push(`json_extract(data, ?) = ?`);
       bindings.push(`$.${field}`, String(value));
     }
+  }
+
+  // SQL-level access control: when caller passes an explicit set,
+  // restrict to those ids. Empty set ⇒ definitely zero rows.
+  if (q.accessibleIds) {
+    if (q.accessibleIds.size === 0) {
+      return { rows: [], total: 0, page: q.page, pageSize: q.pageSize };
+    }
+    const placeholders = Array.from({ length: q.accessibleIds.size }, () => "?").join(",");
+    whereClauses.push(`id IN (${placeholders})`);
+    for (const id of q.accessibleIds) bindings.push(id);
+  }
+
+  // Soft-delete handling — done in SQL so total is accurate.
+  if (q.deletedOnly) {
+    whereClauses.push(`json_extract(data, '$.status') = 'deleted'`);
+  } else if (!q.includeDeleted) {
+    whereClauses.push(`(json_extract(data, '$.status') IS NULL OR json_extract(data, '$.status') != 'deleted')`);
+  }
+
+  // Tenant scoping at SQL level — drops cross-tenant leakage cheaply.
+  if (q.tenantId) {
+    whereClauses.push(
+      `(json_extract(data, '$.tenantId') IS NULL OR json_extract(data, '$.tenantId') = 'default' OR json_extract(data, '$.tenantId') = ?)`,
+    );
+    bindings.push(q.tenantId);
   }
 
   const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";

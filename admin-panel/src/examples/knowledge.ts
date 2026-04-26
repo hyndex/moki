@@ -97,7 +97,7 @@ export const knowledgePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "knowledge.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/knowledge/control-room", view: "knowledge.control-room.view", order: 0 },
+    { id: "knowledge.control-room.nav", label: "Knowledge Control Room", icon: "LayoutDashboard", path: "/knowledge/control-room", view: "knowledge.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

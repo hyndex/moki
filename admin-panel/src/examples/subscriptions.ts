@@ -271,7 +271,7 @@ export const subscriptionsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "subscriptions.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/subscriptions/control-room", view: "subscriptions.control-room.view", order: 0 },
+    { id: "subscriptions.control-room.nav", label: "Subscriptions Control Room", icon: "LayoutDashboard", path: "/subscriptions/control-room", view: "subscriptions.control-room.view", order: 0 },
     { id: "subscriptions.reports.nav", label: "Reports", icon: "BarChart3", path: "/subscriptions/reports", view: "subscriptions.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

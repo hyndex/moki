@@ -1,4 +1,5 @@
 import type { ZodTypeAny, z } from "zod";
+import type { ErpResourceMetadata } from "./erp-metadata";
 
 /** A resource = a typed collection a plugin owns (e.g. "booking", "contact"). */
 export interface ResourceDefinition<TSchema extends ZodTypeAny = ZodTypeAny> {
@@ -18,6 +19,8 @@ export interface ResourceDefinition<TSchema extends ZodTypeAny = ZodTypeAny> {
   readonly searchable?: readonly string[];
   /** Optional icon token name (lucide icon). */
   readonly icon?: string;
+  /** Optional ERP-grade metadata used by builders, workspaces, print, portal, and document mapping. */
+  readonly erp?: ErpResourceMetadata;
 }
 
 export type ResourceRecord<R extends ResourceDefinition> = z.infer<R["schema"]>;

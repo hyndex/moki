@@ -27,6 +27,45 @@ export const manufacturingPlugin = buildDomainPlugin({
       displayField: "code",
       defaultSort: { field: "dueAt", dir: "asc" },
       pageSize: 25,
+      erp: {
+        documentType: "manufacturing.Work Order",
+        module: "Manufacturing",
+        namingSeries: "MFG-WO-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["in_progress", "resolved"],
+        mappingActions: [
+          {
+            id: "work-order-to-job-card",
+            label: "Create Job Card",
+            relation: "creates-job-card",
+            targetResourceId: "manufacturing.job-card",
+            targetDocumentType: "manufacturing.Job Card",
+            visibleInStatuses: ["open", "in_progress"],
+            fieldMap: { workOrder: "code", product: "sku", workCenter: "workCenter" },
+            defaults: { status: "open" }
+          },
+          {
+            id: "work-order-to-stock-entry",
+            label: "Issue Materials",
+            relation: "issues-materials",
+            targetResourceId: "inventory.stock-entry",
+            targetDocumentType: "stock.Stock Entry",
+            visibleInStatuses: ["open", "in_progress"],
+            fieldMap: { workOrder: "code", item: "sku", warehouse: "warehouse" },
+            defaults: { status: "draft", kind: "manufacture" }
+          }
+        ],
+        links: [
+          { field: "bomCode", targetResourceId: "manufacturing.bom", reverseRelation: "work-orders" },
+          { field: "routingCode", targetResourceId: "manufacturing.routing", reverseRelation: "work-orders" },
+          { field: "workCenter", targetResourceId: "manufacturing.work-center", reverseRelation: "work-orders" }
+        ],
+        workspaceLinks: [
+          { label: "MRP", path: "/manufacturing/reports/material-requirements", kind: "report", group: "Planning" },
+          { label: "Work Order Summary", path: "/manufacturing/reports/work-order-summary", kind: "report", group: "Reports" }
+        ],
+        printFormats: [{ id: "work-order", label: "Work Order", default: true }]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "product", kind: "text", required: true, sortable: true },
@@ -79,6 +118,50 @@ export const manufacturingPlugin = buildDomainPlugin({
       icon: "TreePine",
       path: "/manufacturing/boms",
       displayField: "code",
+      erp: {
+        documentType: "manufacturing.BOM",
+        module: "Manufacturing",
+        namingSeries: "BOM-.#####",
+        childTables: [
+          {
+            field: "items",
+            label: "Raw Materials",
+            itemField: "item",
+            quantityField: "qty",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "qty", kind: "number", required: true },
+              { name: "rate", kind: "currency" },
+              { name: "amount", kind: "currency", readonly: true }
+            ]
+          },
+          {
+            field: "operations",
+            label: "Operations",
+            fields: [
+              { name: "operation", kind: "link", referenceTo: "manufacturing.operation", required: true },
+              { name: "workCenter", kind: "link", referenceTo: "manufacturing.work-center" },
+              { name: "timeInMins", kind: "number" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "bom-to-work-order",
+            label: "Create Work Order",
+            relation: "explodes-to",
+            targetResourceId: "manufacturing.order",
+            targetDocumentType: "manufacturing.Work Order",
+            visibleInStatuses: ["active"],
+            fieldMap: { bomCode: "code", sku: "product" },
+            childTableMap: { items: "items", operations: "operations" },
+            defaults: { status: "open" }
+          }
+        ],
+        links: [{ field: "product", targetResourceId: "inventory.item", reverseRelation: "boms" }],
+        printFormats: [{ id: "bom-costed", label: "Costed BOM", default: true }]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "product", kind: "text", required: true, sortable: true },
@@ -273,7 +356,7 @@ export const manufacturingPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "manufacturing.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/manufacturing/control-room", view: "manufacturing.control-room.view", order: 0 },
+    { id: "manufacturing.control-room.nav", label: "Manufacturing Control Room", icon: "LayoutDashboard", path: "/manufacturing/control-room", view: "manufacturing.control-room.view", order: 0 },
     { id: "manufacturing.reports.nav", label: "Reports", icon: "BarChart3", path: "/manufacturing/reports", view: "manufacturing.reports.view" },
   ],
   extraViews: [

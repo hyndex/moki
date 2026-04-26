@@ -64,7 +64,7 @@ export const companyBuilderPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "company-builder.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/company-builder/control-room", view: "company-builder.control-room.view", order: 0 },
+    { id: "company-builder.control-room.nav", label: "Company Builder Control Room", icon: "LayoutDashboard", path: "/company-builder/control-room", view: "company-builder.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

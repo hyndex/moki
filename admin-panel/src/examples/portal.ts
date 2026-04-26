@@ -80,7 +80,7 @@ export const portalPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "portal.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/portals/customer/control-room", view: "portal.control-room.view", order: 0 },
+    { id: "portal.control-room.nav", label: "Portal Control Room", icon: "LayoutDashboard", path: "/portals/customer/control-room", view: "portal.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

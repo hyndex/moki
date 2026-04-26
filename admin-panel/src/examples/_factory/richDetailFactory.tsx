@@ -22,6 +22,7 @@ import type {
   DomainPluginConfig,
   DomainResourceConfig,
 } from "./buildDomainPlugin";
+import type { ErpDocumentMappingAction, ErpWorkflowTransitionDefinition } from "@/contracts/erp-metadata";
 import { renderValue } from "./renderValue";
 import {
   OverviewSections,
@@ -91,6 +92,38 @@ function displayName(
   return String(record.id ?? "Untitled");
 }
 
+function openPrintableDocument(title: string, html: string): void {
+  const win = window.open("", "_blank");
+  if (win) {
+    win.opener = null;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.document.title = title;
+    window.setTimeout(() => {
+      win.focus();
+      win.print();
+    }, 150);
+    return;
+  }
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+function absoluteAppUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${window.location.origin}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+function defaultPortalExpiry(): string {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 30);
+  return expires.toISOString();
+}
+
 /** Resolve a status label + intent from the record using a conventional
  *  "status" field — plugins can override by passing a statusResolver in
  *  the resource config (future extension). */
@@ -140,6 +173,254 @@ function humanize(s: string): string {
     .trim();
 }
 
+function ErpDocumentTab({
+  record,
+  resource,
+}: {
+  record: Record<string, unknown>;
+  resource: DomainResourceConfig;
+}) {
+  const erp = resource.erp;
+  if (!erp) return null;
+  const childTables = erp.childTables ?? [];
+  const links = erp.links ?? [];
+  const workspaceLinks = erp.workspaceLinks ?? [];
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Document model</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-text-muted">Document type</dt>
+              <dd className="font-mono text-text-primary">{erp.documentType ?? resource.singular}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Naming series</dt>
+              <dd className="font-mono text-text-primary">{erp.namingSeries ?? "Manual"}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Submitted states</dt>
+              <dd className="text-text-primary">{erp.submittedStatuses?.join(", ") || "Not configured"}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Search fields</dt>
+              <dd className="text-text-primary">{erp.searchFields?.join(", ") || resource.fields.slice(0, 3).map((field) => field.name).join(", ")}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      {childTables.map((table) => {
+        const rows = Array.isArray(record[table.field]) ? record[table.field] as Record<string, unknown>[] : [];
+        return (
+          <Card key={table.field}>
+            <CardHeader>
+              <CardTitle>{table.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {rows.length === 0 ? (
+                <div className="px-4 py-6 text-sm text-text-muted">
+                  No line rows captured yet. Columns: {table.fields.map((field) => field.label ?? humanize(field.name)).join(", ")}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs uppercase text-text-muted">
+                        {table.fields.map((field) => (
+                          <th key={field.name} className="px-3 py-2 text-left">
+                            {field.label ?? humanize(field.name)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, index) => (
+                        <tr key={String(row.id ?? index)} className="border-b border-border-subtle last:border-b-0">
+                          {table.fields.map((field) => (
+                            <td key={field.name} className="px-3 py-2 text-text-secondary">
+                              {String(row[field.name] ?? "—")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      {(links.length > 0 || workspaceLinks.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Links and drilldowns</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 text-sm md:grid-cols-2">
+              <div>
+                <h4 className="mb-2 font-medium text-text-primary">Document links</h4>
+                <ul className="space-y-2">
+                  {links.map((link) => (
+                    <li key={`${link.field}:${link.targetResourceId}`} className="flex items-center justify-between gap-3 rounded-md border border-border-subtle px-3 py-2">
+                      <span>{link.label ?? humanize(link.field)}</span>
+                      <code className="text-xs text-text-muted">{link.targetResourceId}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="mb-2 font-medium text-text-primary">Workspace drilldowns</h4>
+                <ul className="space-y-2">
+                  {workspaceLinks.map((link) => (
+                    <li key={`${link.kind}:${link.path}`} className="flex items-center justify-between gap-3 rounded-md border border-border-subtle px-3 py-2">
+                      <a className="text-accent hover:underline" href={`#${link.path}`}>{link.label}</a>
+                      <span className="text-xs uppercase text-text-muted">{link.kind}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function ErpDocumentRailCard({
+  record,
+  resource,
+  busyActionId,
+  busyPrintFormatId,
+  busyWorkflowId,
+  busyPortal,
+  onMapDocument,
+  onTransition,
+  onPrint,
+  onCreatePortalLink,
+}: {
+  record: Record<string, unknown>;
+  resource: DomainResourceConfig;
+  busyActionId?: string | null;
+  busyPrintFormatId?: string | null;
+  busyWorkflowId?: string | null;
+  busyPortal?: boolean;
+  onMapDocument: (action: ErpDocumentMappingAction) => Promise<void>;
+  onTransition: (transition: ErpWorkflowTransitionDefinition) => Promise<void>;
+  onPrint: (formatId: string) => Promise<void>;
+  onCreatePortalLink: () => Promise<void>;
+}) {
+  const erp = resource.erp;
+  if (!erp) return null;
+  const status = String(record[erp.statusField ?? "status"] ?? "");
+  const transitions = (erp.workflow?.transitions ?? []).filter((transition) => String(transition.from) === status);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>ERP document</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div className="space-y-1">
+          <div className="text-text-muted">Next actions</div>
+          {(erp.mappingActions ?? []).length === 0 ? (
+            <div className="text-text-secondary">No mapped actions configured.</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(erp.mappingActions ?? []).map((action) => {
+                const ineligible = Boolean(action.visibleInStatuses?.length) && !action.visibleInStatuses?.includes(status);
+                const busy = busyActionId === action.id;
+                return (
+                  <button
+                    key={action.id}
+                    type="button"
+                    className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-primary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-55"
+                    disabled={busy || ineligible}
+                    title={ineligible ? `Available in: ${action.visibleInStatuses?.join(", ")}` : action.label}
+                    onClick={() => void onMapDocument(action)}
+                  >
+                    {busy ? "Creating..." : action.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {erp.workflow ? (
+          <div className="space-y-1">
+            <div className="text-text-muted">Workflow</div>
+            {transitions.length === 0 ? (
+              <div className="text-text-secondary">
+                No transitions available from {status || erp.workflow.initialState}.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {transitions.map((transition) => {
+                  const key = `${transition.from}:${transition.to}`;
+                  const busy = busyWorkflowId === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-primary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-55"
+                      disabled={busy}
+                      onClick={() => void onTransition(transition)}
+                    >
+                      {busy ? "Updating..." : transition.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : null}
+        {(erp.printFormats?.length || erp.portal) && (
+          <div className="flex flex-wrap gap-2">
+            {erp.printFormats?.map((format) => (
+              <button
+                key={format.id}
+                type="button"
+                className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-primary hover:bg-surface-muted"
+                disabled={busyPrintFormatId === format.id}
+                onClick={() => void onPrint(format.id)}
+              >
+                {busyPrintFormatId === format.id ? "Preparing..." : `Print ${format.label}`}
+              </button>
+            ))}
+            {erp.portal ? (
+              <button
+                type="button"
+                className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-primary hover:bg-surface-muted"
+                disabled={busyPortal}
+                onClick={() => void onCreatePortalLink()}
+              >
+                {busyPortal ? "Creating link..." : "Create portal link"}
+              </button>
+            ) : null}
+          </div>
+        )}
+        {erp.builderSurfaces?.length ? (
+          <div className="space-y-1">
+            <div className="text-text-muted">Builder surfaces</div>
+            <ul className="space-y-1">
+              {erp.builderSurfaces.map((surface) => (
+                <li key={surface.id}>
+                  <a className="text-accent hover:underline" href={`#${surface.path}`}>{surface.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RichDealDetailPage({
   plugin,
   resource,
@@ -152,6 +433,10 @@ export function RichDealDetailPage({
   const registry = useRegistry();
   const host = usePluginHost2();
   const fullResourceId = `${plugin.id}.${resource.id}`;
+  const [busyErpActionId, setBusyErpActionId] = React.useState<string | null>(null);
+  const [busyPrintFormatId, setBusyPrintFormatId] = React.useState<string | null>(null);
+  const [busyWorkflowId, setBusyWorkflowId] = React.useState<string | null>(null);
+  const [busyPortal, setBusyPortal] = React.useState(false);
 
   // Extract record id from the hash path. Convention: <basePath>/<id>.
   const id = hash.split("/").pop() ?? "";
@@ -184,6 +469,147 @@ export function RichDealDetailPage({
       } as unknown as Parameters<typeof resolveViewExtensions>[1]),
     [host, detailViewId, fullResourceId, resource.singular],
   );
+  const basePathMap = React.useMemo(
+    () => (registry ? buildBasePathMap(registry) : {}),
+    [registry],
+  );
+  const editPath = `${resource.path}/${id}/edit`;
+  const handleMapDocument = React.useCallback(
+    async (action: ErpDocumentMappingAction) => {
+      if (!resource.erp) return;
+      setBusyErpActionId(action.id);
+      try {
+        const result = await runtime.erp.mapDocument({
+          sourceResource: fullResourceId,
+          sourceId: id,
+          statusField: resource.erp.statusField,
+          action,
+        });
+        runtime.resources.refresh(fullResourceId);
+        runtime.resources.refresh(action.targetResourceId);
+        runtime.actions.toast({
+          title: result.reused ? "Existing document opened" : `${action.label} created`,
+          intent: "success",
+          description: `${action.targetResourceId} ${String(result.target.id ?? result.mapping.targetId)}`,
+        });
+        const targetBasePath = basePathMap[action.targetResourceId];
+        if (targetBasePath) {
+          navigateTo(`${targetBasePath}/${String(result.target.id ?? result.mapping.targetId)}`);
+        }
+      } catch (err) {
+        runtime.actions.toast({
+          title: `${action.label} failed`,
+          description: err instanceof Error ? err.message : "The document action could not be completed.",
+          intent: "danger",
+        });
+      } finally {
+        setBusyErpActionId(null);
+      }
+    },
+    [basePathMap, fullResourceId, id, resource.erp, runtime],
+  );
+  const handlePrint = React.useCallback(
+    async (formatId: string) => {
+      setBusyPrintFormatId(formatId);
+      try {
+        const document = await runtime.erp.renderPrint(fullResourceId, id, formatId);
+        openPrintableDocument(document.title, document.html);
+        runtime.actions.toast({
+          title: "Print view ready",
+          description: `${document.formatId} generated for ${document.title}`,
+          intent: "success",
+        });
+      } catch (err) {
+        runtime.actions.toast({
+          title: "Print view failed",
+          description: err instanceof Error ? err.message : "The print document could not be generated.",
+          intent: "danger",
+        });
+      } finally {
+        setBusyPrintFormatId(null);
+      }
+    },
+    [fullResourceId, id, runtime],
+  );
+  const handleWorkflowTransition = React.useCallback(
+    async (transition: ErpWorkflowTransitionDefinition) => {
+      if (!resource.erp?.workflow) return;
+      const key = `${transition.from}:${transition.to}`;
+      setBusyWorkflowId(key);
+      try {
+        let reason: string | undefined;
+        if (transition.reasonRequired) {
+          reason = window.prompt(`Reason for ${transition.label.toLowerCase()}`) ?? undefined;
+          if (!reason?.trim()) {
+            setBusyWorkflowId(null);
+            return;
+          }
+        }
+        await runtime.erp.transitionWorkflow({
+          resource: fullResourceId,
+          recordId: id,
+          stateField: resource.erp.workflow.stateField,
+          from: String(transition.from),
+          to: String(transition.to),
+          reason,
+        });
+        runtime.resources.refresh(fullResourceId);
+        runtime.actions.toast({
+          title: transition.label,
+          description: `${resource.singular} moved to ${transition.to}.`,
+          intent: "success",
+        });
+      } catch (err) {
+        runtime.actions.toast({
+          title: "Workflow transition failed",
+          description: err instanceof Error ? err.message : "The document state could not be changed.",
+          intent: "danger",
+        });
+      } finally {
+        setBusyWorkflowId(null);
+      }
+    },
+    [fullResourceId, id, resource, runtime],
+  );
+  const handleCreatePortalLink = React.useCallback(
+    async () => {
+      if (!resource.erp?.portal) return;
+      setBusyPortal(true);
+      try {
+        const defaultFormat = resource.erp.printFormats?.find((format) => format.default)
+          ?? resource.erp.printFormats?.[0];
+        const link = await runtime.erp.createPortalLink({
+          resource: fullResourceId,
+          recordId: id,
+          audience: resource.erp.portal.audience,
+          formatId: defaultFormat?.id,
+          title: displayName(rec, resource),
+          expiresAt: defaultPortalExpiry(),
+        });
+        const url = absoluteAppUrl(link.url);
+        try {
+          await navigator.clipboard?.writeText(url);
+        } catch {
+          /* clipboard can be unavailable in restricted browsers */
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+        runtime.actions.toast({
+          title: "Portal link ready",
+          description: "The secure link was copied and opened in a new tab.",
+          intent: "success",
+        });
+      } catch (err) {
+        runtime.actions.toast({
+          title: "Portal link failed",
+          description: err instanceof Error ? err.message : "The portal link could not be created.",
+          intent: "danger",
+        });
+      } finally {
+        setBusyPortal(false);
+      }
+    },
+    [fullResourceId, id, rec, resource, runtime],
+  );
 
   if (!record && !loading) {
     return (
@@ -201,8 +627,6 @@ export function RichDealDetailPage({
   const identifier = displayName(rec, resource);
   const status = resolveStatus(rec, resource);
   const metrics = pickMetrics(rec, resource);
-
-  const editPath = `${resource.path}/${id}/edit`;
 
   // `ext` already computed above (kept here as a no-op reference for
   // readers tracing the original layout).
@@ -311,6 +735,17 @@ export function RichDealDetailPage({
             <OverviewSections record={rec} fields={resource.fields} />
           ),
         },
+        ...(resource.erp
+          ? [
+              {
+                id: "document",
+                label: "Document",
+                render: () => (
+                  <ErpDocumentTab record={rec} resource={resource} />
+                ),
+              },
+            ]
+          : []),
         {
           id: "bi",
           label: "BI",
@@ -331,7 +766,7 @@ export function RichDealDetailPage({
                 resource={fullResourceId}
                 recordId={id}
                 registry={registry}
-                basePathMap={buildBasePathMap(registry)}
+                basePathMap={basePathMap}
               />
             ) : (
               <TabEmpty title="Registry unavailable" />
@@ -460,6 +895,28 @@ export function RichDealDetailPage({
             />
           ),
         },
+        ...(resource.erp
+          ? [
+              {
+                id: "erp-document",
+                priority: 90,
+                render: () => (
+                  <ErpDocumentRailCard
+                    record={rec}
+                    resource={resource}
+                    busyActionId={busyErpActionId}
+                    busyPrintFormatId={busyPrintFormatId}
+                    busyWorkflowId={busyWorkflowId}
+                    busyPortal={busyPortal}
+                    onMapDocument={handleMapDocument}
+                    onTransition={handleWorkflowTransition}
+                    onPrint={handlePrint}
+                    onCreatePortalLink={handleCreatePortalLink}
+                  />
+                ),
+              },
+            ]
+          : []),
         // Custom fields rail — auto-renders only when the resource has
         // fields registered in field_metadata. Inline-editable with
         // optimistic write-through; rolls back + toasts on failure.

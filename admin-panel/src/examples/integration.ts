@@ -211,7 +211,7 @@ export const integrationPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "integration.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/automation/integrations/control-room", view: "integration.control-room.view", order: 0 },
+    { id: "integration.control-room.nav", label: "Integration Control Room", icon: "LayoutDashboard", path: "/automation/integrations/control-room", view: "integration.control-room.view", order: 0 },
     { id: "integration.reports.nav", label: "Reports", icon: "BarChart3", path: "/automation/integrations/reports", view: "integration.reports.view" },
     { id: "integration.status.nav", label: "Status", icon: "Activity", path: "/automation/integrations/status", view: "integration.status.view" },
   ],

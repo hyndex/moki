@@ -38,6 +38,48 @@ export const inventoryPlugin = buildDomainPlugin({
       plural: "Items",
       icon: "Box",
       path: "/inventory/items",
+      erp: {
+        documentType: "stock.Item",
+        module: "Stock",
+        titleField: "name",
+        childTables: [
+          {
+            field: "barcodes",
+            label: "Barcodes",
+            fields: [
+              { name: "barcode", kind: "text", required: true },
+              { name: "uom", kind: "text" }
+            ]
+          },
+          {
+            field: "suppliers",
+            label: "Suppliers",
+            fields: [
+              { name: "supplier", kind: "link", referenceTo: "party.entity", required: true },
+              { name: "supplierPartNo", kind: "text" }
+            ]
+          },
+          {
+            field: "reorderLevels",
+            label: "Reorder Levels",
+            quantityField: "reorderQty",
+            fields: [
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse", required: true },
+              { name: "reorderPoint", kind: "number", required: true },
+              { name: "reorderQty", kind: "number", required: true }
+            ]
+          }
+        ],
+        links: [
+          { field: "preferredSupplier", targetResourceId: "party.entity", reverseRelation: "supplied-items" }
+        ],
+        workspaceLinks: [
+          { label: "Stock Ledger", path: "/inventory/reports/stock-ledger", kind: "report", group: "Reports" },
+          { label: "Stock Balance", path: "/inventory/reports/stock-balance", kind: "report", group: "Reports" },
+          { label: "Item Prices", path: "/inventory/item-prices", kind: "document", group: "Setup" }
+        ],
+        printFormats: [{ id: "item-label", label: "Item Label", default: true }]
+      },
       fields: [
         { name: "sku", label: "SKU", kind: "text", required: true, sortable: true, width: 110 },
         { name: "name", kind: "text", required: true, sortable: true },
@@ -108,6 +150,16 @@ export const inventoryPlugin = buildDomainPlugin({
       plural: "Warehouses",
       icon: "Warehouse",
       path: "/inventory/warehouses",
+      erp: {
+        documentType: "stock.Warehouse",
+        module: "Stock",
+        titleField: "name",
+        links: [{ field: "parentId", targetResourceId: "inventory.warehouse", reverseRelation: "children" }],
+        workspaceLinks: [
+          { label: "Warehouse-wise Balance", path: "/inventory/reports/warehouse-wise-balance", kind: "report", group: "Reports" },
+          { label: "Stock Entries", path: "/inventory/stock-entries", kind: "document", group: "Operations" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 100 },
         { name: "name", kind: "text", required: true, sortable: true },
@@ -234,6 +286,49 @@ export const inventoryPlugin = buildDomainPlugin({
       path: "/inventory/stock-entries",
       displayField: "code",
       defaultSort: { field: "postedAt", dir: "desc" },
+      erp: {
+        documentType: "stock.Stock Entry",
+        module: "Stock",
+        namingSeries: "MAT-STE-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["approved", "published"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "qty",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "sourceWarehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "targetWarehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "qty", kind: "number", required: true },
+              { name: "basicRate", kind: "currency" },
+              { name: "amount", kind: "currency", readonly: true },
+              { name: "batch", kind: "link", referenceTo: "inventory.batch" },
+              { name: "serialNumbers", kind: "textarea" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "stock-entry-to-gl",
+            label: "Post Stock Value",
+            relation: "posts-to",
+            targetResourceId: "accounting.journal-entry",
+            targetDocumentType: "accounts.Journal Entry",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { referenceNo: "code", amount: "value" },
+            defaults: { status: "draft", entryType: "Stock Value" }
+          }
+        ],
+        links: [
+          { field: "sku", targetResourceId: "inventory.item", reverseRelation: "stock-entries" },
+          { field: "warehouse", targetResourceId: "inventory.warehouse", reverseRelation: "stock-entries" }
+        ],
+        printFormats: [{ id: "stock-entry", label: "Stock Entry", default: true }]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "postedAt", label: "Posted", kind: "date", required: true, sortable: true, width: 130 },
@@ -281,6 +376,53 @@ export const inventoryPlugin = buildDomainPlugin({
       path: "/inventory/material-requests",
       displayField: "code",
       defaultSort: { field: "neededBy", dir: "asc" },
+      erp: {
+        documentType: "stock.Material Request",
+        module: "Stock",
+        namingSeries: "MAT-MR-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["submitted", "partially-fulfilled", "fulfilled"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "requiredBy", kind: "date" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "material-request-to-stock-entry",
+            label: "Create Stock Entry",
+            relation: "fulfilled-by",
+            targetResourceId: "inventory.stock-entry",
+            targetDocumentType: "stock.Stock Entry",
+            visibleInStatuses: ["submitted", "partially-fulfilled"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft", kind: "issue" }
+          },
+          {
+            id: "material-request-to-purchase-order",
+            label: "Create Purchase Order",
+            relation: "ordered-by",
+            targetResourceId: "procurement.purchase-order",
+            targetDocumentType: "buying.Purchase Order",
+            visibleInStatuses: ["submitted"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          }
+        ],
+        workspaceLinks: [
+          { label: "Stock Entries", path: "/inventory/stock-entries", kind: "document", group: "Fulfillment" },
+          { label: "Purchase Orders", path: "/procurement/pos", kind: "document", group: "Procurement" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "purpose", label: "Purpose", kind: "enum", required: true, options: [
@@ -326,6 +468,65 @@ export const inventoryPlugin = buildDomainPlugin({
       path: "/inventory/delivery-notes",
       displayField: "code",
       defaultSort: { field: "deliveredAt", dir: "desc" },
+      erp: {
+        documentType: "stock.Delivery Note",
+        module: "Stock",
+        namingSeries: "MAT-DN-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["submitted", "in-transit", "delivered"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse", required: true },
+              { name: "rate", kind: "currency" },
+              { name: "amount", kind: "currency", readonly: true },
+              { name: "batch", kind: "link", referenceTo: "inventory.batch" },
+              { name: "serialNumbers", kind: "textarea" }
+            ]
+          }
+        ],
+        links: [
+          { field: "customer", targetResourceId: "party.entity", reverseRelation: "delivery-notes" },
+          { field: "linkedSo", targetResourceId: "sales.order", reverseRelation: "delivery-notes" }
+        ],
+        mappingActions: [
+          {
+            id: "delivery-note-to-sales-invoice",
+            label: "Create Sales Invoice",
+            relation: "billed-by",
+            targetResourceId: "accounting.invoice",
+            targetDocumentType: "accounts.Sales Invoice",
+            visibleInStatuses: ["delivered", "submitted"],
+            fieldMap: { customer: "customer", salesOrder: "linkedSo", amount: "amount" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          },
+          {
+            id: "delivery-note-to-packing-slip",
+            label: "Create Packing Slip",
+            relation: "packed-by",
+            targetResourceId: "inventory.packing-slip",
+            targetDocumentType: "stock.Packing Slip",
+            visibleInStatuses: ["submitted", "in-transit"],
+            fieldMap: { customer: "customer", linkedSo: "linkedSo" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          }
+        ],
+        printFormats: [{ id: "delivery-note", label: "Delivery Note", default: true }],
+        portal: { route: "/shipments/:id", audience: "customer", enabledByDefault: true },
+        workspaceLinks: [
+          { label: "Stock Ledger", path: "/inventory/reports/stock-ledger", kind: "report", group: "Ledger" },
+          { label: "Sales Invoices", path: "/accounting/invoices", kind: "document", group: "Billing" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "customer", kind: "text", required: true, sortable: true },
@@ -370,6 +571,64 @@ export const inventoryPlugin = buildDomainPlugin({
       path: "/inventory/purchase-receipts",
       displayField: "code",
       defaultSort: { field: "receivedAt", dir: "desc" },
+      erp: {
+        documentType: "stock.Purchase Receipt",
+        module: "Stock",
+        namingSeries: "MAT-PRE-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["approved", "published"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "acceptedWarehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "rejectedWarehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "rate", kind: "currency" },
+              { name: "amount", kind: "currency" }
+            ]
+          }
+        ],
+        links: [
+          { field: "supplier", targetResourceId: "procurement.supplier", reverseRelation: "purchase-receipts" },
+          { field: "linkedPo", targetResourceId: "procurement.purchase-order", reverseRelation: "purchase-receipts" }
+        ],
+        mappingActions: [
+          {
+            id: "purchase-receipt-to-purchase-invoice",
+            label: "Create Purchase Invoice",
+            relation: "billed-by",
+            targetResourceId: "accounting.bill",
+            targetDocumentType: "accounts.Purchase Invoice",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { vendor: "supplier", purchaseReceipt: "code", amount: "amount" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          },
+          {
+            id: "purchase-receipt-to-stock-entry",
+            label: "Post Stock Ledger",
+            relation: "posts-stock",
+            targetResourceId: "inventory.stock-entry",
+            targetDocumentType: "stock.Stock Entry",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { supplier: "supplier", linkedPo: "linkedPo" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft", kind: "receipt" }
+          }
+        ],
+        printFormats: [{ id: "purchase-receipt", label: "Purchase Receipt", default: true }],
+        portal: { route: "/supplier/receipts/:id", audience: "supplier", enabledByDefault: true },
+        workspaceLinks: [
+          { label: "Stock Ledger", path: "/inventory/reports/stock-ledger", kind: "report", group: "Ledger" },
+          { label: "Purchase Invoices", path: "/accounting/bills", kind: "document", group: "Billing" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "supplier", kind: "text", required: true, sortable: true },
@@ -672,7 +931,7 @@ export const inventoryPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "inventory.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/inventory/control-room", view: "inventory.control-room.view", order: 0 },
+    { id: "inventory.control-room.nav", label: "Inventory Control Room", icon: "LayoutDashboard", path: "/inventory/control-room", view: "inventory.control-room.view", order: 0 },
     { id: "inventory.reports.nav", label: "Reports", icon: "BarChart3", path: "/inventory/reports", view: "inventory.reports.view" },
     { id: "inventory.alerts.nav", label: "Low stock", icon: "AlertTriangle", path: "/inventory/alerts", view: "inventory.alerts.view" },
   ],

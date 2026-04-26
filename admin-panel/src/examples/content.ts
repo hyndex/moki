@@ -160,7 +160,7 @@ export const contentPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "content.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/content/control-room", view: "content.control-room.view", order: 0 },
+    { id: "content.control-room.nav", label: "Content Control Room", icon: "LayoutDashboard", path: "/content/control-room", view: "content.control-room.view", order: 0 },
     { id: "content.reports.nav", label: "Reports", icon: "BarChart3", path: "/content/reports", view: "content.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

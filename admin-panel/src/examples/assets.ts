@@ -269,7 +269,7 @@ export const assetsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "assets.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/assets/control-room", view: "assets.control-room.view", order: 0 },
+    { id: "assets.control-room.nav", label: "Assets Control Room", icon: "LayoutDashboard", path: "/assets/control-room", view: "assets.control-room.view", order: 0 },
     { id: "assets.reports.nav", label: "Reports", icon: "BarChart3", path: "/assets/reports", view: "assets.reports.view" },
   ],
   extraViews: [

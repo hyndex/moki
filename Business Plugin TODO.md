@@ -21,9 +21,14 @@ This board is the workspace-level staged tracker for the Gutu Business OS progra
 - [x] Add live importer and dry-run execution surfaces for pack payloads instead of schema-only and sample-artifact coverage.
 - [x] Add shared Postgres and SQLite schema builders for persistent business-runtime state across numbering, imports, links, reconciliation, and pack rollback.
 - [x] Add shared outbox, inbox, dead-letter, projection, replay, and downstream-resolution primitives to `@platform/business-runtime`.
+- [x] Add shared ERP document graph, document mapping, line-level lineage, stored document records, accounting GL, fiscal-period locks, AR/AP aging, financial statements, stock ledger, FIFO valuation, FIFO queues, stock aging, serial or batch drilldown, reservation, transfer, and reconciliation primitives to `@platform/business-runtime`.
+- [x] Add a repeatable ERPNext reference-map generator and durable report so parity coverage can be measured from the checked-out reference source.
 - [x] Move the scaffolded business plugin local state helpers onto `@platform/business-runtime` so the suite uses one shared runtime surface.
 - [x] Extend `business:check` into a contract-registry, pack-preview, and lifecycle-scenario verification lane.
 - [x] Wire the shared SQL persistence surfaces into the generated business-plugin service flows so they no longer rely on JSON fixture files.
+- [x] Surface ERP child tables, document metadata, print formats, portal routes, workspace drilldowns, mapping actions, and builder hooks in generated admin forms and rich detail pages.
+- [x] Persist ERP document mapping and immutable posting batches through tenant-aware live DB operations with idempotency, ACL checks, audit, record links, realtime invalidation, and per-record timelines.
+- [ ] Persist every remaining ERP primitive, including full GL report truth, stock valuation projections, print rendering, portal rendering, and builder-created metadata, through domain-specific tenant-aware operator flows.
 - [ ] Deepen the default runtime path from local SQLite-backed operator fixtures into full multi-environment deployment wiring and tenant-aware live DB operations.
 
 ## Stage 2
@@ -52,6 +57,10 @@ This board is the workspace-level staged tracker for the Gutu Business OS progra
 - [x] Deepen the shared generated lifecycle so every business plugin now carries hold or release, amend, reverse, and richer downstream secondary-record tracking instead of only create or advance or reconcile scaffolds.
 - [ ] Deepen quote-to-cash, procure-to-pay, project-to-bill, and service-to-cash flows from scaffold coverage into domain-complete operational logic.
 - [x] Add direct contract scenarios across the core business plugins for billing intents, reservation intents, and reconciliation handoff.
+- [x] Add representative ERP metadata to Accounting, Inventory, Manufacturing, Sales, and Procurement admin resources for child tables, links, mapping actions, print formats, portal surfaces, builder hooks, and workspace links.
+- [x] Add runtime-level quote-to-cash document-chain coverage with stored records, upstream/downstream lineage, and related-document lookup.
+- [x] Wire generated ERP rich-detail actions and backend mutation routes into representative quote-to-cash, procure-to-pay, stock-to-GL, BOM-to-work-order, and invoice-to-payment document actions.
+- [ ] Migrate remaining hand-authored ERP pages, especially the legacy Sales quote/order screens, onto the same mutation-backed rich-detail action surface.
 
 ## Stage 4
 
@@ -86,6 +95,7 @@ This board is the workspace-level staged tracker for the Gutu Business OS progra
 - Catalog, certification, and publication will stay partial until the new repos are pushed and added to the remote ecosystem.
 - Pack files now have preview or apply or rollback runtime support plus local signing and stable-promotion flows, but remote publication and environment rollout pipelines still need deeper implementation.
 - The business suite now has shared SQL schema builders plus shared orchestration state and recovery flows, but the generated domains are still scaffold-depth and default to local SQLite-backed runtime wiring until deeper operator deployment work lands.
+- The ERPNext parity foundation now includes repeatable reference mapping, richer admin metadata, generated ERP form/detail visibility, document mapping, stored lineage, tenant-aware ERP action routes, immutable posting batches, GL, fiscal locks, AR/AP aging, financial statements, stock valuation, FIFO queues, stock aging, and serial/batch drilldowns. The generated reference map still shows hundreds of ERPNext DocTypes missing from catalog/admin metadata, so parity claims must remain scoped until those ledgers are closed plugin by plugin.
 
 ## Notes
 

@@ -189,7 +189,7 @@ export const analyticsBiPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "analytics-bi.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/analytics/control-room", view: "analytics-bi.control-room.view", order: 0 },
+    { id: "analytics-bi.control-room.nav", label: "Analytics BI Control Room", icon: "LayoutDashboard", path: "/analytics/control-room", view: "analytics-bi.control-room.view", order: 0 },
     { id: "analytics-bi.explore.nav", label: "Explore", icon: "Search", path: "/analytics/explore", view: "analytics-bi.explore.view", order: 1 },
     { id: "analytics-bi.charts.nav", label: "Charts", icon: "BarChart3", path: "/analytics/charts", view: "analytics-bi.charts.view", order: 2 },
     { id: "analytics-bi.dashboards.nav", label: "Dashboards", icon: "PieChart", path: "/analytics/dashboards", view: "analytics-bi.dashboards.view", order: 3 },

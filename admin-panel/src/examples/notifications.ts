@@ -199,7 +199,7 @@ export const notificationsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "notifications.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/notifications/control-room", view: "notifications.control-room.view", order: 0 },
+    { id: "notifications.control-room.nav", label: "Notifications Control Room", icon: "LayoutDashboard", path: "/notifications/control-room", view: "notifications.control-room.view", order: 0 },
     { id: "notifications.reports.nav", label: "Reports", icon: "BarChart3", path: "/notifications/reports", view: "notifications.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

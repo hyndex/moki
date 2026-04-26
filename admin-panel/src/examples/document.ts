@@ -84,7 +84,7 @@ export const documentPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "document.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/documents/control-room", view: "document.control-room.view", order: 0 },
+    { id: "document.control-room.nav", label: "Document Control Room", icon: "LayoutDashboard", path: "/documents/control-room", view: "document.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

@@ -29,6 +29,83 @@ export const accountingPlugin = buildDomainPlugin({
       displayField: "number",
       pageSize: 12,
       defaultSort: { field: "issuedAt", dir: "desc" },
+      erp: {
+        documentType: "accounts.Sales Invoice",
+        module: "Accounts",
+        namingSeries: "SINV-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["approved", "published"],
+        titleField: "number",
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            amountField: "amount",
+            fields: [
+              { name: "item", label: "Item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "description", kind: "text" },
+              { name: "quantity", kind: "number", required: true },
+              { name: "rate", kind: "currency", required: true },
+              { name: "amount", kind: "currency", readonly: true }
+            ]
+          },
+          {
+            field: "taxes",
+            label: "Taxes",
+            amountField: "taxAmount",
+            fields: [
+              { name: "account", kind: "link", referenceTo: "accounting.account", required: true },
+              { name: "rate", kind: "number" },
+              { name: "taxAmount", kind: "currency", readonly: true }
+            ]
+          },
+          {
+            field: "payments",
+            label: "Payments",
+            amountField: "allocatedAmount",
+            fields: [
+              { name: "paymentEntry", kind: "link", referenceTo: "accounting.payment-entry" },
+              { name: "allocatedAmount", kind: "currency" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "invoice-to-payment",
+            label: "Create Payment",
+            relation: "settled-by",
+            targetResourceId: "accounting.payment-entry",
+            targetDocumentType: "accounts.Payment Entry",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { party: "customer", amount: "amount", currency: "currency", referenceNo: "number" },
+            defaults: { status: "draft", paymentType: "Receive" }
+          },
+          {
+            id: "invoice-to-credit-note",
+            label: "Create Credit Note",
+            relation: "reversed-by",
+            targetResourceId: "accounting.invoice",
+            targetDocumentType: "accounts.Sales Invoice",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { customer: "customer", amount: "amount", currency: "currency" },
+            childTableMap: { items: "items", taxes: "taxes" },
+            defaults: { status: "draft", isReturn: true }
+          }
+        ],
+        links: [
+          { field: "customer", targetResourceId: "party.entity", reverseRelation: "invoices" },
+          { field: "salesOrder", targetResourceId: "sales.order", reverseRelation: "invoices" }
+        ],
+        printFormats: [{ id: "standard-tax-invoice", label: "Standard Tax Invoice", default: true, paperSize: "A4" }],
+        portal: { route: "/invoices/:id", audience: "customer", enabledByDefault: true },
+        workspaceLinks: [
+          { label: "General Ledger", path: "/accounting/reports/general-ledger", kind: "report", group: "Ledger" },
+          { label: "Accounts Receivable", path: "/accounting/reports/accounts-receivable", kind: "report", group: "Receivables" },
+          { label: "Payment Entries", path: "/accounting/payment-entries", kind: "document", group: "Receivables" }
+        ]
+      },
       fields: [
         { name: "number", label: "Number", kind: "text", required: true, sortable: true, width: 130 },
         { name: "customer", label: "Customer", kind: "text", required: true, sortable: true },
@@ -58,6 +135,43 @@ export const accountingPlugin = buildDomainPlugin({
       icon: "FileMinus",
       path: "/accounting/bills",
       displayField: "number",
+      erp: {
+        documentType: "accounts.Purchase Invoice",
+        module: "Accounts",
+        namingSeries: "PINV-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["approved", "published"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "rate", kind: "currency", required: true },
+              { name: "amount", kind: "currency", readonly: true }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "bill-to-payment",
+            label: "Create Payment",
+            relation: "settled-by",
+            targetResourceId: "accounting.payment-entry",
+            targetDocumentType: "accounts.Payment Entry",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { party: "vendor", amount: "amount", currency: "currency", referenceNo: "number" },
+            defaults: { status: "draft", paymentType: "Pay" }
+          }
+        ],
+        links: [{ field: "vendor", targetResourceId: "party.entity", reverseRelation: "bills" }],
+        printFormats: [{ id: "standard-purchase-invoice", label: "Standard Purchase Invoice", default: true }],
+        portal: { route: "/supplier-invoices/:id", audience: "supplier", enabledByDefault: true }
+      },
       fields: [
         { name: "number", label: "Number", kind: "text", required: true, sortable: true },
         { name: "vendor", label: "Vendor", kind: "text", required: true, sortable: true },
@@ -80,6 +194,16 @@ export const accountingPlugin = buildDomainPlugin({
       plural: "Chart of Accounts",
       icon: "BookOpen",
       path: "/accounting/accounts",
+      erp: {
+        documentType: "accounts.Account",
+        module: "Accounts",
+        titleField: "name",
+        links: [{ field: "parentId", targetResourceId: "accounting.account", reverseRelation: "children" }],
+        workspaceLinks: [
+          { label: "Chart of Accounts", path: "/accounting/accounts", kind: "document", group: "Setup" },
+          { label: "Trial Balance", path: "/accounting/reports/trial-balance", kind: "report", group: "Statements" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 100 },
         { name: "name", kind: "text", required: true, sortable: true },
@@ -117,6 +241,40 @@ export const accountingPlugin = buildDomainPlugin({
       path: "/accounting/journal-entries",
       displayField: "number",
       defaultSort: { field: "postedAt", dir: "desc" },
+      erp: {
+        documentType: "accounts.Journal Entry",
+        module: "Accounts",
+        namingSeries: "ACC-JV-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["posted"],
+        childTables: [
+          {
+            field: "accounts",
+            label: "Accounting Entries",
+            amountField: "debit",
+            fields: [
+              { name: "account", kind: "link", referenceTo: "accounting.account", required: true },
+              { name: "party", kind: "link", referenceTo: "party.entity" },
+              { name: "costCenter", kind: "link", referenceTo: "accounting.cost-center" },
+              { name: "debit", kind: "currency" },
+              { name: "credit", kind: "currency" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "journal-reverse",
+            label: "Reverse Journal",
+            relation: "reversed-by",
+            targetResourceId: "accounting.journal-entry",
+            targetDocumentType: "accounts.Journal Entry",
+            visibleInStatuses: ["posted"],
+            childTableMap: { lines: "lines" },
+            defaults: { status: "draft", reversal: true }
+          }
+        ],
+        printFormats: [{ id: "journal-voucher", label: "Journal Voucher", default: true }]
+      },
       fields: [
         { name: "number", label: "Number", kind: "text", required: true, sortable: true, width: 130 },
         { name: "postedAt", label: "Posted", kind: "date", required: true, sortable: true, width: 130 },
@@ -177,6 +335,31 @@ export const accountingPlugin = buildDomainPlugin({
       path: "/accounting/payment-entries",
       displayField: "reference",
       defaultSort: { field: "postedAt", dir: "desc" },
+      erp: {
+        documentType: "accounts.Payment Entry",
+        module: "Accounts",
+        namingSeries: "ACC-PAY-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["cleared"],
+        childTables: [
+          {
+            field: "references",
+            label: "Reference Allocations",
+            amountField: "allocatedAmount",
+            fields: [
+              { name: "referenceType", kind: "text" },
+              { name: "referenceName", kind: "dynamic-link", dynamicReferenceField: "referenceType" },
+              { name: "outstandingAmount", kind: "currency", readonly: true },
+              { name: "allocatedAmount", kind: "currency" }
+            ]
+          }
+        ],
+        links: [
+          { field: "party", targetResourceId: "party.entity", reverseRelation: "payments" },
+          { field: "bankAccount", targetResourceId: "accounting.bank-account", reverseRelation: "payments" }
+        ],
+        printFormats: [{ id: "payment-receipt", label: "Payment Receipt", default: true }]
+      },
       fields: [
         { name: "reference", label: "Reference", kind: "text", required: true, sortable: true, width: 140 },
         {
@@ -646,7 +829,7 @@ export const accountingPlugin = buildDomainPlugin({
   extraNav: [
     {
       id: "accounting.control-room.nav",
-      label: "Control Room",
+      label: "Accounting Control Room",
       icon: "LayoutDashboard",
       path: "/accounting/control-room",
       view: "accounting.control-room.view",

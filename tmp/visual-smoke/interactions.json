@@ -1,0 +1,56 @@
+{
+  "results": [
+    {
+      "name": "custom-fields-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "property-setters-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "naming-series-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "print-formats-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "notification-rules-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "webhook-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "api-token-create",
+      "ok": true,
+      "detail": "dialog opened"
+    },
+    {
+      "name": "cmd-k-palette",
+      "ok": true,
+      "detail": "palette opened"
+    },
+    {
+      "name": "bulk-import-wizard-render",
+      "ok": true,
+      "detail": "all 3 wizard steps visible"
+    },
+    {
+      "name": "list-detail-flow",
+      "ok": true,
+      "detail": "list rendered and navigated to detail"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": []
+}

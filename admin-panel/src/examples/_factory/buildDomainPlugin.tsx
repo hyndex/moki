@@ -8,6 +8,7 @@ import {
   defineResource,
 } from "@/builders";
 import type { FieldDescriptor, EnumOption } from "@/contracts/fields";
+import type { ErpFieldDependency, ErpLinkFilter, ErpResourceMetadata } from "@/contracts/erp-metadata";
 import type { NavItem, NavSection } from "@/contracts/nav";
 import type { ActionDescriptor } from "@/contracts/actions";
 import type { CommandDescriptor } from "@/contracts/commands";
@@ -16,7 +17,10 @@ import type {
   ColumnDescriptor,
   View,
 } from "@/contracts/views";
+import type { ConnectionDescriptor, ReportDefinition } from "@/contracts/widgets";
 import { RichDealDetailPage } from "./richDetailFactory";
+import { buildReportLibrary } from "./reportLibraryHelper";
+import { navigateTo } from "@/views/useRoute";
 import { definePlugin, type PluginV2 } from "@/contracts/plugin-v2";
 
 /** Compact per-field config that produces: zod schema, form input, list column,
@@ -32,6 +36,12 @@ export interface DomainFieldConfig {
   currency?: string;
   /** Show in list view? Default true for primitive fields, false for textarea/json. */
   list?: boolean;
+  referenceTo?: string;
+  dynamicReferenceField?: string;
+  linkFilters?: readonly ErpLinkFilter[];
+  dependsOn?: readonly ErpFieldDependency[];
+  fetchFrom?: string;
+  colSpan?: FieldDescriptor["colSpan"];
   sortable?: boolean;
   width?: number | string;
   align?: "left" | "right" | "center";
@@ -71,6 +81,8 @@ export interface DomainResourceConfig {
   pageSize?: number;
   /** Hide form view (read-only resource, e.g. audit-like logs). */
   readOnly?: boolean;
+  /** ERPNext-parity metadata for child tables, document links, print, portal, and workspace builders. */
+  erp?: ErpResourceMetadata;
 }
 
 export interface DomainPluginConfig {
@@ -90,10 +102,27 @@ export interface DomainPluginConfig {
   /** Extra nav items for custom pages. Each one typically points at one of
    *  the extraViews via `view: "<id>"`. */
   extraNav?: readonly NavItem[];
+  /** Declarative ReportBuilder library. The factory contributes the index
+   *  and detail routes, a Reports nav item, and command-palette shortcuts. */
+  reports?: readonly ReportDefinition[];
+  /** Route for the generated reports library. Defaults to `/<plugin>/reports`. */
+  reportsBasePath?: string;
+  /** Optional title/description/resource metadata for the generated reports view. */
+  reportsTitle?: string;
+  reportsDescription?: string;
+  reportsResource?: string;
+  /** Declarative workflow descriptors are registered into commands/nav by
+   *  convention; resource-level `erp.workflow` powers the detail rail actions. */
+  workflows?: readonly {
+    id: string;
+    label: string;
+    resourceId: string;
+    description?: string;
+  }[];
   /** Per-plugin ConnectionsPanel — shown on the rich detail rail. Plugins
    *  describe what related resources exist for their records here (e.g. for
    *  CRM contacts: "Deals", "Invoices", "Tickets"). */
-  connections?: import("@/contracts/widgets").ConnectionDescriptor;
+  connections?: ConnectionDescriptor;
   /** Opt out of the auto-generated RichDetailPage (custom layout in the
    *  plugin file takes over). Default: generated. */
   disableRichDetail?: boolean;
@@ -109,6 +138,18 @@ export function contributeDomain(
   cfg: DomainPluginConfig,
 ): void {
   const resources = cfg.resources.map((r) => buildResource(cfg, r));
+  const reportBasePath = normalizePath(cfg.reportsBasePath ?? `/${cfg.id}/reports`);
+  const reportViews = cfg.reports?.length
+    ? buildReportLibrary({
+        indexViewId: `${cfg.id}.reports.view`,
+        detailViewId: `${cfg.id}.reports.detail.view`,
+        resource: cfg.reportsResource ?? resources[0]?.id ?? `${cfg.id}.reports`,
+        title: cfg.reportsTitle ?? `${cfg.label} Reports`,
+        description: cfg.reportsDescription ?? `Standard operational reports for ${cfg.label}.`,
+        basePath: reportBasePath,
+        reports: cfg.reports,
+      })
+    : null;
   const navItems: NavItem[] = cfg.resources.map((r, idx) => ({
     id: `${cfg.id}.${r.id}.nav`,
     label: r.plural,
@@ -120,6 +161,20 @@ export function contributeDomain(
   }));
   const views = cfg.resources.flatMap((r) => buildViews(cfg, r));
   const widgets = cfg.resources.flatMap((r) => r.widgets ?? []);
+  const reportNav: NavItem[] = reportViews
+    ? [
+        {
+          id: `${cfg.id}.reports.nav`,
+          label: "Reports",
+          icon: "BarChart3",
+          path: reportBasePath,
+          view: reportViews.indexView.id,
+          section: cfg.section.id,
+          order: (cfg.order ?? 0) * 100 + 40,
+        },
+      ]
+    : [];
+  const generatedCommands = buildGeneratedCommands(cfg, reportBasePath);
   const extraNavNormalized: NavItem[] = (cfg.extraNav ?? []).map((n, i) => ({
     section: cfg.section.id,
     order: (cfg.order ?? 0) * 100 + 50 + i,
@@ -128,12 +183,18 @@ export function contributeDomain(
 
   if (resources.length > 0) ctx.contribute.resources(resources);
   ctx.contribute.navSections([cfg.section]);
-  const allNav = [...navItems, ...extraNavNormalized];
+  const allNav = [...navItems, ...reportNav, ...extraNavNormalized];
   if (allNav.length > 0) ctx.contribute.nav(allNav);
-  const allViews = [...views, ...(cfg.extraViews ?? [])];
+  const allViews = [
+    ...views,
+    ...(reportViews ? [reportViews.indexView, reportViews.detailView] : []),
+    ...(cfg.extraViews ?? []),
+  ];
   if (allViews.length > 0) ctx.contribute.views(allViews);
   if (widgets.length > 0) ctx.contribute.widgets(widgets);
-  if (cfg.commands?.length) ctx.contribute.commands(cfg.commands);
+  const commands = [...generatedCommands, ...(cfg.commands ?? [])];
+  if (commands.length) ctx.contribute.commands(commands);
+  if (cfg.connections) ctx.contribute.connections(cfg.connections);
 }
 
 /** Build a v2 plugin from a compact domain config. */
@@ -165,10 +226,62 @@ export function buildDomainPlugin(cfg: DomainPluginConfig): PluginV2 {
   });
 }
 
+function buildGeneratedCommands(
+  cfg: DomainPluginConfig,
+  reportBasePath: string,
+): CommandDescriptor[] {
+  const commands: CommandDescriptor[] = [];
+  if (cfg.reports?.length) {
+    commands.push({
+      id: `${cfg.id}.reports.open`,
+      label: `${cfg.label}: Open reports`,
+      keywords: [cfg.label, "reports", "reporting", "analytics"],
+      icon: "BarChart3",
+      run: () => navigateTo(reportBasePath),
+    });
+    for (const report of cfg.reports) {
+      commands.push({
+        id: `${cfg.id}.reports.${report.id}`,
+        label: `${cfg.label}: ${report.label}`,
+        keywords: [cfg.label, report.label, report.id, "report"],
+        icon: report.icon ?? "FileBarChart",
+        run: () => navigateTo(`${reportBasePath}/${report.id}`),
+      });
+    }
+  }
+  for (const workflow of cfg.workflows ?? []) {
+    commands.push({
+      id: `${cfg.id}.workflow.${workflow.id}`,
+      label: `${cfg.label}: ${workflow.label}`,
+      keywords: [cfg.label, workflow.label, workflow.id, "workflow"],
+      icon: "Workflow",
+      run: () => {
+        const resource = cfg.resources.find((candidate) => {
+          const fullId = `${cfg.id}.${candidate.id}`;
+          return candidate.id === workflow.resourceId || fullId === workflow.resourceId;
+        });
+        navigateTo(resource?.path ?? `/${cfg.id}`);
+      },
+    });
+  }
+  return commands;
+}
+
+function normalizePath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) return "/";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
 function buildResource(cfg: DomainPluginConfig, r: DomainResourceConfig) {
   const shape: Record<string, ZodTypeAny> = { id: z.string() };
   for (const f of r.fields) {
     shape[f.name] = fieldToZod(f);
+  }
+  for (const childTable of r.erp?.childTables ?? []) {
+    if (!shape[childTable.field]) {
+      shape[childTable.field] = z.array(z.record(z.unknown())).optional();
+    }
   }
   const schema = z.object(shape);
   const resource = defineResource({
@@ -178,6 +291,7 @@ function buildResource(cfg: DomainPluginConfig, r: DomainResourceConfig) {
     schema,
     displayField: r.displayField ?? "name",
     icon: r.icon,
+    erp: r.erp,
     searchable: r.fields
       .filter((f) => ["text", "email", "textarea"].includes(f.kind))
       .map((f) => f.name),
@@ -273,22 +387,44 @@ function buildViews(cfg: DomainPluginConfig, r: DomainResourceConfig) {
       id: `${resourceId}.form`,
       title: r.singular,
       resource: resourceId,
-      sections: Array.from(sectionMap.entries()).map(([title, fields], i) => ({
-        id: `section-${i}`,
-        title,
-        columns: fields.length > 4 ? 2 : 1,
-        fields: fields.map<FieldDescriptor>((f) => ({
-          name: f.name,
-          label: f.label,
-          kind: f.kind,
-          required: f.required,
-          help: f.help,
-          placeholder: f.placeholder,
-          options: f.options,
-          currency: f.currency,
-          readonly: f.readonly,
+      sections: [
+        ...Array.from(sectionMap.entries()).map(([title, fields], i) => ({
+          id: `section-${i}`,
+          title,
+          columns: (fields.length > 4 ? 2 : 1) as 1 | 2,
+          fields: fields.map<FieldDescriptor>((f) => ({
+            name: f.name,
+            label: f.label,
+            kind: f.kind,
+            required: f.required,
+            help: f.help,
+            placeholder: f.placeholder,
+            options: f.options,
+            referenceTo: f.referenceTo,
+            dynamicReferenceField: f.dynamicReferenceField,
+            linkFilters: f.linkFilters,
+            dependsOn: f.dependsOn,
+            fetchFrom: f.fetchFrom,
+            currency: f.currency,
+            readonly: f.readonly,
+            colSpan: f.colSpan,
+          })),
         })),
-      })),
+        ...(r.erp?.childTables ?? []).map((table, i) => ({
+          id: `child-table-${i}`,
+          title: table.label,
+          columns: 1 as const,
+          fields: [
+            {
+              name: table.field,
+              label: table.label,
+              kind: "table" as const,
+              table,
+              colSpan: "full" as const,
+            },
+          ],
+        })),
+      ],
     });
     views.push(form);
   }
@@ -416,9 +552,14 @@ function fieldToZod(f: DomainFieldConfig): ZodTypeAny {
     case "multi-enum":
       base = z.array(z.string());
       break;
+    case "table":
+      base = z.array(z.record(z.unknown()));
+      break;
     case "json":
       base = z.unknown();
       break;
+    case "link":
+    case "dynamic-link":
     case "date":
     case "datetime":
     case "textarea":

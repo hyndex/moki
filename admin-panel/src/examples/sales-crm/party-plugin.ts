@@ -49,7 +49,7 @@ const edgeResource = defineResource({
 
 const partyNavSections = [{ id: "sales", label: "Sales & CRM", order: 10 }];
 const partyNav = [
-  { id: "party.control-room", label: "Control Room", icon: "LayoutDashboard", path: "/party-relationships/control-room", view: "party-relationships.control-room.view", section: "sales", order: 49 },
+  { id: "party.control-room", label: "Party Control Room", icon: "LayoutDashboard", path: "/party-relationships/control-room", view: "party-relationships.control-room.view", section: "sales", order: 49 },
   { id: "party.graph", label: "Graph", icon: "Network", path: "/party-relationships/graph", view: "party-relationships.graph.view", section: "sales", order: 50 },
   { id: "party.list", label: "Relationships", icon: "Share2", path: "/party-relationships", view: "party-relationships.list.view", section: "sales", order: 51 },
   { id: "party.reports", label: "Reports", icon: "BarChart3", path: "/party-relationships/reports", view: "party-relationships.reports.view", section: "sales", order: 52 },

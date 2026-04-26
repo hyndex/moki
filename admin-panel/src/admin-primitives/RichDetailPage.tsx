@@ -1,7 +1,11 @@
 import * as React from "react";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Settings2 } from "lucide-react";
 import { PageHeader } from "./PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./Card";
+// PrintAction is contributed by template-core; the shell imports it
+// through the plugin-UI alias so the primitive lives next to the
+// print-format engine that powers it.
+import { PrintAction } from "@/admin-primitives/PrintAction";
 import { Badge } from "@/primitives/Badge";
 import { Button } from "@/primitives/Button";
 import {
@@ -119,6 +123,19 @@ export interface RichDetailPageProps {
   lastUpdatedAt?: Date | string | number | null;
   live?: boolean;
 
+  /** When set, renders a "Print" action button (via PrintAction) in
+   *  the hero. Hands the record body to the configured print formats
+   *  for this resource. The button picker auto-renders the default
+   *  format, or shows a list of formats to choose from. */
+  printResource?: string;
+  printRecord?: Record<string, unknown>;
+  /** When set, renders a "Customize" action that deep-links to the
+   *  Settings → Property setters page scoped to this resource. The
+   *  Property setters page itself links onward to Custom fields,
+   *  Naming series, Print formats, and Notification rules — the
+   *  Frappe-parity customization layer. */
+  customizeResource?: string;
+
   /** Tabs (main content area). */
   tabs: readonly RichDetailTab[];
   /** Default active tab id. Defaults to the first visible tab. */
@@ -156,6 +173,9 @@ export function RichDetailPage({
   extraActions,
   lastUpdatedAt,
   live,
+  printResource,
+  printRecord,
+  customizeResource,
   tabs,
   defaultTabId,
   rail,
@@ -251,6 +271,32 @@ export function RichDetailPage({
                       {a.label}
                     </Button>
                   ))}
+                  {/* Standard customize-form button — deep-links to the
+                       Settings → Property setters page for this resource.
+                       From there the user can also navigate to Custom
+                       fields, Naming series, Print formats, and
+                       Notification rules (the customization layer). */}
+                  {customizeResource && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      iconLeft={<Settings2 className="h-3.5 w-3.5" />}
+                      onClick={() => {
+                        window.location.hash = `/settings/property-setters?resource=${encodeURIComponent(customizeResource)}`;
+                      }}
+                      title="Customize this form (property setters, custom fields, naming, print, notifications)"
+                    >
+                      Customize
+                    </Button>
+                  )}
+                  {printResource && printRecord && (
+                    <PrintAction
+                      resource={printResource}
+                      record={printRecord}
+                      size="sm"
+                      variant="ghost"
+                    />
+                  )}
                   {primaryAction && !primaryAction.hidden && (
                     <Button
                       variant={primaryAction.intent === "danger" ? "danger" : "primary"}

@@ -198,7 +198,7 @@ export const aiEvalsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "ai-evals.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/ai/evals/control-room", view: "ai-evals.control-room.view", order: 0 },
+    { id: "ai-evals.control-room.nav", label: "AI Evals Control Room", icon: "LayoutDashboard", path: "/ai/evals/control-room", view: "ai-evals.control-room.view", order: 0 },
     { id: "ai-evals.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/evals/reports", view: "ai-evals.reports.view" },
     { id: "ai-evals.run-detail.nav", label: "Latest run", icon: "FlaskConical", path: "/ai/evals/latest", view: "ai-evals.run-detail.view" },
   ],

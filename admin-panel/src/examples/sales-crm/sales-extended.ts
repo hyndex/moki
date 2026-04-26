@@ -58,6 +58,19 @@ const DeliveryScheduleSchema = z.object({
   status: z.enum(["pending", "in-transit", "delivered", "delayed"]),
   carrier: z.string().optional(),
 });
+const SalesOrderSchema = z.object({
+  id: z.string(),
+  number: z.string(),
+  customer: z.string(),
+  quoteId: z.string().optional(),
+  orderedAt: z.string(),
+  deliveryDate: z.string().optional(),
+  status: z.enum(["draft", "submitted", "partially-delivered", "delivered", "invoiced", "closed", "cancelled"]),
+  amount: z.number(),
+  currency: z.string(),
+  itemsCount: z.number(),
+  items: z.array(z.record(z.unknown())).optional(),
+});
 
 const TERRITORIES = ["NA East", "NA West", "EMEA", "APAC", "LATAM"];
 const OWNERS = ["sam@gutu.dev", "alex@gutu.dev", "taylor@gutu.dev", "jordan@gutu.dev"];
@@ -183,6 +196,102 @@ export const deliveryScheduleResource = tag(defineResource({
   carrier: pick(["FedEx", "UPS", "DHL", "USPS"], i),
 })));
 
+export const salesOrderResource = tag(defineResource({
+  id: "sales.order",
+  singular: "Sales Order",
+  plural: "Sales Orders",
+  schema: SalesOrderSchema,
+  displayField: "number",
+  icon: "FileCheck2",
+  searchable: ["number", "customer", "quoteId"],
+  erp: {
+    documentType: "selling.Sales Order",
+    module: "Selling",
+    namingSeries: "SO-.YYYY.-.#####",
+    statusField: "status",
+    submittedStatuses: ["submitted", "partially-delivered", "delivered", "invoiced", "closed"],
+    titleField: "number",
+    childTables: [
+      {
+        field: "items",
+        label: "Items",
+        itemField: "item",
+        quantityField: "quantity",
+        amountField: "amount",
+        fields: [
+          { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+          { name: "description", kind: "text" },
+          { name: "quantity", kind: "number", required: true },
+          { name: "rate", kind: "currency", required: true },
+          { name: "amount", kind: "currency", readonly: true },
+          { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse" }
+        ]
+      }
+    ],
+    links: [
+      { field: "quoteId", targetResourceId: "sales.quote", reverseRelation: "orders" },
+      { field: "customer", targetResourceId: "party.entity", reverseRelation: "sales-orders" }
+    ],
+    mappingActions: [
+      {
+        id: "sales-order-to-delivery-note",
+        label: "Create Delivery Note",
+        relation: "fulfilled-by",
+        targetResourceId: "inventory.delivery-note",
+        targetDocumentType: "stock.Delivery Note",
+        visibleInStatuses: ["submitted", "partially-delivered"],
+        fieldMap: { customer: "customer", linkedSo: "number", currency: "currency" },
+        childTableMap: { items: "items" },
+        defaults: { status: "draft" }
+      },
+      {
+        id: "sales-order-to-invoice",
+        label: "Create Sales Invoice",
+        relation: "billed-by",
+        targetResourceId: "accounting.invoice",
+        targetDocumentType: "accounts.Sales Invoice",
+        visibleInStatuses: ["submitted", "delivered"],
+        fieldMap: { customer: "customer", salesOrder: "number", amount: "amount", currency: "currency" },
+        childTableMap: { items: "items" },
+        defaults: { status: "draft" }
+      },
+      {
+        id: "sales-order-to-pick-list",
+        label: "Create Pick List",
+        relation: "picked-by",
+        targetResourceId: "inventory.pick-list",
+        targetDocumentType: "stock.Pick List",
+        visibleInStatuses: ["submitted"],
+        fieldMap: { customer: "customer", salesOrder: "number" },
+        childTableMap: { items: "items" },
+        defaults: { status: "draft" }
+      }
+    ],
+    printFormats: [{ id: "sales-order", label: "Sales Order", default: true, paperSize: "A4" }],
+    portal: { route: "/orders/:id", audience: "customer", enabledByDefault: true },
+    workspaceLinks: [
+      { label: "Delivery Notes", path: "/inventory/delivery-notes", kind: "document", group: "Fulfillment" },
+      { label: "Sales Invoices", path: "/accounting/invoices", kind: "document", group: "Billing" },
+      { label: "Sales Order Backlog", path: "/sales/reports/sales-order-backlog", kind: "report", group: "Reports" }
+    ],
+    builderSurfaces: [
+      { id: "sales-order-workflow-builder", label: "Sales order workflow", kind: "workflow", path: "/settings/workflows/sales-order", exportableToPack: true },
+      { id: "sales-order-print-builder", label: "Sales order print format", kind: "print-format", path: "/settings/print-formats/sales-order", exportableToPack: true }
+    ]
+  },
+}), Array.from({ length: 28 }, (_, i) => ({
+  id: `so_${i + 1}`,
+  number: code("SO", i, 5),
+  customer: pick(CUSTOMERS, i),
+  quoteId: i % 2 === 0 ? code("Q", i, 4) : undefined,
+  orderedAt: days(i * 2),
+  deliveryDate: days(-7 - i),
+  status: pick(["submitted", "partially-delivered", "delivered", "invoiced", "closed", "cancelled"] as const, i),
+  amount: 5_000 + ((i * 8_321) % 95_000),
+  currency: "USD",
+  itemsCount: 1 + (i % 8),
+})));
+
 /* List views */
 const opts = {
   deal: [
@@ -193,12 +302,34 @@ const opts = {
 };
 
 export const SALES_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
+  salesOrderResource,
   productBundleResource, installationNoteResource, salesPartnerResource,
   salesTeamResource, customerCreditLimitResource, territoryResource,
   commissionRuleResource, pricingRuleResource, deliveryScheduleResource,
 ];
 
 export const SALES_EXTENDED_VIEWS: readonly View[] = [
+  defineListView({
+    id: "sales.orders.list", title: "Sales Orders", resource: "sales.order",
+    search: true, defaultSort: { field: "orderedAt", dir: "desc" },
+    columns: [
+      { field: "number", label: "Order", width: 110, sortable: true },
+      { field: "customer", label: "Customer", sortable: true },
+      { field: "status", label: "Status", kind: "enum", options: [
+        { value: "draft", label: "Draft", intent: "neutral" },
+        { value: "submitted", label: "Submitted", intent: "info" },
+        { value: "partially-delivered", label: "Partially delivered", intent: "warning" },
+        { value: "delivered", label: "Delivered", intent: "success" },
+        { value: "invoiced", label: "Invoiced", intent: "accent" },
+        { value: "closed", label: "Closed", intent: "neutral" },
+        { value: "cancelled", label: "Cancelled", intent: "danger" },
+      ]},
+      { field: "orderedAt", label: "Ordered", kind: "date", sortable: true },
+      { field: "deliveryDate", label: "Delivery", kind: "date" },
+      { field: "amount", label: "Amount", kind: "currency", align: "right", sortable: true, totaling: "sum" },
+      { field: "itemsCount", label: "Items", kind: "number", align: "right" },
+    ],
+  }),
   defineListView({
     id: "sales.product-bundles.list", title: "Product Bundles", resource: "sales.product-bundle",
     search: true,

@@ -202,7 +202,7 @@ export const aiCorePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "ai-core.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/ai/control-room", view: "ai-core.control-room.view", order: 0 },
+    { id: "ai-core.control-room.nav", label: "AI Control Room", icon: "LayoutDashboard", path: "/ai/control-room", view: "ai-core.control-room.view", order: 0 },
     { id: "ai-core.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/reports", view: "ai-core.reports.view" },
     { id: "ai.playground.nav", label: "Playground", icon: "MessageCircle", path: "/ai/playground", view: "ai-core.playground.view" },
   ],

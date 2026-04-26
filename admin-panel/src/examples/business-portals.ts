@@ -87,7 +87,7 @@ export const businessPortalsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "business-portals.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/portals/business/control-room", view: "business-portals.control-room.view", order: 0 },
+    { id: "business-portals.control-room.nav", label: "Business Portals Control Room", icon: "LayoutDashboard", path: "/portals/business/control-room", view: "business-portals.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

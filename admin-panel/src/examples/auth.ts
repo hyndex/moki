@@ -291,7 +291,7 @@ export const authPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "auth.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/auth/control-room", view: "auth.control-room.view", order: 0 },
+    { id: "auth.control-room.nav", label: "Auth Control Room", icon: "LayoutDashboard", path: "/auth/control-room", view: "auth.control-room.view", order: 0 },
     { id: "auth.reports.nav", label: "Reports", icon: "BarChart3", path: "/auth/reports", view: "auth.reports.view" },
   ],
   extraViews: [

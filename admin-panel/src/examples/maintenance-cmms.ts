@@ -232,7 +232,7 @@ export const maintenanceCmmsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "maintenance-cmms.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/cmms/control-room", view: "maintenance-cmms.control-room.view", order: 0 },
+    { id: "maintenance-cmms.control-room.nav", label: "Maintenance Control Room", icon: "LayoutDashboard", path: "/cmms/control-room", view: "maintenance-cmms.control-room.view", order: 0 },
     { id: "maintenance-cmms.reports.nav", label: "Reports", icon: "BarChart3", path: "/cmms/reports", view: "maintenance-cmms.reports.view" },
   ],
   extraViews: [

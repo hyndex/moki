@@ -201,7 +201,7 @@ export const issuesPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "issues.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/issues/control-room", view: "issues.control-room.view", order: 0 },
+    { id: "issues.control-room.nav", label: "Issues Control Room", icon: "LayoutDashboard", path: "/issues/control-room", view: "issues.control-room.view", order: 0 },
     { id: "issues.reports.nav", label: "Reports", icon: "BarChart3", path: "/issues/reports", view: "issues.reports.view" },
     { id: "issues.board.nav", label: "Board", icon: "LayoutGrid", path: "/issues/board", view: "issues.kanban.view" },
   ],

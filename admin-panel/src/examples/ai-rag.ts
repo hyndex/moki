@@ -186,7 +186,7 @@ export const aiRagPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "ai-rag.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/ai/rag/control-room", view: "ai-rag.control-room.view", order: 0 },
+    { id: "ai-rag.control-room.nav", label: "AI RAG Control Room", icon: "LayoutDashboard", path: "/ai/rag/control-room", view: "ai-rag.control-room.view", order: 0 },
     { id: "ai-rag.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/rag/reports", view: "ai-rag.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

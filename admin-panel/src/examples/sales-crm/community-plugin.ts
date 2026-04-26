@@ -81,7 +81,7 @@ const reportResource = defineResource({
 
 const communityNavSections = [{ id: "sales", label: "Sales & CRM", order: 10 }];
 const communityNav = [
-  { id: "community.control-room", label: "Control Room", icon: "LayoutDashboard", path: "/community/control-room", view: "community.control-room.view", section: "sales", order: 39 },
+  { id: "community.control-room", label: "Community Control Room", icon: "LayoutDashboard", path: "/community/control-room", view: "community.control-room.view", section: "sales", order: 39 },
   { id: "community.feed", label: "Feed", icon: "MessageCircle", path: "/community/feed", view: "community.feed.view", section: "sales", order: 40 },
   { id: "community.spaces", label: "Spaces", icon: "Hash", path: "/community/spaces", view: "community.spaces.view", section: "sales", order: 41 },
   { id: "community.moderation", label: "Moderation", icon: "ShieldAlert", path: "/community/moderation", view: "community.moderation.view", section: "sales", order: 42 },

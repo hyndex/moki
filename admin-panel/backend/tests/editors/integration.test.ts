@@ -96,7 +96,15 @@ async function setup() {
 }
 
 beforeAll(async () => { app = await setup(); });
-afterAll(async () => { await rm(app.dataDir, { recursive: true, force: true }); });
+afterAll(async () => {
+  resetStorageRegistry();
+  // `src/db.ts` exports a Bun module-level SQLite singleton. Later backend
+  // tests can reuse that cached handle, so removing the temp database here
+  // leaves the handle pointing at a deleted file and triggers SQLITE_IOERR.
+  if (process.env.GUTU_DELETE_EDITOR_TEST_DB === "1") {
+    await rm(app.dataDir, { recursive: true, force: true });
+  }
+});
 beforeEach(async () => {
   // Reset throttles between tests so cooldown doesn't leak.
   const editorsMod = await import("../../src/routes/editors");

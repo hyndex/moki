@@ -272,7 +272,7 @@ export const productCatalogPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "product-catalog.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/catalog/control-room", view: "product-catalog.control-room.view", order: 0 },
+    { id: "product-catalog.control-room.nav", label: "Catalog Control Room", icon: "LayoutDashboard", path: "/catalog/control-room", view: "product-catalog.control-room.view", order: 0 },
     { id: "product-catalog.reports.nav", label: "Reports", icon: "BarChart3", path: "/catalog/reports", view: "product-catalog.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

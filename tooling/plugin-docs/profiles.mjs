@@ -205,6 +205,19 @@ export const pluginProfiles = {
       "Expose clearer integration points for notifications and portal experiences if community flows become more user-facing."
     ]
   },
+  "collab-pages-core": {
+    group: "Content and Experience",
+    architectureRole:
+      "Owns collaborative block-page records and realtime authoring surfaces so teams can use rich pages without coupling editors directly to storage, files, or auth internals.",
+    focusAreas: ["collaborative pages", "block editor records", "realtime authoring"],
+    recommendedNext: [
+      "Deepen page versioning, permission diagnostics, and recovery flows as collaborative pages become durable business records.",
+      "Clarify storage and file-attachment lifecycle guidance once embedded databases and rich media leave the baseline editor surface."
+    ],
+    laterOptional: [
+      "Public publishing and template galleries after the collaborative record contract stabilizes."
+    ]
+  },
   "company-builder-core": {
     group: "Governed AI Operating Models",
     architectureRole:
@@ -245,6 +258,19 @@ export const pluginProfiles = {
       "Add stronger file and template integration guidance when document outputs become a common platform contract."
     ]
   },
+  "document-editor-core": {
+    group: "Content and Experience",
+    architectureRole:
+      "Provides the rich document editing surface for governed text documents while keeping editor state, files, auth, and storage integrations behind explicit plugin contracts.",
+    focusAreas: ["rich documents", "editor state", "document collaboration"],
+    recommendedNext: [
+      "Deepen DOCX import or export diagnostics, comment workflows, and autosave recovery once document editing moves beyond baseline authoring.",
+      "Clarify file, storage, and realtime collaboration boundaries as more document-producing flows adopt the editor."
+    ],
+    laterOptional: [
+      "Template galleries, mail-merge style generation, and public review links after the editor record model stabilizes."
+    ]
+  },
   "execution-workspaces-core": {
     group: "AI Systems",
     architectureRole:
@@ -265,6 +291,32 @@ export const pluginProfiles = {
       "Expose clearer connector guidance for external storage backends once the contract is stable."
     ]
   },
+  "spreadsheet-core": {
+    group: "Content and Experience",
+    architectureRole:
+      "Provides governed workbook records and spreadsheet editing surfaces so teams can use formulas, tables, and analysis artifacts without bypassing platform storage and access controls.",
+    focusAreas: ["workbooks", "spreadsheet editor", "formula artifacts"],
+    recommendedNext: [
+      "Deepen workbook versioning, import or export diagnostics, and calculation recovery as spreadsheet usage becomes operational.",
+      "Clarify embedded chart, pivot, and file lifecycle boundaries where workbooks become source data for dashboards or reports."
+    ],
+    laterOptional: [
+      "Connected sheets, reusable workbook templates, and external data refresh after the core editor contract stabilizes."
+    ]
+  },
+  "slides-core": {
+    group: "Content and Experience",
+    architectureRole:
+      "Owns presentation deck records and slide editing surfaces so teams can create governed visual communication artifacts inside the platform shell.",
+    focusAreas: ["slide decks", "presentation editor", "visual artifacts"],
+    recommendedNext: [
+      "Deepen deck versioning, export diagnostics, and collaborative review flows once presentations become durable customer-facing artifacts.",
+      "Clarify media, template, and storage integration guidance as slide decks consume more shared platform assets."
+    ],
+    laterOptional: [
+      "Brand-kit templates, speaker notes workflows, and publishable deck links after the baseline deck lifecycle hardens."
+    ]
+  },
   "forms-core": {
     group: "Content and Experience",
     architectureRole:
@@ -273,6 +325,58 @@ export const pluginProfiles = {
     recommendedNext: [
       "Expand validation and workflow coupling where form submissions drive more downstream automation.",
       "Add stronger portal and dashboard integration guidance if form-driven products become more user-facing."
+    ]
+  },
+  "storage-core": {
+    group: "Platform Backbone",
+    architectureRole:
+      "Owns storage backend declarations, presigned access, and backend registry orchestration so file-using plugins do not couple directly to local or cloud storage implementations.",
+    focusAreas: ["storage registry", "presigned access", "backend health"],
+    recommendedNext: [
+      "Deepen backend health checks, lifecycle policies, and migration diagnostics as more plugins rely on durable file storage.",
+      "Expose clearer adapter capability reporting and failure recovery where storage providers differ in behavior."
+    ],
+    laterOptional: [
+      "Storage tiering, object retention policies, and cross-region replication controls after the backend contract stabilizes."
+    ]
+  },
+  "storage-local": {
+    group: "Platform Backbone",
+    architectureRole:
+      "Provides the local filesystem storage adapter for development, small deployments, and controlled self-hosted environments.",
+    focusAreas: ["local storage adapter", "tenant directory isolation", "signed local URLs"],
+    recommendedNext: [
+      "Harden path, quota, and cleanup diagnostics as local storage is used outside development environments.",
+      "Clarify backup and restore guidance for operators who rely on filesystem-backed storage."
+    ],
+    laterOptional: [
+      "Filesystem quota enforcement and local object lifecycle policies after the adapter contract stabilizes."
+    ]
+  },
+  "storage-s3": {
+    group: "Platform Backbone",
+    architectureRole:
+      "Provides the S3-compatible storage adapter for cloud object storage without forcing higher-level plugins to learn provider-specific behavior.",
+    focusAreas: ["S3 adapter", "object storage", "cloud-compatible presign"],
+    recommendedNext: [
+      "Deepen provider-specific diagnostics, retry policy guidance, and bucket policy validation as S3-compatible deployments broaden.",
+      "Expose clearer capability flags for endpoints that differ from AWS S3 semantics."
+    ],
+    laterOptional: [
+      "Multipart tuning, lifecycle policy templates, and cross-provider migration helpers after the adapter baseline hardens."
+    ]
+  },
+  "whiteboard-core": {
+    group: "Content and Experience",
+    architectureRole:
+      "Owns infinite-canvas whiteboard records and collaborative visual workspace surfaces while keeping realtime, file, and storage behavior governed by platform contracts.",
+    focusAreas: ["whiteboards", "infinite canvas", "visual collaboration"],
+    recommendedNext: [
+      "Deepen canvas versioning, export recovery, and permission diagnostics as whiteboards become durable project artifacts.",
+      "Clarify rich-media and embedded-object lifecycle guidance where canvas objects reference shared files or records."
+    ],
+    laterOptional: [
+      "Template libraries, presentation mode, and public review links after the core canvas contract stabilizes."
     ]
   },
   "integration-core": {

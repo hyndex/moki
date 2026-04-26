@@ -218,7 +218,7 @@ export const traceabilityPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "traceability.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/traceability/control-room", view: "traceability.control-room.view", order: 0 },
+    { id: "traceability.control-room.nav", label: "Traceability Control Room", icon: "LayoutDashboard", path: "/traceability/control-room", view: "traceability.control-room.view", order: 0 },
     { id: "traceability.reports.nav", label: "Reports", icon: "BarChart3", path: "/traceability/reports", view: "traceability.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

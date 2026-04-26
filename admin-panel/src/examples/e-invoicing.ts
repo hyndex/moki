@@ -134,7 +134,7 @@ export const eInvoicingPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "e-invoicing.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/finance/e-invoices/control-room", view: "e-invoicing.control-room.view", order: 0 },
+    { id: "e-invoicing.control-room.nav", label: "E Invoicing Control Room", icon: "LayoutDashboard", path: "/finance/e-invoices/control-room", view: "e-invoicing.control-room.view", order: 0 },
     { id: "e-invoicing.reports.nav", label: "Reports", icon: "BarChart3", path: "/finance/e-invoices/reports", view: "e-invoicing.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

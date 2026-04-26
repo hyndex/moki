@@ -312,7 +312,7 @@ export const paymentsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "payments.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/finance/payments/control-room", view: "payments.control-room.view", order: 0 },
+    { id: "payments.control-room.nav", label: "Payments Control Room", icon: "LayoutDashboard", path: "/finance/payments/control-room", view: "payments.control-room.view", order: 0 },
     { id: "payments.reports.nav", label: "Reports", icon: "BarChart3", path: "/finance/payments/reports", view: "payments.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

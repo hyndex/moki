@@ -317,7 +317,7 @@ export const projectsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "projects.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/projects/control-room", view: "projects.control-room.view", order: 0 },
+    { id: "projects.control-room.nav", label: "Projects Control Room", icon: "LayoutDashboard", path: "/projects/control-room", view: "projects.control-room.view", order: 0 },
     { id: "projects.reports.nav", label: "Reports", icon: "BarChart3", path: "/projects/reports", view: "projects.reports.view" },
     { id: "projects.board.nav", label: "Board", icon: "LayoutGrid", path: "/projects/board", view: "projects.board.view" },
   ],

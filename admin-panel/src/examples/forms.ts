@@ -92,7 +92,7 @@ export const formsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "forms.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/forms/control-room", view: "forms.control-room.view", order: 0 },
+    { id: "forms.control-room.nav", label: "Forms Control Room", icon: "LayoutDashboard", path: "/forms/control-room", view: "forms.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

@@ -1,0 +1,311 @@
+{
+  "results": [
+    {
+      "scenario": "webhooks",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI list shows new webhook",
+          "ok": true,
+          "detail": "body has url? true"
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        },
+        {
+          "step": "UI list no longer shows it",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "api-tokens",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "one-time plaintext token returned",
+          "ok": true,
+          "detail": "token field present"
+        },
+        {
+          "step": "UI list shows new token",
+          "ok": true
+        },
+        {
+          "step": "DELETE (revoke)",
+          "ok": true,
+          "detail": "status 200"
+        },
+        {
+          "step": "UI list shows token with Revoked badge",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "custom-fields",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI shows new field key",
+          "ok": true
+        },
+        {
+          "step": "GET list contains it",
+          "ok": true
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "property-setters",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 200"
+        },
+        {
+          "step": "UI shows the override value",
+          "ok": true
+        },
+        {
+          "step": "effective endpoint 200",
+          "ok": true
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "naming-series",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI shows series label",
+          "ok": true
+        },
+        {
+          "step": "counter increments per call",
+          "ok": true,
+          "detail": "E2E-1777206989743-.00001 → E2E-1777206989743-.00002 → E2E-1777206989743-.00003"
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "print-formats",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI shows new format",
+          "ok": true
+        },
+        {
+          "step": "render endpoint 200",
+          "ok": true,
+          "detail": "{\"html\":\"<!doctype html>\\n<html lang=\\\"en\\\">\\n<head>\\n<meta charset=\\\"utf-8\\\" />\\n<title>E2E print 1"
+        },
+        {
+          "step": "render output contains record id",
+          "ok": true,
+          "detail": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\" />\n<title>E2E prin"
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "letter-heads",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "GET list shows it",
+          "ok": true
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "notification-rules",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI shows new rule",
+          "ok": true
+        },
+        {
+          "step": "test-fire endpoint 200",
+          "ok": true,
+          "detail": "status 200"
+        },
+        {
+          "step": "deliveries list returns",
+          "ok": true,
+          "detail": "count=0"
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "workflows",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "UI shows new workflow",
+          "ok": true
+        },
+        {
+          "step": "detail page renders name",
+          "ok": true
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "contacts",
+      "steps": [
+        {
+          "step": "POST create",
+          "ok": true,
+          "detail": "status 201"
+        },
+        {
+          "step": "list shows new contact",
+          "ok": true
+        },
+        {
+          "step": "detail shows email",
+          "ok": true
+        },
+        {
+          "step": "PUT update",
+          "ok": true,
+          "detail": "status 200"
+        },
+        {
+          "step": "detail reflects update",
+          "ok": true
+        },
+        {
+          "step": "DELETE",
+          "ok": true,
+          "detail": "status 200"
+        }
+      ]
+    },
+    {
+      "scenario": "resources-read",
+      "steps": [
+        {
+          "step": "GET /api/resources/crm.contact",
+          "ok": true,
+          "detail": "count=46"
+        },
+        {
+          "step": "GET /api/resources/crm.lead",
+          "ok": true,
+          "detail": "count=40"
+        },
+        {
+          "step": "GET /api/resources/sales.deal",
+          "ok": true,
+          "detail": "count=28"
+        },
+        {
+          "step": "GET /api/resources/sales.quote",
+          "ok": true,
+          "detail": "count=18"
+        },
+        {
+          "step": "GET /api/resources/ops.ticket",
+          "ok": true,
+          "detail": "count=0"
+        },
+        {
+          "step": "GET /api/resources/hr.employee",
+          "ok": true,
+          "detail": "count=0"
+        }
+      ]
+    },
+    {
+      "scenario": "cmd-k",
+      "steps": [
+        {
+          "step": "palette opens via Meta+K",
+          "ok": true
+        },
+        {
+          "step": "search 'naming' yields results",
+          "ok": true
+        },
+        {
+          "step": "search 'webhook' yields results",
+          "ok": true
+        }
+      ]
+    }
+  ],
+  "browserErrors": []
+}

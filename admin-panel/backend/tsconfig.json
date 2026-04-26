@@ -13,7 +13,36 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "isolatedModules": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@gutu-host/*": ["src/host/*"],
+      "@gutu-plugin/accounting-core": ["../../plugins/gutu-plugin-accounting-core/framework/builtin-plugins/accounting-core/src/host-plugin"],
+      "@gutu-plugin/sales-core": ["../../plugins/gutu-plugin-sales-core/framework/builtin-plugins/sales-core/src/host-plugin"],
+      "@gutu-plugin/inventory-core": ["../../plugins/gutu-plugin-inventory-core/framework/builtin-plugins/inventory-core/src/host-plugin"],
+      "@gutu-plugin/manufacturing-core": ["../../plugins/gutu-plugin-manufacturing-core/framework/builtin-plugins/manufacturing-core/src/host-plugin"],
+      "@gutu-plugin/pricing-tax-core": ["../../plugins/gutu-plugin-pricing-tax-core/framework/builtin-plugins/pricing-tax-core/src/host-plugin"],
+      "@gutu-plugin/treasury-core": ["../../plugins/gutu-plugin-treasury-core/framework/builtin-plugins/treasury-core/src/host-plugin"],
+      "@gutu-plugin/e-invoicing-core": ["../../plugins/gutu-plugin-e-invoicing-core/framework/builtin-plugins/e-invoicing-core/src/host-plugin"],
+      "@gutu-plugin/hr-payroll-core": ["../../plugins/gutu-plugin-hr-payroll-core/framework/builtin-plugins/hr-payroll-core/src/host-plugin"],
+      "@gutu-plugin/notifications-core": ["../../plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/src/host-plugin"],
+      "@gutu-plugin/template-core": ["../../plugins/gutu-plugin-template-core/framework/builtin-plugins/template-core/src/host-plugin"],
+      "@gutu-plugin/forms-core": ["../../plugins/gutu-plugin-forms-core/framework/builtin-plugins/forms-core/src/host-plugin"],
+      "@gutu-plugin/integration-core": ["../../plugins/gutu-plugin-integration-core/framework/builtin-plugins/integration-core/src/host-plugin"],
+      "@gutu-plugin/analytics-bi-core": ["../../plugins/gutu-plugin-analytics-bi-core/framework/builtin-plugins/analytics-bi-core/src/host-plugin"],
+      "@gutu-plugin/favorites-core": ["../../plugins/gutu-plugin-favorites-core/framework/builtin-plugins/favorites-core/src/host-plugin"],
+      "@gutu-plugin/record-links-core": ["../../plugins/gutu-plugin-record-links-core/framework/builtin-plugins/record-links-core/src/host-plugin"],
+      "@gutu-plugin/saved-views-core": ["../../plugins/gutu-plugin-saved-views-core/framework/builtin-plugins/saved-views-core/src/host-plugin"],
+      "@gutu-plugin/timeline-core": ["../../plugins/gutu-plugin-timeline-core/framework/builtin-plugins/timeline-core/src/host-plugin"],
+      "@gutu-plugin/awesome-search-core": ["../../plugins/gutu-plugin-awesome-search-core/framework/builtin-plugins/awesome-search-core/src/host-plugin"],
+      "@gutu-plugin/erp-actions-core": ["../../plugins/gutu-plugin-erp-actions-core/framework/builtin-plugins/erp-actions-core/src/host-plugin"],
+      "@gutu-plugin/editor-core": ["../../plugins/gutu-plugin-editor-core/framework/builtin-plugins/editor-core/src/host-plugin"],
+      "@gutu-plugin/connections-core": ["../../plugins/gutu-plugin-connections-core/framework/builtin-plugins/connections-core/src/host-plugin"],
+      "@gutu-plugin/field-metadata-core": ["../../plugins/gutu-plugin-field-metadata-core/framework/builtin-plugins/field-metadata-core/src/host-plugin"],
+      "@gutu-plugin/webhooks-core": ["../../plugins/gutu-plugin-webhooks-core/framework/builtin-plugins/webhooks-core/src/host-plugin"],
+      "@gutu-plugin/auth-core": ["../../plugins/gutu-plugin-auth-core/framework/builtin-plugins/auth-core/src/host-plugin"],
+      "@gutu-plugin/workflow-core": ["../../plugins/gutu-plugin-workflow-core/framework/builtin-plugins/workflow-core/src/host-plugin"],
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../../plugins/gutu-plugin-*/framework/builtin-plugins/*/src/host-plugin/**/*"]
 }

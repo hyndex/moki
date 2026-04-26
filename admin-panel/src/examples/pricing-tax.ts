@@ -272,7 +272,7 @@ export const pricingTaxPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "pricing-tax.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/pricing/control-room", view: "pricing-tax.control-room.view", order: 0 },
+    { id: "pricing-tax.control-room.nav", label: "Pricing Pricing Tax Tax Control Room", icon: "LayoutDashboard", path: "/pricing/control-room", view: "pricing-tax.control-room.view", order: 0 },
     { id: "pricing-tax.reports.nav", label: "Reports", icon: "BarChart3", path: "/pricing/reports", view: "pricing-tax.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

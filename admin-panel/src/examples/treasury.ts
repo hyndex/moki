@@ -258,7 +258,7 @@ export const treasuryPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "treasury.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/treasury/control-room", view: "treasury.control-room.view", order: 0 },
+    { id: "treasury.control-room.nav", label: "Treasury Control Room", icon: "LayoutDashboard", path: "/treasury/control-room", view: "treasury.control-room.view", order: 0 },
     { id: "treasury.reports.nav", label: "Reports", icon: "BarChart3", path: "/treasury/reports", view: "treasury.reports.view" },
     { id: "treasury.cash.nav", label: "Cash position", icon: "PiggyBank", path: "/treasury/cash", view: "treasury.cash.view" },
   ],

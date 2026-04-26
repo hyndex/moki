@@ -87,7 +87,7 @@ export const pageBuilderPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "page-builder.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/pages/control-room", view: "page-builder.control-room.view", order: 0 },
+    { id: "page-builder.control-room.nav", label: "Pages Control Room", icon: "LayoutDashboard", path: "/pages/control-room", view: "page-builder.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

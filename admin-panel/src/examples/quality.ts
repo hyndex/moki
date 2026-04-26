@@ -301,7 +301,7 @@ export const qualityPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "quality.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/quality/control-room", view: "quality.control-room.view", order: 0 },
+    { id: "quality.control-room.nav", label: "Quality Control Room", icon: "LayoutDashboard", path: "/quality/control-room", view: "quality.control-room.view", order: 0 },
     { id: "quality.reports.nav", label: "Reports", icon: "BarChart3", path: "/quality/reports", view: "quality.reports.view" },
   ],
   extraViews: [

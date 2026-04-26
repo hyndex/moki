@@ -1,0 +1,386 @@
+[
+  {
+    "scenario": "plugin-admin",
+    "steps": [
+      {
+        "step": "GET /_plugins returns 200",
+        "ok": true
+      },
+      {
+        "step": "lists ≥20 plugins",
+        "ok": true,
+        "detail": "count=25"
+      },
+      {
+        "step": "every row has id+version+manifest|null",
+        "ok": true
+      },
+      {
+        "step": "every row has status field",
+        "ok": true
+      },
+      {
+        "step": "GET /_plugins/timeline-core 200",
+        "ok": true,
+        "detail": "id=timeline-core"
+      },
+      {
+        "step": "GET /_plugins/<missing> 404",
+        "ok": true
+      },
+      {
+        "step": "GET /_plugins/_leases lists leases",
+        "ok": true
+      },
+      {
+        "step": "GET /_plugins/_ws-routes 200",
+        "ok": true
+      },
+      {
+        "step": "GET /_plugins/_enablement 200",
+        "ok": true
+      }
+    ]
+  },
+  {
+    "scenario": "leases",
+    "steps": [
+      {
+        "step": "≥6 cluster-singleton leases held",
+        "ok": true,
+        "detail": "count=6"
+      },
+      {
+        "step": "lease \"notifications:dispatcher\" present",
+        "ok": true
+      },
+      {
+        "step": "lease \"notifications:scheduler\" present",
+        "ok": true
+      },
+      {
+        "step": "lease \"analytics:auto-email\" present",
+        "ok": true
+      },
+      {
+        "step": "lease \"webhooks:dispatcher\" present",
+        "ok": true
+      },
+      {
+        "step": "lease \"workflow:engine\" present",
+        "ok": true
+      },
+      {
+        "step": "lease \"timeline:writer\" present",
+        "ok": true
+      },
+      {
+        "step": "every lease has expiresAt in the future",
+        "ok": true
+      },
+      {
+        "step": "every lease holderId is non-empty",
+        "ok": true
+      }
+    ]
+  },
+  {
+    "scenario": "enablement",
+    "steps": [
+      {
+        "step": "webhooks-core reachable when enabled (default)",
+        "ok": true,
+        "detail": "status=200"
+      },
+      {
+        "step": "POST without pluginId → 400",
+        "ok": true
+      },
+      {
+        "step": "POST with non-bool enabled → 400",
+        "ok": true
+      },
+      {
+        "step": "POST disable returns 200",
+        "ok": true
+      },
+      {
+        "step": "POST re-enable returns 200",
+        "ok": true
+      },
+      {
+        "step": "enablement persists in list",
+        "ok": true,
+        "detail": "{\"pluginId\":\"webhooks-core\",\"enabled\":true,\"settings\":null,\"updatedAt\":\"2026-04-26T12:37:55.615Z\"}"
+      }
+    ]
+  },
+  {
+    "scenario": "auth-guards",
+    "steps": [
+      {
+        "step": "/_plugins requires auth (401)",
+        "ok": true,
+        "detail": "status=401"
+      },
+      {
+        "step": "bad bearer → 401",
+        "ok": true,
+        "detail": "status=401"
+      }
+    ]
+  },
+  {
+    "scenario": "uninstall",
+    "steps": [
+      {
+        "step": "POST uninstall on missing plugin → 404",
+        "ok": true,
+        "detail": "status=404"
+      }
+    ]
+  },
+  {
+    "scenario": "manifests",
+    "steps": [
+      {
+        "step": "≥4 plugins now ship a manifest",
+        "ok": true,
+        "detail": "count=5"
+      },
+      {
+        "step": "notifications-core permissions valid",
+        "ok": true,
+        "detail": "perms=[\"db.read\",\"db.write\",\"audit.write\",\"events.subscribe\",\"net.outbound\"]"
+      },
+      {
+        "step": "analytics-bi-core permissions valid",
+        "ok": true,
+        "detail": "perms=[\"db.read\",\"db.write\",\"audit.write\",\"net.outbound\"]"
+      },
+      {
+        "step": "webhooks-core permissions valid",
+        "ok": true,
+        "detail": "perms=[\"db.read\",\"db.write\",\"audit.write\",\"events.subscribe\",\"net.outbound\"]"
+      },
+      {
+        "step": "workflow-core permissions valid",
+        "ok": true,
+        "detail": "perms=[\"db.read\",\"db.write\",\"audit.write\",\"events.subscribe\",\"events.publish\",\"net.outbound\"]"
+      },
+      {
+        "step": "timeline-core permissions valid",
+        "ok": true,
+        "detail": "perms=[\"db.read\",\"db.write\",\"events.subscribe\"]"
+      },
+      {
+        "step": "notifications-core advertises provides",
+        "ok": true
+      }
+    ]
+  },
+  {
+    "scenario": "discovery",
+    "steps": [
+      {
+        "step": "discovered \"template-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"notifications-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"pricing-tax-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"accounting-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"inventory-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"manufacturing-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"sales-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"treasury-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"hr-payroll-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"e-invoicing-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"forms-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"integration-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"analytics-bi-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"field-metadata-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"auth-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"webhooks-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"workflow-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"saved-views-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"timeline-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"favorites-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"record-links-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"erp-actions-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"awesome-search-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"editor-core\"",
+        "ok": true
+      },
+      {
+        "step": "discovered \"connections-core\"",
+        "ok": true
+      }
+    ]
+  },
+  {
+    "scenario": "crud-edges",
+    "steps": [
+      {
+        "step": "webhooks: invalid URL accepted/rejected gracefully",
+        "ok": true,
+        "detail": "status=400"
+      },
+      {
+        "step": "naming-series: bad pattern → 400",
+        "ok": true,
+        "detail": "status=400"
+      },
+      {
+        "step": "notification-rules: empty channels → 400",
+        "ok": true,
+        "detail": "status=400"
+      },
+      {
+        "step": "field-metadata: duplicate key → 4xx (409 or 400)",
+        "ok": true,
+        "detail": "status=400"
+      },
+      {
+        "step": "print-formats: render with missing vars 200",
+        "ok": true,
+        "detail": "status=200"
+      },
+      {
+        "step": "api-tokens: well-formed scopes → 201",
+        "ok": true,
+        "detail": "status=201"
+      },
+      {
+        "step": "PATCH partial update",
+        "ok": true,
+        "detail": "status=200"
+      },
+      {
+        "step": "PATCH preserves non-patched fields",
+        "ok": true
+      },
+      {
+        "step": "DELETE missing → 404 or 200 (idempotent)",
+        "ok": true,
+        "detail": "status=404"
+      }
+    ]
+  },
+  {
+    "scenario": "tenancy",
+    "steps": [
+      {
+        "step": "all rows belong to a single tenant",
+        "ok": true,
+        "detail": "tenantIds=6763edf4-39f1-4e17-bc1f-c1d5f5dbe4fc"
+      },
+      {
+        "step": "GET /:id with foreign id → 404",
+        "ok": true,
+        "detail": "status=404"
+      }
+    ]
+  },
+  {
+    "scenario": "health",
+    "steps": [
+      {
+        "step": "/api/health open + 200",
+        "ok": true
+      },
+      {
+        "step": "/api/health includes time",
+        "ok": true
+      }
+    ]
+  },
+  {
+    "scenario": "listing",
+    "steps": [
+      {
+        "step": "limit=1 returns 1 row",
+        "ok": true
+      },
+      {
+        "step": "list returns total count",
+        "ok": true
+      },
+      {
+        "step": "offset=1 returns different row",
+        "ok": true
+      },
+      {
+        "step": "negative limit handled gracefully",
+        "ok": true,
+        "detail": "status=200"
+      }
+    ]
+  }
+]

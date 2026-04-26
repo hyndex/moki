@@ -178,7 +178,7 @@ export const automationPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "automation.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/automation/control-room", view: "automation.control-room.view", order: 0 },
+    { id: "automation.control-room.nav", label: "Automation Control Room", icon: "LayoutDashboard", path: "/automation/control-room", view: "automation.control-room.view", order: 0 },
     { id: "automation.reports.nav", label: "Reports", icon: "BarChart3", path: "/automation/reports", view: "automation.reports.view" },
     { id: "automation.run-detail.nav", label: "Sample run", icon: "PlayCircle", path: "/automation/run-detail", view: "automation.run-detail.view" },
   ],

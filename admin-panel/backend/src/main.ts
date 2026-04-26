@@ -1,16 +1,42 @@
 import { migrate } from "./migrations";
 import { createApp } from "./server";
 import { seedAll } from "./seed/run";
-import { registerSocket, unregisterSocket } from "./lib/ws";
+import { registerSocket, unregisterSocket } from "@gutu-host/ws";
 import { loadConfig } from "./config";
 import { migrateGlobal, migrateTenantSchema } from "./tenancy/migrations";
 import { ensureDefaultTenant, listTenants } from "./tenancy/provisioner";
 import { bootstrapStorage } from "./storage";
+
+// Mail plugin (kept in shell until extracted into its own gutu-plugin-mail-core).
 import { migrateMail } from "./lib/mail/migrations";
 import { ensureProviders } from "./lib/mail/oauth";
 import { bootstrapMailJobs } from "./jobs";
-import { startWorkflowEngine } from "./lib/workflow/engine";
-import { workflowRoutes } from "./routes/workflows";
+
+import { markReady, startDrain } from "./host/lifecycle";
+
+// Plugin loader: routes all lifecycle through a tiny contract. Plugins
+// announce themselves via `package.json["gutuPlugins"]` (or env
+// GUTU_PLUGINS); the loader auto-imports them, sorts by dependency,
+// runs migrate / install / mount / start with per-plugin isolation
+// (one plugin's failure doesn't bring down the rest), and surfaces
+// status on /api/_plugins.
+import {
+  loadPlugins,
+  runPluginMigrations,
+  mountPluginRoutes,
+  installPluginsIfNeeded,
+  startPlugins,
+  stopPlugins,
+} from "./host/plugin-contract";
+import { loadDiscoveredPlugins } from "./host/discover";
+import { ensureTenantEnablementSchema } from "./host/tenant-enablement";
+import { registerPluginWsRoutes, matchWsRoute } from "./host/ws-router";
+import { pluginsRoutes, setActivePlugins } from "./routes/_plugins";
+
+// Discover every plugin from package.json["gutuPlugins"] / env /
+// monorepo scan. The HOST_PLUGINS list is no longer hardcoded — adding
+// a plugin is `bun add @acme/gutu-foo` + appending to `gutuPlugins`.
+const HOST_PLUGINS = await loadDiscoveredPlugins();
 
 const cfg = loadConfig();
 
@@ -24,6 +50,17 @@ if (cfg.dbKind === "sqlite" && !cfg.multisite) {
 } else {
   await migrateGlobal();
 }
+
+// Plugin migrations: each plugin owns its own tables. Topologically
+// sorted by dependsOn so a plugin's tables exist before any plugin
+// that depends on it runs. Failures quarantine the offending plugin
+// (status reported via /api/_plugins) rather than aborting boot.
+const orderedPlugins = loadPlugins(HOST_PLUGINS);
+ensureTenantEnablementSchema();
+await runPluginMigrations(orderedPlugins);
+await installPluginsIfNeeded(orderedPlugins);  // one-shot per (plugin, version)
+registerPluginWsRoutes(orderedPlugins);          // compile WS routing table
+setActivePlugins(orderedPlugins);                 // make /api/_plugins aware
 
 // Ensure default tenant exists and its schema is migrated.
 const defaultTenant = await ensureDefaultTenant();
@@ -59,16 +96,44 @@ ensureProviders();
 if (process.env.MAIL_DISABLE_JOBS !== "1") bootstrapMailJobs();
 
 const app = createApp();
-// Mount the workflows router. Hono's tenant + auth middleware
-// registered inside `createApp()` for `/api/*` still applies to
-// routes added after the fact, so order is fine.
-app.route("/api/workflows", workflowRoutes);
 
-// Boot the workflow engine — subscribes to the in-process record
-// event bus, starts the cron tick, and spins up the run worker pool.
-// Must run AFTER migrations so the `workflows` / `workflow_runs`
-// tables exist for the cron + worker to query.
-startWorkflowEngine();
+// Mount the operator-facing plugin admin endpoint. /api/_plugins
+// surfaces every loaded plugin's manifest, status, errors, leases,
+// ws routes, and per-tenant enablement. Wired into shell so it's
+// always available even when individual plugins are quarantined.
+app.route("/api/_plugins", pluginsRoutes);
+
+// Mount every plugin's contributed routes under /api/<mountPath>. The
+// shell no longer mounts any domain routes directly — every domain
+// surface (workflows, webhooks, api-tokens, field-metadata, timeline,
+// favorites, …) is contributed by a plugin discovered above.
+mountPluginRoutes(orderedPlugins, app);
+
+// Fire start hooks — each plugin spins up its own workers (notification
+// dispatcher, scheduler, auto-email cron, workflow engine, …) inside
+// its start() hook. Workers that need leader election use
+// `withLeadership(name, fn)` from `@gutu-host/leader`.
+await startPlugins(orderedPlugins);
+
+// Boot done: flip readiness so /api/ready returns 200. /api/health
+// has been returning 200 throughout — that's liveness, not readiness.
+markReady();
+
+// Graceful shutdown — flip readiness off, refuse new requests, wait
+// for in-flight requests to finish (up to 25s), then run plugin stop
+// hooks, then exit. Modern PaaS deployers send SIGTERM and wait
+// `terminationGracePeriodSeconds` for the pod to clean up; this
+// timeline matches that contract.
+const shutdown = async (signal: string) => {
+  console.log(`[gutu-backend] received ${signal}, beginning graceful drain`);
+  await startDrain({
+    drainMs: Number(process.env.DRAIN_TIMEOUT_MS ?? 25_000),
+    onDrained: () => stopPlugins(orderedPlugins),
+  });
+  process.exit(0);
+};
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
 
 await seedAll({ force: process.env.SEED_FORCE === "1" });
 
@@ -80,24 +145,19 @@ console.log(
 
 import { resolveTenant } from "./tenancy/resolver";
 import { dbx } from "./dbx";
-import { effectiveRole } from "./lib/acl";
+import { effectiveRole } from "@gutu-host/acl";
 import {
   yjsOnOpen,
   yjsOnMessage,
   yjsOnClose,
   type YjsSocketData,
-} from "./lib/yjs-room";
+} from "@gutu-plugin/editor-core";
 import { db } from "./db";
-import { startWebhookDispatcher } from "./lib/webhook-dispatcher";
-import { startTimelineWriter } from "./lib/timeline";
 
-// Start the in-process integrations: outbound webhooks, timeline
-// writer, and the workflow engine. All three subscribe to the
-// record event bus that the generic resource router emits to. They
-// register handlers; the bus fans events out asynchronously so the
-// request path stays fast.
-startWebhookDispatcher();
-startTimelineWriter();
+// In-process workers (webhook dispatcher, timeline writer, workflow
+// engine, notification dispatcher, auto-email scheduler, …) are owned
+// by their plugins and started by `startPlugins(HOST_PLUGINS)` above.
+// Nothing for the shell to start here.
 
 /** Resolve a WebSocket upgrade's session + tenant. Returns null if the token
  *  is missing, unknown, or expired — caller refuses the upgrade in that case. */

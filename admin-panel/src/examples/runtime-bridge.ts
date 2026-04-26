@@ -98,7 +98,7 @@ export const runtimeBridgePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "runtime-bridge.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/platform/runtime-bridges/control-room", view: "runtime-bridge.control-room.view", order: 0 },
+    { id: "runtime-bridge.control-room.nav", label: "Runtime Bridge Control Room", icon: "LayoutDashboard", path: "/platform/runtime-bridges/control-room", view: "runtime-bridge.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

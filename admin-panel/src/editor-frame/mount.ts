@@ -95,9 +95,9 @@ async function mountUniverSheet(
     asLocale(docsLocale),
   ]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: resolveUniverTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(formula.UniverFormulaEnginePlugin);
@@ -145,9 +145,9 @@ async function mountUniverDoc(
   ]);
   const enUS = mergeLocales([asLocale(uiLocale), asLocale(designLocale), asLocale(docsLocale)]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: resolveUniverTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(ui.UniverUIPlugin, { container });
@@ -197,9 +197,9 @@ async function mountUniverSlides(
     asLocale(uiLocale), asLocale(designLocale), asLocale(docsLocale), asLocale(slidesLocale),
   ]);
   const univer = new core.Univer({
-    theme: design.defaultTheme,
+    theme: resolveUniverTheme(design) as never,
     locale: core.LocaleType.EN_US,
-    locales: { [core.LocaleType.EN_US]: enUS },
+    locales: { [core.LocaleType.EN_US]: enUS } as never,
   });
   univer.registerPlugin(render.UniverRenderEnginePlugin);
   univer.registerPlugin(ui.UniverUIPlugin, { container });
@@ -937,6 +937,12 @@ function mergeLocales(locales: readonly Record<string, unknown>[]): Record<strin
   const out: Record<string, unknown> = {};
   for (const l of locales) deepMerge(out, l);
   return out;
+}
+
+function resolveUniverTheme(design: unknown): unknown {
+  if (!design || typeof design !== "object") return {};
+  const mod = design as { defaultTheme?: unknown; default?: { defaultTheme?: unknown } };
+  return mod.defaultTheme ?? mod.default?.defaultTheme ?? {};
 }
 
 function deepMerge(dst: Record<string, unknown>, src: Record<string, unknown>): void {

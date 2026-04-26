@@ -351,7 +351,7 @@ const bookingNav = [
         section: "operations",
         order: 11,
       },
-      { id: "booking.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/bookings/control-room", view: "booking.control-room.view", section: "operations", order: 12 },
+      { id: "booking.control-room.nav", label: "Booking Control Room", icon: "LayoutDashboard", path: "/bookings/control-room", view: "booking.control-room.view", section: "operations", order: 12 },
       { id: "booking.reports.nav", label: "Reports", icon: "BarChart3", path: "/bookings/reports", view: "booking.reports.view", section: "operations", order: 13 },
       { id: "booking.services.nav", label: "Services", icon: "Briefcase", path: "/bookings/services", view: "booking.services.list", section: "operations", order: 14 },
       { id: "booking.resources.nav", label: "Bookable Resources", icon: "DoorOpen", path: "/bookings/resources", view: "booking.resources.list", section: "operations", order: 15 },

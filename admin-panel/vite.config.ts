@@ -33,6 +33,37 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@gutu/admin-shell-next": path.resolve(__dirname, "./packages/admin-shell-next/src/index.ts"),
+      // Plugin UI contributions resolve through @gutu-plugin-ui/<code>.
+      // Each entry points at the plugin's host-plugin/ui/index.ts barrel.
+      "@gutu-host/plugin-ui-contract": path.resolve(__dirname, "./src/host/plugin-ui-contract.ts"),
+      "@gutu-plugin-ui/forms-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-forms-core/framework/builtin-plugins/forms-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/template-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-template-core/framework/builtin-plugins/template-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/notifications-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/integration-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-integration-core/framework/builtin-plugins/integration-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/webhooks-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-webhooks-core/framework/builtin-plugins/webhooks-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/auth-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-auth-core/framework/builtin-plugins/auth-core/src/host-plugin/ui/index.ts",
+      ),
+      "@gutu-plugin-ui/workflow-core": path.resolve(
+        __dirname,
+        "../plugins/gutu-plugin-workflow-core/framework/builtin-plugins/workflow-core/src/host-plugin/ui/index.ts",
+      ),
     },
   },
   // Multi-page entry: the main shell + a separate /editor-frame.html that

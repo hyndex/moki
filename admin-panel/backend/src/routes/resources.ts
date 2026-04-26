@@ -52,6 +52,12 @@ import {
 } from "../lib/acl";
 import { emitRecordEvent } from "../lib/event-bus";
 import { validateRecordAgainstFieldMeta } from "../lib/field-metadata";
+// Cross-plugin imports via the host alias. The shell's generic resource
+// CRUD path fires plugin-owned hooks (notification rules from
+// notifications-core, naming-series allocation from template-core) so
+// every record write picks up tenant-configured behaviour.
+import { fireEvent } from "@gutu-plugin/notifications-core";
+import { nextNameForResource } from "@gutu-plugin/template-core";
 import { db } from "../db";
 
 export const resourceRoutes = new Hono();
@@ -126,44 +132,28 @@ resourceRoutes.get("/:resource", (c) => {
   const includeDeleted = url.searchParams.get("includeDeleted") === "1";
   const deletedOnly = url.searchParams.get("deletedOnly") === "1";
 
-  // Compute the set of record IDs this user can READ on this resource.
-  // For very large tenants we'd want a SQL JOIN here; with current
-  // scale a Set is fine.
-  const accessible = accessibleRecordIds({
-    resource,
-    userId: user.id,
+  const accessible = accessibleRecordIds({ resource, userId: user.id, tenantId });
+
+  // SQL-level access + tenant + soft-delete filtering: push everything
+  // into the listRecords WHERE clause so total + pagination are
+  // computed against the filtered universe instead of pre-filter.
+  const result = listRecords(resource, {
+    ...q,
+    accessibleIds: accessible,
     tenantId,
+    includeDeleted,
+    deletedOnly,
   });
 
-  const result = listRecords(resource, q);
-  // Drop records the user can't read AND records that belong to
-  // another tenant. Tenant-isolation also belongs in the SQL but for
-  // back-compat we filter in JS.
-  const allowed = result.rows.filter((r) => {
-    const rid = r.id as string | undefined;
-    if (!rid) return false;
-    const rt = (r.tenantId as string | undefined) ?? null;
-    if (rt && rt !== "default" && rt !== tenantId) return false;
-    if (!accessible.has(rid)) return false;
-    const isDeleted = r.status === "deleted";
-    if (deletedOnly) return isDeleted;
-    if (!includeDeleted && isDeleted) return false;
-    return true;
-  });
-  // Annotate with the user's effective role per row so the frontend
-  // can hide owner-only UI on records they can only view.
-  const annotated = allowed.map((r) => {
-    const role = effectiveRole({
-      resource,
-      recordId: r.id as string,
-      userId: user.id,
-      tenantId,
-    });
+  // Annotate with effective role for client-side UI gating.
+  const annotated = result.rows.map((r) => {
+    const role = effectiveRole({ resource, recordId: r.id as string, userId: user.id, tenantId });
     return { ...r, role: role ?? "viewer" };
   });
+
   return c.json({
     rows: annotated,
-    total: annotated.length,
+    total: result.total,
     page: result.page,
     pageSize: result.pageSize,
   });
@@ -202,6 +192,19 @@ resourceRoutes.post("/:resource", async (c) => {
     );
   }
   enriched = validated.record;
+  // Auto-allocate document name from naming series if the resource has
+  // a default series configured AND the body didn't supply one. The
+  // allocated name lands on the standard `name` field (visible in lists
+  // + form headers). Failures here are non-fatal: write proceeds, name
+  // stays whatever the caller set.
+  if (typeof enriched.name !== "string" || !enriched.name) {
+    try {
+      const allocated = nextNameForResource(tenantId, resource);
+      if (allocated) enriched = { ...enriched, name: allocated };
+    } catch {
+      // keep going — naming-series is opt-in
+    }
+  }
   const row = insertRecord(resource, id, enriched);
   // Auto-seed ACL: creator → owner, tenant → editor. Same pattern as
   // editor records — preserves "everyone in the workspace can edit"
@@ -229,6 +232,21 @@ resourceRoutes.post("/:resource", async (c) => {
     actor: user.email,
     record: enriched,
   });
+  // Notification rules listen on the create event. Failures here are
+  // logged into notification_deliveries (status='failed') by the
+  // dispatcher; never block the write.
+  try {
+    fireEvent({
+      tenantId,
+      resource,
+      event: "create",
+      recordId: id,
+      record: enriched,
+      context: { actor: user.email },
+    });
+  } catch (err) {
+    console.error("[notification-rules] fire on create failed", err);
+  }
   return c.json({ ...row, role: "owner" }, 201);
 });
 
@@ -281,6 +299,57 @@ resourceRoutes.patch("/:resource/:id", async (c) => {
     before,
     diff: diffObjects(before, row),
   });
+  // Fire notification rules: 'update' for any change, 'value-change'
+  // additionally so rules can subscribe specifically to changes to a
+  // particular field (the rule body inspects `previous` vs current).
+  // 'submit'/'cancel' are inferred from a 'status' change.
+  try {
+    const beforeStatus = (before as { status?: string }).status;
+    const afterStatus = (row as { status?: string }).status;
+    fireEvent({
+      tenantId: tenantFromCtx(),
+      resource,
+      event: "update",
+      recordId: id,
+      record: row,
+      previous: before,
+      context: { actor: user.email },
+    });
+    fireEvent({
+      tenantId: tenantFromCtx(),
+      resource,
+      event: "value-change",
+      recordId: id,
+      record: row,
+      previous: before,
+      context: { actor: user.email },
+    });
+    if (beforeStatus !== afterStatus) {
+      if (afterStatus === "submitted") {
+        fireEvent({
+          tenantId: tenantFromCtx(),
+          resource,
+          event: "submit",
+          recordId: id,
+          record: row,
+          previous: before,
+          context: { actor: user.email },
+        });
+      } else if (afterStatus === "cancelled" || afterStatus === "canceled") {
+        fireEvent({
+          tenantId: tenantFromCtx(),
+          resource,
+          event: "cancel",
+          recordId: id,
+          record: row,
+          previous: before,
+          context: { actor: user.email },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[notification-rules] fire on update failed", err);
+  }
   return c.json({ ...row, role: guard.role });
 });
 

@@ -14,6 +14,16 @@
     "test": "bun test",
     "test:watch": "bun test --watch"
   },
+  "//gutuPlugins": "Frontend plugin auto-discovery: every entry is the npm name of a plugin shipping `host-plugin/ui/index.ts` with an `adminUi` export. The shell auto-imports each at boot. Add a UI plugin: `bun add @acme/gutu-foo` + add the name here.",
+  "gutuPlugins": [
+    "@gutu-plugin/forms-core",
+    "@gutu-plugin/template-core",
+    "@gutu-plugin/notifications-core",
+    "@gutu-plugin/integration-core",
+    "@gutu-plugin/webhooks-core",
+    "@gutu-plugin/auth-core",
+    "@gutu-plugin/workflow-core"
+  ],
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
@@ -84,6 +94,7 @@
     "@vanilla-extract/esbuild-plugin": "^2.3.22",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "playwright": "^1.59.1",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",

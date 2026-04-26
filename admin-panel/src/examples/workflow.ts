@@ -184,7 +184,7 @@ export const workflowPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "workflow.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/automation/workflows/control-room", view: "workflow.control-room.view", order: 0 },
+    { id: "workflow.control-room.nav", label: "Workflow Control Room", icon: "LayoutDashboard", path: "/automation/workflows/control-room", view: "workflow.control-room.view", order: 0 },
     { id: "workflow.reports.nav", label: "Reports", icon: "BarChart3", path: "/automation/workflows/reports", view: "workflow.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

@@ -50,11 +50,26 @@ function parseStorageBackendsEnv(): StorageBackendConfig[] | null {
 }
 
 function localDefaultConfig(opts: BootstrapOptions): LocalAdapterConfig {
-  const signingKey =
-    process.env.STORAGE_SIGNING_KEY ?? randomBytes(32).toString("hex");
-  if (!process.env.STORAGE_SIGNING_KEY) {
+  // Production refuses to boot with an ephemeral signing key — every
+  // previously-issued presigned URL would silently 401 after a restart,
+  // breaking downloads in flight. Dev tolerates it with a warning so
+  // local iteration isn't blocked.
+  const isProd = process.env.NODE_ENV === "production";
+  const fromEnv = process.env.STORAGE_SIGNING_KEY?.trim();
+  if (isProd && !fromEnv) {
+    throw new Error(
+      "[storage] STORAGE_SIGNING_KEY is required in production. Generate with `openssl rand -hex 32` and set in your environment.",
+    );
+  }
+  if (isProd && fromEnv && fromEnv.length < 32) {
+    throw new Error(
+      "[storage] STORAGE_SIGNING_KEY too short (need ≥32 chars / ≥128 bits). Use `openssl rand -hex 32`.",
+    );
+  }
+  const signingKey = fromEnv ?? randomBytes(32).toString("hex");
+  if (!fromEnv) {
     console.warn(
-      "[storage] STORAGE_SIGNING_KEY not set — generated an ephemeral key. Presigned URLs will not survive restart.",
+      "[storage] STORAGE_SIGNING_KEY not set — generated an ephemeral key. Presigned URLs will not survive restart. (Required in production.)",
     );
   }
   return {

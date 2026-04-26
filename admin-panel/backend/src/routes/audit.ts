@@ -1,10 +1,24 @@
 import { Hono } from "hono";
 import type { SQLQueryBindings } from "bun:sqlite";
 import { db } from "../db";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, currentUser } from "../middleware/auth";
+import { verifyAuditChain } from "../lib/audit";
 
 export const auditRoutes = new Hono();
 auditRoutes.use("*", requireAuth);
+
+/** Walk the hash chain end-to-end and report integrity status. Cheap
+ *  for the typical small audit volume; for huge logs an operator
+ *  passes ?limit=N to scope. Admin role only — surfaces enough info
+ *  to attribute a tamper attempt. */
+auditRoutes.get("/verify", (c) => {
+  const user = currentUser(c);
+  if (user.role !== "admin") return c.json({ error: "admin role required" }, 403);
+  const url = new URL(c.req.url);
+  const limit = Math.min(1_000_000, Math.max(1, Number(url.searchParams.get("limit") ?? 100_000)));
+  const result = verifyAuditChain({ limit });
+  return c.json(result);
+});
 
 auditRoutes.get("/", (c) => {
   const url = new URL(c.req.url);

@@ -188,7 +188,7 @@ export const userDirectoryPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "user-directory.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/directory/control-room", view: "user-directory.control-room.view", order: 0 },
+    { id: "user-directory.control-room.nav", label: "User Directory Control Room", icon: "LayoutDashboard", path: "/directory/control-room", view: "user-directory.control-room.view", order: 0 },
     { id: "user-directory.reports.nav", label: "Reports", icon: "BarChart3", path: "/directory/reports", view: "user-directory.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

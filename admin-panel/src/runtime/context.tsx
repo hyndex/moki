@@ -16,6 +16,7 @@ import type { AnalyticsEmitter } from "@/contracts/analytics";
 import type { PermissionEvaluator } from "@/contracts/permissions";
 import type { FeatureFlagStore, CapabilityRegistry } from "@/contracts/feature-flags";
 import type { SavedViewStore } from "@/contracts/saved-views";
+import { ErpClient } from "./erp";
 
 export interface AdminRuntime {
   resources: ResourceClient;
@@ -26,6 +27,7 @@ export interface AdminRuntime {
   flags: FeatureFlagStore;
   capabilities: CapabilityRegistry;
   savedViews: SavedViewStore;
+  erp: ErpClient;
   stopRealtime?: () => void;
 }
 
@@ -91,6 +93,7 @@ export function createRuntime(): AdminRuntime {
   const flags = createFeatureFlags();
   const capabilities = createCapabilityRegistry();
   const savedViews = createSavedViewStore();
+  const erp = new ErpClient();
   const runtime: AdminRuntime = {
     resources,
     bus,
@@ -99,6 +102,7 @@ export function createRuntime(): AdminRuntime {
     flags,
     capabilities,
     savedViews,
+    erp,
     actions: {
       toast: (opts) =>
         bus.emit("toast:add", {

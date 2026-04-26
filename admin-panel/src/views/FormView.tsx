@@ -1,6 +1,6 @@
 import * as React from "react";
 import { z } from "zod";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Settings2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import type { FormView as FormViewDef, FormSection } from "@/contracts/views";
 import type { FieldDescriptor, FieldPredicateContext } from "@/contracts/fields";
@@ -16,6 +16,7 @@ import { navigateTo } from "./useRoute";
 import { cn } from "@/lib/cn";
 import { CustomFieldsSection } from "@/admin-primitives/CustomFieldsSection";
 import { useFieldMetadata } from "@/runtime/useFieldMetadata";
+import { usePropertySetters, type ResourceOverrides, type FieldOverrides } from "@/runtime/usePropertySetters";
 
 export interface FormViewRendererProps {
   view: FormViewDef;
@@ -34,6 +35,11 @@ export function FormViewRenderer({
 }: FormViewRendererProps) {
   const runtime = useRuntime();
   const { data: existing, loading, error } = useRecord(view.resource, id);
+  // Tenant-scoped property setter overrides (label/required/readonly/
+  // hidden/helpText/defaultValue/options/section/position/printHidden).
+  // These compose with — and override — the static FieldDescriptor
+  // contract from the plugin schema. Empty when no overrides exist.
+  const { overrides: propertyOverrides } = usePropertySetters(view.resource);
 
   // Initial values merge defaults, section field-level defaultValue, and existing record.
   const initialDefaults = React.useMemo(() => {
@@ -159,6 +165,21 @@ export function FormViewRenderer({
             <Button
               type="button"
               variant="ghost"
+              size="sm"
+              iconLeft={<Settings2 className="h-3.5 w-3.5" />}
+              onClick={() => {
+                // Open the customization settings deep-linked to this
+                // resource. Hash-based routing in the shell preserves
+                // the user's place; closing returns here.
+                window.location.hash = `/settings/property-setters?resource=${encodeURIComponent(view.resource)}`;
+              }}
+              title="Customize this form (property setters, custom fields, naming series, print formats)"
+            >
+              Customize
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => navigateTo(returnPath)}
               disabled={submitting}
             >
@@ -234,6 +255,7 @@ export function FormViewRenderer({
                   loading={loading && !!id}
                   ctx={ctx}
                   onFieldChange={setField}
+                  propertyOverrides={propertyOverrides}
                 />
               </CardContent>
             )}
@@ -251,6 +273,7 @@ function SectionFields({
   loading,
   ctx,
   onFieldChange,
+  propertyOverrides,
 }: {
   section: FormSection;
   values: Record<string, unknown>;
@@ -258,8 +281,24 @@ function SectionFields({
   loading: boolean;
   ctx: FieldPredicateContext;
   onFieldChange: (name: string, value: unknown) => void;
+  propertyOverrides?: ResourceOverrides;
 }) {
-  const visibleFields = section.fields.filter((f) => isFieldVisible(f, ctx));
+  // Apply tenant-scoped property setter overrides on top of the static
+  // descriptors. We don't mutate the field descriptor in place — we
+  // produce a new {field, ov} pair so the original schema stays
+  // canonical. Order: filter hidden → sort by overridden position →
+  // render with overridden label/required/etc.
+  const augmented = section.fields
+    .map((f) => ({ field: f, ov: propertyOverrides?.[f.name] ?? {} as FieldOverrides }))
+    .filter(({ field, ov }) => {
+      if (ov.hidden === true) return false;
+      return isFieldVisible(field, ctx);
+    })
+    .sort((a, b) => {
+      const pa = typeof a.ov.position === "number" ? a.ov.position : Number.POSITIVE_INFINITY;
+      const pb = typeof b.ov.position === "number" ? b.ov.position : Number.POSITIVE_INFINITY;
+      return pa - pb;
+    });
   return (
     <div
       className={cn(
@@ -271,12 +310,22 @@ function SectionFields({
             : "grid-cols-1",
       )}
     >
-      {visibleFields.map((f) => {
-        const required = f.required || (f.requiredWhen ? f.requiredWhen(ctx) : false);
-        const fieldReadonly =
+      {augmented.map(({ field: f, ov }) => {
+        // Effective label / required / readonly / help text fold in any
+        // tenant-scoped property setter overrides.
+        const effectiveLabel = (typeof ov.label === "string" ? ov.label : f.label) ?? humanize(f.name);
+        const baseRequired = f.required || (f.requiredWhen ? f.requiredWhen(ctx) : false);
+        const required = typeof ov.required === "boolean" ? ov.required : baseRequired;
+        const baseReadonly =
           f.readonly ||
           (f.readonlyWhen ? f.readonlyWhen(ctx) : false) ||
           (f.canEdit ? !f.canEdit(ctx) : false);
+        const fieldReadonly = typeof ov.readonly === "boolean" ? ov.readonly : baseReadonly;
+        const helpText = typeof ov.helpText === "string" ? ov.helpText : (f.description ?? f.help);
+        const overriddenOptions =
+          ov.options && Array.isArray(ov.options)
+            ? (ov.options as Array<{ value: string; label: string; color?: string }>)
+            : undefined;
         return (
           <div
             key={f.name}
@@ -287,15 +336,22 @@ function SectionFields({
             )}
           >
             <FormField
-              label={f.label ?? humanize(f.name)}
+              label={effectiveLabel}
               required={required}
-              help={f.description ?? f.help}
+              help={helpText}
               error={errors[f.name]}
             >
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <FieldInput
-                    field={{ ...f, required, readonly: fieldReadonly }}
+                    field={{
+                      ...f,
+                      label: effectiveLabel,
+                      required,
+                      readonly: fieldReadonly,
+                      ...(overriddenOptions ? { options: overriddenOptions } : {}),
+                      ...(ov.defaultValue !== undefined ? { defaultValue: ov.defaultValue } : {}),
+                    }}
                     value={values[f.name]}
                     onChange={(v) => onFieldChange(f.name, v)}
                     record={values}

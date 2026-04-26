@@ -186,7 +186,7 @@ export const aiAssistPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "ai-assist.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/ai/assist/control-room", view: "ai-assist.control-room.view", order: 0 },
+    { id: "ai-assist.control-room.nav", label: "AI Assist Control Room", icon: "LayoutDashboard", path: "/ai/assist/control-room", view: "ai-assist.control-room.view", order: 0 },
     { id: "ai-assist.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/assist/reports", view: "ai-assist.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

@@ -30,6 +30,15 @@ Reference: audit of `ref/Business/ERPNext/erpnext/` summarised in this tracker. 
 
 ## P0 — Foundation (must ship first)
 
+### ✅ P0 — ERP document actions and posting bridge — shipped (this pass)
+**Delivered**: tenant-aware `/api/erp` backend routes for ERP document mapping, related-document lookup, and immutable posting batches. The mapping path enforces source ACL, tenant isolation, idempotency, document-state eligibility, safe JSON defaults, downstream ACL seeding, record links, audit rows, realtime invalidation, and per-record timeline entries. The generated ERP rich-detail rail now executes live mapping actions and navigates to downstream records where a target route exists. Accounting, Inventory, Manufacturing, Sales, and Procurement mapping metadata now includes field maps, child-table maps, target document types, and safe draft defaults. Integration tests cover mapping, replay, related links, timelines, state rejection, unbalanced accounting rejection, balanced posting persistence, and posting replay.
+
+**Print and portal added**: `/api/erp/print/:resource/:id` now renders redacted printable ERP documents with child tables and format metadata under normal document ACL. `/api/erp/portal-links` now creates hashed-token portal links with expiry, revocation, access counters, audit rows, and timeline events, while `/api/erp/portal/:token` serves the public document view without exposing stored tokens. Generated rich-detail print and portal buttons now call these runtime-backed routes instead of using browser-only print or static hash navigation. Integration tests cover redaction, child-table rendering, hashed token storage, public access, expiry, and revocation.
+
+**Workflow/report bridge added**: `buildDomainPlugin` now accepts declarative `reports[]`, `workflows[]`, and `connections`; contributes generated ReportBuilder routes, Reports nav, command-palette report/workflow entries, and live connection descriptors; and the generated ERP rich-detail rail now exposes metadata-backed workflow transitions. `/api/erp` now includes posting preview, workflow transition, cancel, reverse, reconcile, related ledger, related stock, and ledger/stock report endpoints. Integration coverage includes workflow transition, cancellation idempotency, reconciliation, accounting preview, ledger report, stock posting lookup, and reversal replay.
+
+**Still not complete**: hand-authored ERP pages that bypass the generated rich-detail factory should be migrated where they do not add domain-specific UX; plugin-specific auto-posting engines still need to deepen beyond generic immutable posting rows for every document type.
+
 ### ✅ P0 — CRM (`crm`) — shipped (commit pending)
 **Delivered**: 8 new resources (Lead, Opportunity, Campaign, Appointment, Contract, Competitor, Market Segment, Sales Stage) with Zod schemas + list views + idempotent backend seed (123 new records). CRM Control Room dashboard (4 KPIs + 4 charts + 4 shortcuts + 3 quick lists). 8 reports via ReportBuilder (Lead Details, Lead Conversion Time, Lead Owner Efficiency, Opportunity Summary by Stage, Sales Pipeline Analytics, Campaign Efficiency, Lost Opportunity, First Response Time). Connections panel descriptors for Contact/Opportunity/Campaign routing to Deals, Invoices, Payments, Tickets, Notes, Appointments, Contracts. Nav extended (+ 11 entries) and commands (+ 5). Typecheck clean. Backend boots healthy; all endpoints return live data. Frontend renders Control Room with live aggregations.
 
@@ -325,6 +334,7 @@ _Each entry: date · plugin · delivered scope · commit_
 | 2026-04-24 | Content/Contracts/Document/Files/Forms/Knowledge/Template | 15+ resources + reports + Control Rooms (7 plugins) | 226ad46 |
 | 2026-04-24 | Business Portals/Company Builder/Page Builder/Portal | 10 resources + Control Rooms (4 plugins) | c6a8a63 |
 | 2026-04-24 | Execution Workspaces/Runtime Bridge/Search/Org-Tenant | 11 resources + Control Rooms (4 plugins) | 98fcf81 |
+| 2026-04-26 | ERP parity foundation | Declarative factory reports/workflows/connections + ERP transition/cancel/reverse/reconcile/preview/ledger/stock/report endpoints + expanded ERPNext machine ledger | local |
 
 ## Summary
 
@@ -348,9 +358,9 @@ Total: ~2,500+ seed records across ~200 resources spanning 55+ plugins.
 
 ## Deferred to follow-up passes
 
-These are intentionally deferred — the breadth is in place, but depth remains for a future sprint:
-- Accounting: double-entry posting engine + GL/Trial Balance/Balance Sheet/P&L reports
-- Inventory: BOM explosion visualization, batch/serial traceability graph
+These are intentionally deferred — the breadth is in place, but depth remains for future passes:
+- Accounting: the shared runtime and `/api/erp` bridge now have tenant-scoped posting preview, balanced GL posting, reversals, related ledger reads, General Ledger and Trial Balance report data, cancellation, reconciliation, audit, timeline, and replay primitives; remaining work is document-specific auto-posting from every accounting document plus full financial-statement UI drilldown.
+- Inventory: the shared runtime and `/api/erp` bridge now have tenant-scoped stock posting, related stock reads, stock-ledger report data, reconciliation, cancellation, reversal, audit, timeline, and replay primitives; remaining work is document-specific auto-posting from every stock document plus BOM explosion visualization and route-level traceability graph UI.
 - HR: Org-chart via RelationshipGraph, payroll wizard, appraisal with nested goals
 - Support: CSAT analysis with NPS breakdown, macro-library integration
 - Several plugins still use auto-generated rich-detail pages instead of hand-crafted layouts — the factory covers these today but custom pages would unlock per-plugin UX polish.
@@ -361,10 +371,14 @@ These are intentionally deferred — the breadth is in place, but depth remains 
 
 These are shared infrastructure needs that come up repeatedly; knocking them out once accelerates multiple plugins:
 
-- [ ] Extend `buildDomainPlugin` to accept `reports[]` declaratively (not just custom views)
-- [ ] Extend `buildDomainPlugin` to accept `connections` descriptor so detail rails auto-populate
-- [ ] Extend `buildDomainPlugin` to accept `workflows[]` declaratively (state machine engine)
-- [ ] Migrate all 8 standard reports to the new `ReportBuilder` API (already done ✅)
+- [x] Add repeatable ERPNext reference-map generation (`business:erpnext-map`) with durable JSON and Markdown reports for DocTypes, reports, workspaces, pages, print formats, web forms, child tables, and link fields.
+- [x] Add ERP-grade admin metadata contracts for child tables, document links, mapping actions, workflows, property setters, workspace links, dashboard charts, number cards, print formats, portal surfaces, builder surfaces, naming series, and submitted statuses.
+- [x] Add shared `@platform/business-runtime` primitives for document mapping with stored records and line-level lineage, GL posting/reversal/statements, fiscal locks, AR/AP aging, and FIFO stock ledger/reservation/reconciliation/aging/serial-batch drilldown.
+- [x] Render ERP child tables in generated factory forms and surface ERP document model, line tables, mapping actions, print/portal actions, workspace drilldowns, and builder links in generated rich detail pages.
+- [x] Extend `buildDomainPlugin` to accept `reports[]` declaratively (generated ReportBuilder index/detail routes, Reports nav, and command entries)
+- [x] Extend `buildDomainPlugin` to accept `connections` descriptor so detail rails auto-populate through the plugin registry
+- [x] Extend `buildDomainPlugin` to accept `workflows[]` declaratively and surface resource-level ERP workflow transitions in generated rich details
+- [x] Migrate all 8 standard reports to the new `ReportBuilder` API
 - [x] Migrate existing Kanban pages to the new `DnDKanban` ✅ (LiveDnDKanban + all 5 plugin boards: 5849d11)
 - [ ] Migrate hand-rolled SVG charts to `EChartsCard` where they gain value (drilldowns, zoom)
 - [ ] Migrate party-relationships graph + automation workflows to `@xyflow/react`
@@ -381,3 +395,4 @@ Shipped in this pass (commits 5849d11 · b26d7f7 · 49164e3 · db798aa):
 - [x] **Dashboard / Control Room** — edit mode on both `WorkspaceRenderer` (used by all Control Rooms) and `DashboardView`: drag to reorder widgets, eye-toggle to hide/show, Reset/Cancel/Done buttons, localStorage persistence keyed per workspace.
 - [x] **Forms** — `visibleWhen(ctx)`, `requiredWhen(ctx)`, `readonlyWhen(ctx)`, `canView(ctx)`, `canEdit(ctx)`, `defaultValue`, `description`, `unit`, `colSpan` on `FieldDescriptor`; `collapsible`, `visibleWhen`, `icon` on `FormSection`. Renderer applies all of them.
 - [x] **Reports / BI** — `ReportBuilder` now has Table/Chart/Pivot view-mode switcher, chart-type selector (Bar/Line/Area/Donut), Print action, sortable table columns. New `PivotTable` primitive with row/column/value/aggregation (sum/avg/count/min/max), row+column+grand totals, auto-detecting dimension vs. value fields from `ReportColumn.fieldtype`.
+- [x] **ERP metadata foundation** — `ResourceDefinition.erp` now carries ERPNext-parity metadata for document type, naming series, submitted statuses, child tables, links, mapping actions, workflows, property setters, workspace links, dashboard charts, number cards, builder surfaces, print formats, portal surfaces, and onboarding. Accounting, Inventory, Manufacturing, Sales, and Procurement examples now furnish representative metadata for their highest-leverage documents.

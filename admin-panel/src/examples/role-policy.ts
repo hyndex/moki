@@ -187,7 +187,7 @@ export const rolePolicyPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "role-policy.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/roles/control-room", view: "role-policy.control-room.view", order: 0 },
+    { id: "role-policy.control-room.nav", label: "Roles Control Room", icon: "LayoutDashboard", path: "/roles/control-room", view: "role-policy.control-room.view", order: 0 },
     { id: "role-policy.reports.nav", label: "Reports", icon: "BarChart3", path: "/roles/reports", view: "role-policy.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

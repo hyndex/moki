@@ -127,7 +127,7 @@ export const filesPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "files.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/files/control-room", view: "files.control-room.view", order: 0 },
+    { id: "files.control-room.nav", label: "Files Control Room", icon: "LayoutDashboard", path: "/files/control-room", view: "files.control-room.view", order: 0 },
     { id: "files.storage.nav", label: "Storage Backends", icon: "Database", path: "/files/storage", order: 10 },
   ],
   extraViews: [controlRoomView],

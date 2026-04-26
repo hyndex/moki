@@ -16,6 +16,9 @@ export type FieldKind =
   | "enum"
   | "multi-enum"
   | "reference"
+  | "link"
+  | "dynamic-link"
+  | "table"
   | "json"
   | "custom";
 
@@ -46,6 +49,15 @@ export interface FieldDescriptor {
   readonly options?: readonly EnumOption[];
   /** For "reference" — the resource id to resolve the display value from. */
   readonly referenceTo?: string;
+  /** For "link" and "dynamic-link" — ERP-style picker filters. */
+  readonly linkFilters?: readonly import("./erp-metadata").ErpLinkFilter[];
+  /** For "dynamic-link" — field on this record that stores the target resource/document type. */
+  readonly dynamicReferenceField?: string;
+  /** For "table" — child table metadata. */
+  readonly table?: import("./erp-metadata").ErpChildTableDefinition;
+  /** ERP-style dependency expression distilled into structured predicates for builders and packs. */
+  readonly dependsOn?: readonly import("./erp-metadata").ErpFieldDependency[];
+  readonly fetchFrom?: string;
   /** For "currency" — default ISO-4217 code. */
   readonly currency?: string;
   /** For custom fields — render callback (receives value + change handler). */
@@ -55,6 +67,10 @@ export interface FieldDescriptor {
   /** Hide from forms but keep in list views (e.g. computed read-only fields). */
   readonly formHidden?: boolean;
   readonly listHidden?: boolean;
+  readonly printHidden?: boolean;
+  readonly portalHidden?: boolean;
+  readonly inStandardFilter?: boolean;
+  readonly inGlobalSearch?: boolean;
 
   /* ---- ERPNext-parity dynamic controls ---- */
 
@@ -80,6 +96,7 @@ export interface FieldDescriptor {
   readonly description?: string;
   /** Placeholder unit (e.g. "kg", "%") shown after the input. */
   readonly unit?: string;
+  readonly precision?: number;
   /** Grid column span for this field inside its section (1-3). Defaults to
    *  1 inside a 3-col section. Use `"full"` for full-width. */
   readonly colSpan?: 1 | 2 | 3 | "full";

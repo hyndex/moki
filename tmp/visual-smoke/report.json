@@ -1,0 +1,112 @@
+[
+  {
+    "name": "landing",
+    "url": "http://127.0.0.1:5173/#/",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 626,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/landing.png"
+  },
+  {
+    "name": "custom-fields",
+    "url": "http://127.0.0.1:5173/#/settings/custom-fields",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1485,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/custom-fields.png"
+  },
+  {
+    "name": "property-setters",
+    "url": "http://127.0.0.1:5173/#/settings/property-setters",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1532,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/property-setters.png"
+  },
+  {
+    "name": "naming-series",
+    "url": "http://127.0.0.1:5173/#/settings/naming-series",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1551,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/naming-series.png"
+  },
+  {
+    "name": "print-formats",
+    "url": "http://127.0.0.1:5173/#/settings/print-formats",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1360,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/print-formats.png"
+  },
+  {
+    "name": "notification-rules",
+    "url": "http://127.0.0.1:5173/#/settings/notification-rules",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1376,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/notification-rules.png"
+  },
+  {
+    "name": "bulk-import",
+    "url": "http://127.0.0.1:5173/#/settings/bulk-import",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1152,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/bulk-import.png"
+  },
+  {
+    "name": "workflows",
+    "url": "http://127.0.0.1:5173/#/settings/workflows",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 1266,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/workflows.png"
+  },
+  {
+    "name": "webhooks",
+    "url": "http://127.0.0.1:5173/#/settings/webhooks",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 983,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/webhooks.png"
+  },
+  {
+    "name": "api-tokens",
+    "url": "http://127.0.0.1:5173/#/settings/api-tokens",
+    "ok": true,
+    "missing": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "bodyTextLen": 2999,
+    "screenshotPath": "/Users/chinmoybhuyan/Desktop/Personal/Framework/tmp/visual-smoke/api-tokens.png"
+  }
+]

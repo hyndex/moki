@@ -48,7 +48,7 @@ const contactResource = defineResource({
 const crmNavSections = [{ id: "sales", label: "Sales & CRM", order: 10 }];
 const crmNav = [
   { id: "crm.overview", label: "Overview", icon: "LayoutDashboard", path: "/contacts/overview", view: "crm.overview.view", section: "sales", order: 10 },
-  { id: "crm.control-room", label: "Control Room", icon: "Gauge", path: "/crm/control-room", view: "crm.control-room.view", section: "sales", order: 10.5 },
+  { id: "crm.control-room", label: "CRM Control Room", icon: "Gauge", path: "/crm/control-room", view: "crm.control-room.view", section: "sales", order: 10.5 },
   { id: "crm.contacts", label: "Contacts", icon: "Users", path: "/contacts", view: "crm.contacts.view", section: "sales", order: 11 },
   { id: "crm.leads", label: "Leads", icon: "UserRound", path: "/crm/leads", view: "crm.leads.list", section: "sales", order: 11.5 },
   { id: "crm.opportunities", label: "Opportunities", icon: "Target", path: "/crm/opportunities", view: "crm.opportunities.list", section: "sales", order: 11.7 },

@@ -177,7 +177,7 @@ export const jobsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "jobs.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/automation/jobs/control-room", view: "jobs.control-room.view", order: 0 },
+    { id: "jobs.control-room.nav", label: "Jobs Control Room", icon: "LayoutDashboard", path: "/automation/jobs/control-room", view: "jobs.control-room.view", order: 0 },
     { id: "jobs.reports.nav", label: "Reports", icon: "BarChart3", path: "/automation/jobs/reports", view: "jobs.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

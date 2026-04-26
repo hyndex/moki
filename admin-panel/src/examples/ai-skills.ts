@@ -149,7 +149,7 @@ export const aiSkillsPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "ai-skills.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/ai/skills/control-room", view: "ai-skills.control-room.view", order: 0 },
+    { id: "ai-skills.control-room.nav", label: "AI Skills Control Room", icon: "LayoutDashboard", path: "/ai/skills/control-room", view: "ai-skills.control-room.view", order: 0 },
     { id: "ai-skills.reports.nav", label: "Reports", icon: "BarChart3", path: "/ai/skills/reports", view: "ai-skills.reports.view" },
   ],
   extraViews: [controlRoomView, reportsIndex, reportsDetail],

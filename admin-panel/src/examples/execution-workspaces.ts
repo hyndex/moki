@@ -59,7 +59,7 @@ export const executionWorkspacesPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "execution-workspaces.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/platform/exec-workspaces/control-room", view: "execution-workspaces.control-room.view", order: 0 },
+    { id: "execution-workspaces.control-room.nav", label: "Execution Control Room", icon: "LayoutDashboard", path: "/platform/exec-workspaces/control-room", view: "execution-workspaces.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

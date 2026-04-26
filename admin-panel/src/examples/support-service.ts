@@ -387,7 +387,7 @@ export const supportServicePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "support.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/support/control-room", view: "support-service.control-room.view", order: 0 },
+    { id: "support.control-room.nav", label: "Support Control Room", icon: "LayoutDashboard", path: "/support/control-room", view: "support-service.control-room.view", order: 0 },
     { id: "support.reports.nav", label: "Reports", icon: "BarChart3", path: "/support/reports", view: "support-service.reports.view" },
     { id: "support.board.nav", label: "Board", icon: "LayoutGrid", path: "/support/board", view: "support-service.kanban.view" },
     { id: "support.analytics.nav", label: "Analytics", icon: "LineChart", path: "/support/analytics", view: "support-service.analytics.view" },

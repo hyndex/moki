@@ -67,7 +67,7 @@ export const templatePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "template.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/templates/control-room", view: "template.control-room.view", order: 0 },
+    { id: "template.control-room.nav", label: "Template Control Room", icon: "LayoutDashboard", path: "/templates/control-room", view: "template.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

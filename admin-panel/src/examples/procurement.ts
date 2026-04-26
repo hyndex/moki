@@ -34,6 +34,75 @@ export const procurementPlugin = buildDomainPlugin({
       displayField: "number",
       defaultSort: { field: "createdAt", dir: "desc" },
       pageSize: 25,
+      erp: {
+        documentType: "buying.Purchase Order",
+        module: "Buying",
+        namingSeries: "PUR-ORD-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["approved", "published"],
+        titleField: "number",
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "rate", kind: "currency", required: true },
+              { name: "amount", kind: "currency", readonly: true },
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse" }
+            ]
+          },
+          {
+            field: "taxes",
+            label: "Taxes",
+            amountField: "taxAmount",
+            fields: [
+              { name: "account", kind: "link", referenceTo: "accounting.account" },
+              { name: "rate", kind: "number" },
+              { name: "taxAmount", kind: "currency" }
+            ]
+          }
+        ],
+        links: [
+          { field: "vendor", targetResourceId: "procurement.supplier", reverseRelation: "purchase-orders" },
+          { field: "requisitionCode", targetResourceId: "procurement.requisition", reverseRelation: "purchase-orders" }
+        ],
+        mappingActions: [
+          {
+            id: "purchase-order-to-receipt",
+            label: "Create Purchase Receipt",
+            relation: "received-by",
+            targetResourceId: "inventory.purchase-receipt",
+            targetDocumentType: "stock.Purchase Receipt",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { supplier: "vendor", linkedPo: "code", amount: "total" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          },
+          {
+            id: "purchase-order-to-bill",
+            label: "Create Purchase Invoice",
+            relation: "billed-by",
+            targetResourceId: "accounting.bill",
+            targetDocumentType: "accounts.Purchase Invoice",
+            visibleInStatuses: ["approved", "published"],
+            fieldMap: { vendor: "vendor", purchaseOrder: "code", amount: "total" },
+            childTableMap: { items: "items", taxes: "taxes" },
+            defaults: { status: "draft" }
+          }
+        ],
+        printFormats: [{ id: "purchase-order", label: "Purchase Order", default: true, paperSize: "A4" }],
+        portal: { route: "/supplier/purchase-orders/:id", audience: "supplier", enabledByDefault: true },
+        workspaceLinks: [
+          { label: "Purchase Receipts", path: "/inventory/purchase-receipts", kind: "document", group: "Receive" },
+          { label: "Purchase Invoices", path: "/accounting/bills", kind: "document", group: "Bill" },
+          { label: "Purchase Analytics", path: "/procurement/reports/purchase-analytics", kind: "report", group: "Reports" }
+        ]
+      },
       fields: [
         { name: "number", kind: "text", required: true, sortable: true, width: 130 },
         { name: "vendor", kind: "text", required: true, sortable: true },
@@ -138,6 +207,53 @@ export const procurementPlugin = buildDomainPlugin({
       path: "/procurement/requisitions",
       displayField: "code",
       defaultSort: { field: "submittedAt", dir: "desc" },
+      erp: {
+        documentType: "stock.Material Request",
+        module: "Buying",
+        namingSeries: "MAT-MR-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["submitted", "approved", "converted"],
+        childTables: [
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true },
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "requiredBy", kind: "date" }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "requisition-to-rfq",
+            label: "Create RFQ",
+            relation: "requested-by",
+            targetResourceId: "procurement.rfq",
+            targetDocumentType: "buying.Request for Quotation",
+            visibleInStatuses: ["approved", "submitted"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          },
+          {
+            id: "requisition-to-po",
+            label: "Create Purchase Order",
+            relation: "ordered-by",
+            targetResourceId: "procurement.purchase-order",
+            targetDocumentType: "buying.Purchase Order",
+            visibleInStatuses: ["approved", "submitted"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          }
+        ],
+        workspaceLinks: [
+          { label: "RFQs", path: "/procurement/rfqs", kind: "document", group: "Source" },
+          { label: "Purchase Orders", path: "/procurement/pos", kind: "document", group: "Order" }
+        ]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "requester", kind: "text" },
@@ -180,6 +296,57 @@ export const procurementPlugin = buildDomainPlugin({
       path: "/procurement/rfqs",
       displayField: "code",
       defaultSort: { field: "issuedAt", dir: "desc" },
+      erp: {
+        documentType: "buying.Request for Quotation",
+        module: "Buying",
+        namingSeries: "PUR-RFQ-.YYYY.-.#####",
+        statusField: "status",
+        submittedStatuses: ["issued", "closed", "awarded"],
+        childTables: [
+          {
+            field: "suppliers",
+            label: "Suppliers",
+            fields: [
+              { name: "supplier", kind: "link", referenceTo: "procurement.supplier", required: true },
+              { name: "contactEmail", kind: "email" }
+            ]
+          },
+          {
+            field: "items",
+            label: "Items",
+            itemField: "item",
+            quantityField: "quantity",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "quantity", kind: "number", required: true }
+            ]
+          }
+        ],
+        mappingActions: [
+          {
+            id: "rfq-to-supplier-quotation",
+            label: "Record Supplier Quotation",
+            relation: "quoted-by",
+            targetResourceId: "procurement.supplier-quotation",
+            targetDocumentType: "buying.Supplier Quotation",
+            visibleInStatuses: ["issued", "closed"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          },
+          {
+            id: "rfq-to-purchase-order",
+            label: "Award Purchase Order",
+            relation: "awarded-as",
+            targetResourceId: "procurement.purchase-order",
+            targetDocumentType: "buying.Purchase Order",
+            visibleInStatuses: ["awarded"],
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          }
+        ],
+        printFormats: [{ id: "rfq", label: "Request for Quotation", default: true }],
+        portal: { route: "/supplier/rfqs/:id", audience: "supplier", enabledByDefault: true }
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true },
         { name: "title", kind: "text", required: true, sortable: true },
@@ -258,6 +425,59 @@ export const procurementPlugin = buildDomainPlugin({
       path: "/procurement/receipts",
       displayField: "code",
       defaultSort: { field: "receivedAt", dir: "desc" },
+      erp: {
+        documentType: "buying.Purchase Receipt",
+        module: "Buying",
+        namingSeries: "MAT-PRE-.YYYY.-.#####",
+        statusField: "qcStatus",
+        submittedStatuses: ["passed", "partial"],
+        childTables: [
+          {
+            field: "items",
+            label: "Received Items",
+            itemField: "item",
+            quantityField: "receivedQty",
+            amountField: "amount",
+            fields: [
+              { name: "item", kind: "link", referenceTo: "inventory.item", required: true },
+              { name: "orderedQty", kind: "number" },
+              { name: "receivedQty", kind: "number", required: true },
+              { name: "rejectedQty", kind: "number" },
+              { name: "warehouse", kind: "link", referenceTo: "inventory.warehouse" },
+              { name: "amount", kind: "currency" }
+            ]
+          }
+        ],
+        links: [
+          { field: "poNumber", targetResourceId: "procurement.purchase-order", reverseRelation: "receipts" },
+          { field: "supplier", targetResourceId: "procurement.supplier", reverseRelation: "receipts" }
+        ],
+        mappingActions: [
+          {
+            id: "receipt-to-stock-ledger",
+            label: "Post Stock Ledger",
+            relation: "posts-stock",
+            targetResourceId: "inventory.stock-entry",
+            targetDocumentType: "stock.Stock Entry",
+            visibleInStatuses: ["passed", "partial"],
+            fieldMap: { supplier: "supplier", linkedPo: "poNumber" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft", kind: "receipt" }
+          },
+          {
+            id: "receipt-to-bill",
+            label: "Create Purchase Invoice",
+            relation: "billed-by",
+            targetResourceId: "accounting.bill",
+            targetDocumentType: "accounts.Purchase Invoice",
+            visibleInStatuses: ["passed", "partial"],
+            fieldMap: { vendor: "supplier", purchaseReceipt: "code", amount: "amount" },
+            childTableMap: { items: "items" },
+            defaults: { status: "draft" }
+          }
+        ],
+        printFormats: [{ id: "purchase-receipt", label: "Purchase Receipt", default: true }]
+      },
       fields: [
         { name: "code", kind: "text", required: true, sortable: true, width: 120 },
         { name: "poNumber", label: "PO", kind: "text", required: true },
@@ -311,7 +531,7 @@ export const procurementPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "procurement.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/procurement/control-room", view: "procurement.control-room.view", order: 0 },
+    { id: "procurement.control-room.nav", label: "Procurement Control Room", icon: "LayoutDashboard", path: "/procurement/control-room", view: "procurement.control-room.view", order: 0 },
     { id: "procurement.reports.nav", label: "Reports", icon: "BarChart3", path: "/procurement/reports", view: "procurement.reports.view" },
   ],
   extraViews: [

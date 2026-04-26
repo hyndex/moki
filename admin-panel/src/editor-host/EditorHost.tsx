@@ -30,7 +30,7 @@ interface FrameMessage {
   type?: string;
   kind?: string;
   id?: string;
-  status?: SaveStatus;
+  status?: SaveStatus | WsStatus;
   error?: string;
   peers?: PresencePeer[];
 }
@@ -54,7 +54,7 @@ function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.
           setErrorMsg(null);
           break;
         case "editor-frame-status":
-          if (data.status) setStatus(data.status);
+          if (isSaveStatus(data.status)) setStatus(data.status);
           if (data.status === "error" && data.error) setErrorMsg(data.error);
           if (data.status === "saved") setErrorMsg(null);
           break;
@@ -181,6 +181,15 @@ function statusColor(s: SaveStatus): string {
     case "ready": return "#555";
     default: return "#999";
   }
+}
+
+function isSaveStatus(status: FrameMessage["status"]): status is SaveStatus {
+  return status === "loading" ||
+    status === "ready" ||
+    status === "saving" ||
+    status === "saved" ||
+    status === "retrying" ||
+    status === "error";
 }
 
 function statusLabel(s: SaveStatus): string {

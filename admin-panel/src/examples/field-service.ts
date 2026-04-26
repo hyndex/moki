@@ -364,7 +364,7 @@ export const fieldServicePlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "field-service.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/field-service/control-room", view: "field-service.control-room.view", order: 0 },
+    { id: "field-service.control-room.nav", label: "Field Service Control Room", icon: "LayoutDashboard", path: "/field-service/control-room", view: "field-service.control-room.view", order: 0 },
     { id: "field-service.reports.nav", label: "Reports", icon: "BarChart3", path: "/field-service/reports", view: "field-service.reports.view" },
     { id: "field-service.calendar.nav", label: "Calendar", icon: "Calendar", path: "/field-service/calendar", view: "field-service.calendar.view" },
   ],

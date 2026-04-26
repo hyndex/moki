@@ -46,7 +46,7 @@ export function resolveRoute(
       const remainder = clean.slice(n.path.length);
       const view = findViewForNav(n, registry);
       if (!view) continue;
-      return classify(view, n.path, remainder);
+      return classify(view, n.path, remainder, registry);
     }
   }
 
@@ -116,7 +116,20 @@ function findViewForNav(
   return null;
 }
 
-function classify(view: View, base: string, remainder: string): Route {
+/** True iff a custom view registered for `resource` matches the
+ *  `<resource>-detail.view` or `<resource>.detail.view` convention.
+ *  Used to gate the detail-routing-under-custom-view shortcut so we
+ *  don't hijack legitimate sub-paths under hub/dashboard custom views. */
+function hasCustomDetailView(resource: string | undefined, registry: AdminRegistry): boolean {
+  if (!resource) return false;
+  const wantA = `${resource}-detail.view`;
+  const wantB = `${resource}.detail.view`;
+  return Object.values(registry.views).some(
+    (v) => v.type === "custom" && v.resource === resource && (v.id === wantA || v.id === wantB),
+  );
+}
+
+function classify(view: View, base: string, remainder: string, registry?: AdminRegistry): Route {
   if (!remainder || remainder === "/") {
     if (view.type === "dashboard")
       return { path: base, view, mode: "dashboard", navItemPath: base };
@@ -134,6 +147,46 @@ function classify(view: View, base: string, remainder: string): Route {
       return { path: base, view, mode: "external", navItemPath: base };
   }
   if (view.type === "custom") {
+    // When a custom list-style view (e.g. crm.contacts.view) has a sub-path
+    // that looks like a single record id, switch to detail mode so a custom
+    // detail view registered for the same resource gets rendered. Only flip
+    // when (a) a `<resource>-detail.view` actually exists in the registry,
+    // and (b) the remainder is plausibly an id (one segment, not "new").
+    // This guards hub/dashboard custom views (e.g. settings) that own deep
+    // sub-paths internally and would otherwise be hijacked.
+    const parts = remainder.replace(/^\//, "").split("/");
+    const detailExists =
+      registry !== undefined && hasCustomDetailView(view.resource, registry);
+    if (
+      detailExists &&
+      parts.length === 1 &&
+      parts[0] &&
+      parts[0] !== "new" &&
+      view.resource
+    ) {
+      return {
+        path: base + remainder,
+        view,
+        mode: "detail",
+        id: parts[0],
+        navItemPath: base,
+      };
+    }
+    if (
+      detailExists &&
+      parts.length === 2 &&
+      parts[1] === "edit" &&
+      parts[0] &&
+      view.resource
+    ) {
+      return {
+        path: base + remainder,
+        view,
+        mode: "edit",
+        id: parts[0],
+        navItemPath: base,
+      };
+    }
     return { path: base + remainder, view, mode: "custom", navItemPath: base };
   }
   if (view.type.startsWith("external:")) {

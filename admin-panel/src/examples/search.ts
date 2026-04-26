@@ -107,7 +107,7 @@ export const searchPlugin = buildDomainPlugin({
     },
   ],
   extraNav: [
-    { id: "search.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/platform/search-indexes/control-room", view: "search.control-room.view", order: 0 },
+    { id: "search.control-room.nav", label: "Search Control Room", icon: "LayoutDashboard", path: "/platform/search-indexes/control-room", view: "search.control-room.view", order: 0 },
   ],
   extraViews: [controlRoomView],
   commands: [

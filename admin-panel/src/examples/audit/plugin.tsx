@@ -138,7 +138,7 @@ const auditNav = [
     id: "audit-event-detail", label: "Event detail (sample)", icon: "FileText",
     path: "/audit/event-sample", view: "audit.event-detail.view", section: "platform", order: 25,
   },
-  { id: "audit-control-room", label: "Control Room", icon: "LayoutDashboard", path: "/audit/control-room", view: "audit.control-room.view", section: "platform", order: 5 },
+  { id: "audit-control-room", label: "Audit Control Room", icon: "LayoutDashboard", path: "/audit/control-room", view: "audit.control-room.view", section: "platform", order: 5 },
   { id: "audit-reports", label: "Reports", icon: "BarChart3", path: "/audit/reports", view: "audit.reports.view", section: "platform", order: 12 },
 ];
 const auditResources = [eventResource];
