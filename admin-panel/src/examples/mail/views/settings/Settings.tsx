@@ -41,25 +41,33 @@ export function MailSettingsPage(): React.ReactElement {
         {saving && <span className="text-xs text-text-muted">Saving…</span>}
       </header>
       <Tabs defaultValue="general">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="connections">Accounts</TabsTrigger>
-          <TabsTrigger value="self-hosted">Self-hosted</TabsTrigger>
-          <TabsTrigger value="identities">Identities</TabsTrigger>
-          <TabsTrigger value="signatures">Signatures</TabsTrigger>
-          <TabsTrigger value="vacation">Vacation</TabsTrigger>
-          <TabsTrigger value="forwarding">Forwarding</TabsTrigger>
-          <TabsTrigger value="labels">Labels</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="shortcuts">Shortcuts</TabsTrigger>
-          <TabsTrigger value="ai">AI</TabsTrigger>
-          <TabsTrigger value="shared">Shared inbox</TabsTrigger>
-          <TabsTrigger value="tenant">Tenant policy</TabsTrigger>
-          <TabsTrigger value="danger">Danger zone</TabsTrigger>
-        </TabsList>
+        {/* 17 tabs — wrapping the row would visually collide with the
+         *  content below (TabsList has a fixed h-9). Horizontal scroll
+         *  keeps the bar a single line and lets the user keyboard-tab
+         *  through every option without layout jumps. The flex container
+         *  is set up to *not* be inline-flex so it spans the full width
+         *  and the scrollbar stays inside the page. */}
+        <div className="border-b border-border -mb-px overflow-x-auto scrollbar-thin">
+          <TabsList className="flex h-9 w-max border-b-0 gap-0">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="connections">Accounts</TabsTrigger>
+            <TabsTrigger value="self-hosted">Self-hosted</TabsTrigger>
+            <TabsTrigger value="identities">Identities</TabsTrigger>
+            <TabsTrigger value="signatures">Signatures</TabsTrigger>
+            <TabsTrigger value="vacation">Vacation</TabsTrigger>
+            <TabsTrigger value="forwarding">Forwarding</TabsTrigger>
+            <TabsTrigger value="labels">Labels</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="privacy">Privacy</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="shortcuts">Shortcuts</TabsTrigger>
+            <TabsTrigger value="ai">AI</TabsTrigger>
+            <TabsTrigger value="shared">Shared inbox</TabsTrigger>
+            <TabsTrigger value="tenant">Tenant policy</TabsTrigger>
+            <TabsTrigger value="danger">Danger zone</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="general"><GeneralTab settings={s} save={save} /></TabsContent>
         <TabsContent value="connections"><ConnectionsTab /></TabsContent>
         <TabsContent value="self-hosted"><SelfHostedTab /></TabsContent>

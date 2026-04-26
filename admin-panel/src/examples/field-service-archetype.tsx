@@ -166,9 +166,10 @@ export function FieldServiceArchetypeMap() {
               </dl>
               <a
                 href={`#/field-service/jobs/${encodeURIComponent(selected.id)}`}
-                className="text-xs font-medium text-info hover:underline pt-1 border-t border-border-subtle"
+                className="inline-flex items-center gap-1 text-xs font-medium text-info hover:text-info-strong transition-colors group pt-1 border-t border-border-subtle"
               >
-                Open job detail →
+                Open job detail
+                <span aria-hidden className="transition-transform duration-fast group-hover:translate-x-0.5">→</span>
               </a>
             </div>
           ) : (

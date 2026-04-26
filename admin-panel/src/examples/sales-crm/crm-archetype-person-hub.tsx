@@ -245,9 +245,10 @@ export function CrmArchetypePersonHub() {
             footer={
               <a
                 href={`#/contacts/${encodeURIComponent(p.id)}`}
-                className="text-xs font-medium text-info hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-info hover:text-info-strong transition-colors group"
               >
-                Open canonical record →
+                Open canonical record
+                <span aria-hidden className="transition-transform duration-fast group-hover:translate-x-0.5">→</span>
               </a>
             }
           />

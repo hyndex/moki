@@ -262,9 +262,10 @@ export function ManufacturingArchetypeBom() {
             footer={
               <a
                 href={`#/manufacturing/bom-lines/${encodeURIComponent(selected.id)}`}
-                className="text-xs font-medium text-info hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-info hover:text-info-strong transition-colors group"
               >
-                Open BOM line detail →
+                Open BOM line detail
+                <span aria-hidden className="transition-transform duration-fast group-hover:translate-x-0.5">→</span>
               </a>
             }
           />

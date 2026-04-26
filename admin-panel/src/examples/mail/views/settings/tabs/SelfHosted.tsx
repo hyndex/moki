@@ -24,6 +24,7 @@ import { Button } from "@/primitives/Button";
 import { Input } from "@/primitives/Input";
 import { Label } from "@/primitives/Label";
 import { Textarea } from "@/primitives/Textarea";
+import { cn } from "@/lib/cn";
 
 interface SelfHostedConfig {
   configured: boolean;
@@ -146,26 +147,27 @@ export function SelfHostedTab(): React.ReactElement {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="max-w-3xl space-y-6">
       <div className="space-y-1">
-        <h2 className="text-sm font-semibold">Self-hosted mail server</h2>
-        <p className="text-xs text-text-muted">
+        <h2 className="text-base font-semibold text-text-primary">Self-hosted mail server</h2>
+        <p className="text-xs text-text-muted leading-relaxed">
           Connect a self-hosted JMAP server (Stalwart, Cyrus, Apache James). The
-          framework will use it for inbound and outbound mail through the same
+          framework uses it for inbound and outbound mail through the same
           pipeline that handles Gmail and Outlook accounts.
         </p>
       </div>
 
       {/* CONNECTION CARD */}
-      <div className="rounded-md border border-border bg-surface-0 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">Connection</div>
+      <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
+        <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+          <div className="text-sm font-semibold text-text-primary">Connection</div>
           {config?.configured && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-success-soft text-success-strong">
-              Configured
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-soft text-success-strong">
+              <span className="h-1.5 w-1.5 rounded-full bg-success-strong" aria-hidden /> Configured
             </span>
           )}
         </div>
+        <div className="p-4 space-y-3">
 
         {loading ? (
           <div className="text-xs text-text-muted">Loading…</div>
@@ -233,26 +235,38 @@ export function SelfHostedTab(): React.ReactElement {
             </div>
 
             {probe && (
-              <div className={`text-xs rounded p-2 ${probe.ok ? "bg-success-soft" : "bg-danger-soft"}`}>
+              <div
+                role="status"
+                aria-live="polite"
+                className={cn(
+                  "text-xs rounded-md p-3 space-y-1 border",
+                  probe.ok
+                    ? "bg-success-soft/60 text-success-strong border-success-strong/20"
+                    : "bg-danger-soft/60 text-danger-strong border-danger-strong/20",
+                )}
+              >
                 {probe.ok ? (
                   <>
-                    <div className="font-medium">✓ Reachable</div>
-                    <div>API URL: <code>{probe.apiUrl}</code></div>
-                    <div>Mail account: {probe.hasMailAccount ? "yes" : "missing — token might lack mail scope"}</div>
-                    <div>Capabilities: {(probe.capabilities ?? []).join(", ") || "none"}</div>
+                    <div className="font-semibold">✓ Reachable</div>
+                    <div className="text-text-primary">API URL: <code className="font-mono text-[11px]">{probe.apiUrl}</code></div>
+                    <div className="text-text-primary">
+                      Mail account: {probe.hasMailAccount ? "yes" : "missing — token might lack mail scope"}
+                    </div>
+                    <div className="text-text-primary">Capabilities: {(probe.capabilities ?? []).join(", ") || "none"}</div>
                   </>
                 ) : (
                   <>
-                    <div className="font-medium">✗ Probe failed</div>
-                    {probe.status && <div>Status: {probe.status}</div>}
-                    {probe.body && <div className="font-mono">{probe.body}</div>}
-                    {probe.error && <div className="font-mono">{probe.error}</div>}
+                    <div className="font-semibold">✗ Probe failed</div>
+                    {probe.status && <div className="text-text-primary">Status: {probe.status}</div>}
+                    {probe.body && <div className="font-mono text-[11px] text-text-primary break-all">{probe.body}</div>}
+                    {probe.error && <div className="font-mono text-[11px] text-text-primary break-all">{probe.error}</div>}
                   </>
                 )}
               </div>
             )}
           </>
         )}
+        </div>
       </div>
 
       {/* DNS RECORDS CARD */}
@@ -302,14 +316,16 @@ function DnsRecordsCard(): React.ReactElement {
   };
 
   return (
-    <div className="rounded-md border border-border bg-surface-0 p-4 space-y-3">
-      <div className="space-y-1">
-        <div className="text-sm font-medium">DNS records</div>
-        <p className="text-xs text-text-muted">
-          Publish these records at your DNS provider so inbound mail at <code>@your-domain.com</code> reaches your Stalwart server.
-          The framework only generates the strings — it never touches your DNS zone.
+    <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
+      <div className="border-b border-border-subtle px-4 py-3 space-y-1">
+        <div className="text-sm font-semibold text-text-primary">DNS records</div>
+        <p className="text-xs text-text-muted leading-relaxed">
+          Publish these records at your DNS provider so inbound mail at{" "}
+          <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-surface-1">@your-domain.com</code>{" "}
+          reaches your Stalwart server. The framework only generates the strings — it never touches your DNS zone.
         </p>
       </div>
+      <div className="p-4 space-y-3">
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Domain" hint="example.com (no protocol, no trailing slash)">
@@ -362,9 +378,18 @@ function DnsRecordsCard(): React.ReactElement {
       </div>
 
       {bundle && (
-        <div className="space-y-2 pt-1">
-          <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Records to publish
+        <div className="space-y-3 pt-2 border-t border-border-subtle">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+              Records to publish
+            </div>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(bundle.zoneFile).catch(() => undefined)}
+              className="text-[11px] text-text-muted hover:text-text-primary transition-colors"
+            >
+              Copy zone file
+            </button>
           </div>
           <DnsRow label="MX" record={bundle.bundle.mx} />
           <DnsRow label="SPF (TXT)" record={bundle.bundle.spf} />
@@ -372,29 +397,51 @@ function DnsRecordsCard(): React.ReactElement {
           <DnsRow label="DMARC (TXT)" record={bundle.bundle.dmarc} />
           {bundle.bundle.tlsRpt && <DnsRow label="TLSRPT (TXT)" record={bundle.bundle.tlsRpt} />}
           {bundle.bundle.mtaSts && <DnsRow label="MTA-STS (TXT)" record={bundle.bundle.mtaSts} />}
-          <details className="text-xs">
-            <summary className="cursor-pointer text-text-muted">Zone-file format (paste into BIND, PowerDNS)</summary>
-            <pre className="mt-1 rounded bg-surface-1 p-2 text-[10px] overflow-x-auto whitespace-pre">
+          <details className="text-xs pt-1">
+            <summary className="cursor-pointer text-text-muted hover:text-text-primary transition-colors select-none">
+              Zone-file format (paste into BIND, PowerDNS)
+            </summary>
+            <pre className="mt-2 rounded bg-surface-1 p-3 text-[11px] overflow-x-auto whitespace-pre font-mono">
               {bundle.zoneFile}
             </pre>
           </details>
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 function DnsRow({ label, record }: { label: string; record: DnsRecord }): React.ReactElement {
+  const [copied, setCopied] = React.useState(false);
+  const copy = (): void => {
+    void navigator.clipboard.writeText(record.value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
   return (
-    <div className="grid grid-cols-[100px_1fr] gap-2 text-xs items-start">
-      <div className="font-medium text-text-muted">{label}</div>
-      <div className="space-y-0.5">
+    <div className="grid grid-cols-[110px_1fr_auto] gap-3 text-xs items-start group">
+      <div className="font-semibold text-text-muted uppercase tracking-wide text-[10px] pt-1">
+        {label}
+      </div>
+      <div className="space-y-0.5 min-w-0">
         <div className="font-mono text-[11px] text-text-primary truncate" title={record.name}>
           {record.name}
-          {record.priority !== undefined && <span className="text-text-muted"> (priority {record.priority})</span>}
+          {record.priority !== undefined && (
+            <span className="text-text-muted"> (priority {record.priority})</span>
+          )}
         </div>
         <div className="font-mono text-[11px] text-text-muted break-all">{record.value}</div>
       </div>
+      <button
+        type="button"
+        onClick={copy}
+        title="Copy value"
+        className="text-[11px] text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1 px-1.5 py-0.5 rounded hover:bg-surface-1"
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
     </div>
   );
 }
@@ -409,10 +456,10 @@ function Field({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-text-primary">{label}</Label>
       {children}
-      {hint && <div className="text-[10px] text-text-muted">{hint}</div>}
+      {hint && <div className="text-[11px] text-text-muted leading-snug">{hint}</div>}
     </div>
   );
 }

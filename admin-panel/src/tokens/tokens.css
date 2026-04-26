@@ -185,6 +185,23 @@ body {
   background: rgb(var(--text-muted));
 }
 
+/* Compact, near-invisible scrollbar — used by horizontally-scrolling
+ *  rows (e.g. the mail settings tab bar with 17 tabs) where the default
+ *  10px chrome would crowd the row. Falls back to the system bar on
+ *  Firefox via the `scrollbar-width` property. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-strong));
+  border: 1px solid rgb(var(--surface-1));
+  border-radius: 6px;
+}
+
 /* Keyframes used outside tailwind config */
 @keyframes shimmer {
   100% {

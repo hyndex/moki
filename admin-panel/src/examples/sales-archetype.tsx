@@ -222,6 +222,7 @@ export function SalesArchetypePipeline() {
                   }
                 }}
                 aria-label={`Open ${d.name}`}
+                className="outline-none rounded-sm transition-shadow duration-fast focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
               >
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="text-sm font-medium text-text-primary truncate">{d.name}</div>

@@ -450,7 +450,7 @@ export function InventoryArchetypeList() {
               {rows.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-t border-border-subtle hover:bg-surface-1 cursor-pointer"
+                  className="border-t border-border-subtle hover:bg-surface-1 cursor-pointer transition-colors duration-fast outline-none focus-visible:bg-surface-1 focus-visible:shadow-[inset_2px_0_0_rgb(var(--accent))]"
                   onClick={(e) => {
                     const tgt = e.target as HTMLElement;
                     if (tgt.closest('input,button,a')) return;
