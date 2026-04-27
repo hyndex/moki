@@ -32,6 +32,7 @@ import {
 import { archetypesCatalogView } from "./archetypes-catalog";
 import { archetypeEventsView } from "./archetype-events";
 import { fieldKindsCatalogView } from "./field-kinds-catalog";
+import { mcpAgentsView, mcpAgentsNavItem } from "./mcp-agents-page";
 
 // Decentralized discovery: Vite's `import.meta.glob` (eager) walks
 // every `host-plugin/ui/index.ts` under `plugins/gutu-plugin-*` at
@@ -288,6 +289,7 @@ const builtInNav = [
     section: "settings",
     order: 8,
   },
+  mcpAgentsNavItem,
 ];
 
 /* -- The plugin surface itself ------------------------------------------- */
@@ -311,7 +313,7 @@ export const adminToolsPlugin = definePlugin({
     ctx.contribute.navSections([{ id: "settings", label: "Settings", order: 200 }]);
     ctx.contribute.nav([...builtInNav, ...adminToolsNav]);
     ctx.contribute.resources([pluginsConsoleResource, archetypesCatalogResource, ...pluginResources]);
-    ctx.contribute.views([pluginsConsoleView, archetypesCatalogView, archetypeEventsView, fieldKindsCatalogView, ...pluginViews]);
+    ctx.contribute.views([pluginsConsoleView, archetypesCatalogView, archetypeEventsView, fieldKindsCatalogView, mcpAgentsView, ...pluginViews]);
     if (adminToolsCommands.length > 0) ctx.contribute.commands(adminToolsCommands);
   },
 });

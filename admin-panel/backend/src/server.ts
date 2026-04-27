@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { authRoutes } from "./routes/auth";
 import { resourceRoutes } from "./routes/resources";
 import { kpiRoutes } from "./routes/kpi";
+import { mcpRoutes } from "./routes/mcp";
 import { healthRoutes } from "./routes/health";
 import { readyRoutes } from "./routes/ready";
 import { metricsRoutes } from "./routes/_metrics";
@@ -100,6 +101,9 @@ export function createApp() {
   // CRUD uses, with the same ACL + tenant filters. Saves the client from
   // shipping the entire dataset to the browser to compute one number.
   app.route("/api/kpi", kpiRoutes);
+  // MCP — agent-facing JSON-RPC + admin endpoints for issuing
+  // tokens, dual-key approvals, and viewing the call audit.
+  app.route("/api/mcp", mcpRoutes);
   app.route("/api/files", filesRoutes);
   app.route("/api/storage", storageRoutes);
   // Mail plugin: kept as a shell-mounted route for now (mailRoutes lives
