@@ -56,6 +56,20 @@ function toMap(rows: Row[]): Record<string, string> {
   return out;
 }
 
+/** Map two `Record<string, string>` shapes for equality. We use this
+ *  to decide whether the parent's `value` represents a different
+ *  intent vs. just the round-trip from our own commit (which strips
+ *  empty-key rows). Without this guard, the editor would lose any
+ *  in-progress empty row the moment the user clicks "Add row" — the
+ *  new row gets stripped on commit, the parent's `value` shrinks, and
+ *  the sync effect resets local rows back to the stripped set. */
+function recordsEqual(a: Record<string, string>, b: Record<string, string>): boolean {
+  const ak = Object.keys(a), bk = Object.keys(b);
+  if (ak.length !== bk.length) return false;
+  for (const k of ak) if (b[k] !== a[k]) return false;
+  return true;
+}
+
 export function KeyValueEditor({
   value,
   onChange,
@@ -67,10 +81,17 @@ export function KeyValueEditor({
 }: KeyValueEditorProps): React.ReactElement {
   const [rows, setRows] = React.useState<Row[]>(() => toRows(value));
 
-  // Sync down when the parent's `value` changes (e.g. a different
-  // record gets loaded into the form).
+  // Sync down only when the parent's `value` is meaningfully
+  // different from what our current rows would produce. Otherwise we
+  // clobber locally-edited empty rows the moment the parent's state
+  // round-trips through onChange (toMap drops empties).
   React.useEffect(() => {
-    setRows(toRows(value));
+    if (!recordsEqual(toMap(rows), value)) {
+      setRows(toRows(value));
+    }
+    // We intentionally exclude `rows` from deps — the effect should
+    // only fire when the parent hands us a new value object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const commit = (next: Row[]): void => {

@@ -103,6 +103,15 @@ const VERB_TO_ACTION: Record<string, "read" | "write" | "delete"> = {
   archive: "delete",
 };
 
+/** Stable order for action chips. Severity-ascending (read → write →
+ *  delete) — matches the picker's allowedActions filter and keeps
+ *  read first, where it sits across every page that lists actions. */
+const ACTION_ORDER: ReadonlyArray<"read" | "write" | "delete"> = ["read", "write", "delete"];
+
+function sortActions(actions: ReadonlyArray<"read" | "write" | "delete">): Array<"read" | "write" | "delete"> {
+  return ACTION_ORDER.filter((a) => actions.includes(a));
+}
+
 /** The picker-feeding endpoint reads this. We merge:
  *
  *    - the explicit registry (plugin-declared)
@@ -126,7 +135,7 @@ export function listUiResources(): UiResourceDescriptor[] {
     if (t.scopeAction) {
       const acts = new Set(cur.actions ?? []);
       acts.add(t.scopeAction);
-      cur.actions = Array.from(acts).sort() as UiResourceDescriptor["actions"];
+      cur.actions = sortActions(Array.from(acts));
     } else {
       // Fall back to deriving from the verb when scopeAction is unset
       // (rare — auto-generated tools always set it).
@@ -135,7 +144,7 @@ export function listUiResources(): UiResourceDescriptor[] {
       if (action) {
         const acts = new Set(cur.actions ?? []);
         acts.add(action);
-        cur.actions = Array.from(acts).sort() as UiResourceDescriptor["actions"];
+        cur.actions = sortActions(Array.from(acts));
       }
     }
     merged.set(t.resource, cur);
@@ -156,7 +165,7 @@ export function listUiResources(): UiResourceDescriptor[] {
       // Union of actions — plugin can declare additional verbs (e.g.
       // a read-only aggregate that has no MCP tool yet).
       actions: explicit.actions && explicit.actions.length > 0
-        ? Array.from(new Set([...cur.actions ?? [], ...explicit.actions])).sort() as UiResourceDescriptor["actions"]
+        ? sortActions(Array.from(new Set([...cur.actions ?? [], ...explicit.actions])))
         : cur.actions,
     });
   }
