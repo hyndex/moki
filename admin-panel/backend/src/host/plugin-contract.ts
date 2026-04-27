@@ -23,6 +23,7 @@
 
 import type { Hono, Context } from "hono";
 import type { ServerWebSocket } from "bun";
+import { registerUiResource, registerUiResources } from "../lib/ui/metadata";
 
 /* ---- types ----------------------------------------------------------- */
 
@@ -88,11 +89,34 @@ export interface RegistriesContext {
   };
 }
 
+/** UI metadata descriptors a plugin can hand back to the shell so
+ *  pickers (resource select, scope tree, tool picker) render labels
+ *  and groups instead of asking operators to type strings. The host
+ *  exposes this through `/api/ui/resources`. */
+export interface UiResourceDescriptor {
+  id: string;
+  label?: string;
+  pluralLabel?: string;
+  group?: string;
+  icon?: string;
+  actions?: ReadonlyArray<"read" | "write" | "delete">;
+  description?: string;
+}
+
 export interface PluginContext {
   /** Cross-plugin registry namespace. Register capabilities here and
    *  other plugins look them up by name. Avoids hard imports between
    *  plugins. */
   registries: RegistriesContext;
+  /** Announce UI metadata for picker rendering. Plugins call this
+   *  from `start()` (or once at module load) to override labels,
+   *  group names, and supported actions for resources they own. The
+   *  shell folds these descriptors into the `/api/ui/resources`
+   *  aggregator. Calling without descriptors is a no-op. */
+  ui: {
+    registerResource(descriptor: UiResourceDescriptor): void;
+    registerResources(descriptors: UiResourceDescriptor[]): void;
+  };
 }
 
 export interface HostPlugin {
@@ -207,7 +231,12 @@ const registries: RegistriesContext = {
   },
 };
 
-const PLUGIN_CONTEXT: PluginContext = { registries };
+const ui: PluginContext["ui"] = {
+  registerResource(d) { registerUiResource(d); },
+  registerResources(ds) { registerUiResources(ds); },
+};
+
+const PLUGIN_CONTEXT: PluginContext = { registries, ui };
 
 /* ---- plugin status tracking (used by /api/_plugins) ----------------- */
 

@@ -20,6 +20,7 @@ import { mailRoutes } from "./routes/mail";
 import { analyticsRoutes } from "./routes/analytics";
 import { searchRoutes } from "./routes/search";
 import { i18nRoutes } from "./routes/i18n";
+import { uiMetadataRoutes } from "./routes/ui-metadata";
 import { tenantMiddleware } from "./tenancy/middleware";
 import { loadConfig } from "./config";
 import { drainMiddleware } from "./host/lifecycle";
@@ -114,6 +115,7 @@ export function createApp() {
   app.route("/api/analytics", analyticsRoutes);
   app.route("/api/search", searchRoutes);
   app.route("/api/i18n", i18nRoutes);
+  app.route("/api/ui", uiMetadataRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

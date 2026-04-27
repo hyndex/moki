@@ -20,6 +20,8 @@ import { Badge } from "@/primitives/Badge";
 import { defineCustomView } from "@/builders";
 import { authStore } from "@/runtime/auth";
 import { cn } from "@/lib/cn";
+import { ResourceScopePicker, ToolPicker, type ScopeMap, type ScopeAction } from "@/admin-primitives/pickers";
+import { useUiResources } from "@/runtime/useUiMetadata";
 
 interface Agent {
   id: string;
@@ -810,12 +812,16 @@ function DualKeyTab({
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Tool name</Label>
-          <Input
-            value={toolName}
-            onChange={(e) => setToolName(e.target.value)}
-            placeholder="sales.deal.delete"
+          <Label className="text-xs">Tool</Label>
+          <ToolPicker
+            value={toolName || undefined}
+            onChange={(v) => setToolName(v ?? "")}
+            riskFilter={["irreversible"]}
+            placeholder="Select an irreversible tool…"
           />
+          <p className="text-[11px] text-text-muted">
+            Dual-key tokens only matter for irreversible operations. The list is filtered to that risk class.
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Arguments (exact match required)</Label>
@@ -910,18 +916,7 @@ function AgentDetailPanel({ agent, onClose }: { agent: Agent; onClose: () => voi
           )}
 
           <Section title="Scopes">
-            {Object.keys(agent.scopes).length === 0 ? (
-              <div className="text-xs text-text-muted">No scopes — agent can connect but cannot call any tool.</div>
-            ) : (
-              <ul className="text-xs space-y-1">
-                {Object.entries(agent.scopes).map(([resource, actions]) => (
-                  <li key={resource} className="flex items-center gap-2">
-                    <code className="font-mono">{resource}</code>
-                    <span className="text-text-muted">{actions.join(", ")}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ScopeDisplay scopes={agent.scopes} />
           </Section>
 
           <Section title="Risk + limits">
@@ -967,6 +962,42 @@ function AgentDetailPanel({ agent, onClose }: { agent: Agent; onClose: () => voi
   );
 }
 
+/** Read-only scope panel — uses the same registry the picker reads
+ *  from so labels stay in sync. Falls back to the raw id when the
+ *  registry hasn't loaded the descriptor yet. */
+function ScopeDisplay({ scopes }: { scopes: Record<string, string[]> }): React.ReactElement {
+  const { data: resources } = useUiResources();
+  const byId = React.useMemo(() => new Map(resources.map((r) => [r.id, r])), [resources]);
+  const entries = Object.entries(scopes);
+  if (entries.length === 0) {
+    return (
+      <div className="text-xs text-text-muted">
+        No scopes — agent can connect but cannot call any tool.
+      </div>
+    );
+  }
+  return (
+    <ul className="text-xs space-y-1.5">
+      {entries.map(([resource, actions]) => {
+        const meta = byId.get(resource);
+        return (
+          <li key={resource} className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-text-primary">{meta?.label ?? resource}</span>
+            <code className="font-mono text-[10px] text-text-muted">{resource}</code>
+            <div className="ml-auto flex items-center gap-1">
+              {actions.map((a) => (
+                <Badge key={a} intent={a === "delete" ? "danger" : a === "write" ? "warning" : "neutral"}>
+                  {a}
+                </Badge>
+              ))}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Stat({ label, value, muted }: { label: string; value: React.ReactNode; muted?: boolean }): React.ReactElement {
   return (
     <div className="rounded-md border border-border bg-surface-1 p-2">
@@ -1001,25 +1032,36 @@ function CreateAgentDialog({
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [riskCeiling, setRiskCeiling] = React.useState<Agent["riskCeiling"]>("safe-read");
-  const [scopesText, setScopesText] = React.useState('crm.contact: read\nsales.deal: read');
+  const [scopes, setScopes] = React.useState<ScopeMap>({});
   const [instructions, setInstructions] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [err, setErr] = React.useState<string | undefined>();
+
+  // Allowed actions follow the risk ceiling — `safe-read` should
+  // never be able to grant write/delete, even if the picker shows them.
+  const allowedActions = React.useMemo<ScopeAction[]>(() => {
+    if (riskCeiling === "safe-read") return ["read"];
+    return ["read", "write", "delete"];
+  }, [riskCeiling]);
+
+  // When ceiling tightens, prune scopes that are no longer permitted
+  // so the operator never silently submits an over-scoped agent.
+  React.useEffect(() => {
+    const allowed = new Set(allowedActions);
+    const pruned: ScopeMap = {};
+    let changed = false;
+    for (const [resource, actions] of Object.entries(scopes)) {
+      const kept = actions.filter((a) => allowed.has(a as ScopeAction)) as ScopeAction[];
+      if (kept.length !== actions.length) changed = true;
+      if (kept.length > 0) pruned[resource] = kept;
+    }
+    if (changed) setScopes(pruned);
+  }, [allowedActions, scopes]);
 
   const submit = async (): Promise<void> => {
     setSubmitting(true);
     setErr(undefined);
     try {
-      const scopes: Record<string, string[]> = {};
-      for (const line of scopesText.split(/\n+/)) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
-        const m = /^(\S+):\s*(.+)$/.exec(trimmed);
-        if (!m) continue;
-        const resource = m[1]!;
-        const actions = m[2]!.split(",").map((s) => s.trim()).filter(Boolean) as Array<"read" | "write" | "delete">;
-        if (actions.length > 0) scopes[resource] = actions;
-      }
       await api("/mcp/admin/agents", {
         method: "POST",
         body: JSON.stringify({
@@ -1046,7 +1088,7 @@ function CreateAgentDialog({
       onClick={onClose}
     >
       <div
-        className="bg-surface-0 rounded-lg border border-border shadow-2xl w-full max-w-md p-4 space-y-3"
+        className="bg-surface-0 rounded-lg border border-border shadow-2xl w-full max-w-2xl p-4 space-y-3"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-base font-semibold">New MCP agent</div>
@@ -1071,8 +1113,12 @@ function CreateAgentDialog({
           </select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Scopes (one per line: `resource: read, write, delete`)</Label>
-          <Textarea value={scopesText} onChange={(e) => setScopesText(e.target.value)} rows={4} className="font-mono text-xs" />
+          <Label className="text-xs">Scopes</Label>
+          <ResourceScopePicker
+            value={scopes}
+            onChange={setScopes}
+            allowedActions={allowedActions}
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Instructions (returned on initialize)</Label>
