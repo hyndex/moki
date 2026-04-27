@@ -11,6 +11,11 @@ import {
   SelectValue,
 } from "@/primitives/Select";
 import type { FieldDescriptor } from "@/contracts/fields";
+import { getFieldKindRenderer } from "./fieldKindRegistry";
+// Side-effect import: registers the built-in advanced field kinds
+// (image, file, geo, color, tags, …) into the registry. Tree-shakable —
+// pages that never reach FieldInput pay nothing for it.
+import "./field-kinds/registerAll";
 
 export interface FieldInputProps {
   field: FieldDescriptor;
@@ -32,6 +37,26 @@ export function FieldInput({
   const readOnly = disabled || field.readonly;
   if (field.render) {
     return <>{field.render({ value, record, onChange, invalid, disabled: readOnly })}</>;
+  }
+
+  // Field-kind registry takes precedence — new advanced kinds (image,
+  // geo, video, …) ship as registered renderers, NOT as new switch
+  // cases. The legacy switch below is kept verbatim for built-in kinds
+  // so existing pages stay byte-identical.
+  const registered = getFieldKindRenderer(field.kind);
+  if (registered?.Form) {
+    const Form = registered.Form;
+    return (
+      <Form
+        field={field}
+        value={value}
+        onChange={onChange}
+        record={record}
+        invalid={invalid}
+        disabled={readOnly}
+        readOnly={readOnly}
+      />
+    );
   }
 
   switch (field.kind) {

@@ -20,7 +20,20 @@ export type FieldKind =
   | "dynamic-link"
   | "table"
   | "json"
-  | "custom";
+  | "custom"
+  /* ---- advanced kinds — backed by the field-kind registry ---- */
+  | "tags"
+  | "file"
+  | "image"
+  | "video"
+  | "audio"
+  | "geo.point"
+  | "geo.polygon"
+  | "color"
+  | "markdown"
+  | "code"
+  | "duration"
+  | "sparkline";
 
 export interface EnumOption {
   readonly value: string;
