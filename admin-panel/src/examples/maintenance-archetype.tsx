@@ -164,7 +164,7 @@ export function MaintenanceArchetypeCalendar() {
           <Button variant="outline" size="sm" onClick={() => goWeek(1)} aria-label="Next week">
             <ChevronRight className="h-4 w-4" aria-hidden />
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/maintenance/work-orders/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New WO
           </Button>
         </>

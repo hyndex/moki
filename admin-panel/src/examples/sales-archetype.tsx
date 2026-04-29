@@ -164,7 +164,7 @@ export function SalesArchetypePipeline() {
       subtitle="Stage-driven deal flow with aging and totals"
       actions={
         <>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/sales/deals/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New deal
           </Button>
         </>

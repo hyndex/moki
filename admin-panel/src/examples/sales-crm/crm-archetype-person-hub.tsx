@@ -19,7 +19,7 @@ import {
   useUrlState,
   useRecordLinks,
 } from "@/admin-archetypes";
-import { useRecord } from "@/runtime/hooks";
+import { useRecord, useList } from "@/runtime/hooks";
 
 interface PersonHub {
   id: string;
@@ -88,7 +88,14 @@ function liveOrSample(rec: Record<string, unknown> | null | undefined, fallback:
 export function CrmArchetypePersonHub() {
   const [params, setParams] = useUrlState(["tab", "id"] as const);
   const tab = params.tab ?? "overview";
-  const id = params.id ?? "p-ada";
+  // When no id is specified in the URL, prefer the first real contact
+  // from the records table over a hardcoded "p-ada" demo id (which
+  // 404s when the seed doesn't include it). Empty list falls back to
+  // the literal "p-ada" sentinel; useRecord then yields its sample
+  // data via the liveOrSample fallback below.
+  const list = useList("crm.contact", { pageSize: 1 });
+  const firstId = list.data?.rows?.[0]?.id ? String(list.data.rows[0].id) : null;
+  const id = params.id ?? firstId ?? "p-ada";
   // Real backend read for the focused entity. Falls back to sample
   // when the id isn't found (e.g., demo path).
   const live = useRecord("crm.contact", id);
@@ -134,19 +141,48 @@ export function CrmArchetypePersonHub() {
       badge={p && <Badge intent={STAGE_TONE[p.stage]}>{p.stage}</Badge>}
       actions={
         <>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (p?.email) window.location.href = `mailto:${p.email}`;
+            }}
+            disabled={!p?.email}
+          >
             <MailPlus className="h-4 w-4 mr-1" aria-hidden /> Email
           </Button>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (p?.phone) window.location.href = `tel:${p.phone}`;
+            }}
+            disabled={!p?.phone}
+          >
             <Phone className="h-4 w-4 mr-1" aria-hidden /> Call
           </Button>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (live.data) {
+                window.location.hash = `#/crm/appointments/new?contactId=${encodeURIComponent(String(live.data.id))}`;
+              }
+            }}
+          >
             <CalendarPlus className="h-4 w-4 mr-1" aria-hidden /> Schedule
           </Button>
-          <Button size="sm">
+          <Button
+            size="sm"
+            onClick={() => {
+              if (live.data) {
+                window.location.hash = `#/contacts/${encodeURIComponent(String(live.data.id))}/edit`;
+              }
+            }}
+          >
             <Edit3 className="h-4 w-4 mr-1" aria-hidden /> Edit
           </Button>
-          <Button size="sm" variant="ghost" aria-label="More">
+          <Button size="sm" variant="ghost" aria-label="More" disabled>
             <MoreHorizontal className="h-4 w-4" aria-hidden />
           </Button>
         </>

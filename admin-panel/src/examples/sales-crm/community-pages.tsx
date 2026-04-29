@@ -50,6 +50,14 @@ function FeedPage() {
   const [space, setSpace] = React.useState("all");
   const [draft, setDraft] = React.useState("");
   const [local, setLocal] = React.useState<CommunityPost[]>([]);
+  // Inline composer ref so the header "New post" button focuses the
+  // textarea below instead of being a no-op (the inline composer IS
+  // the new-post UI on this page; the header button just acts as an
+  // affordance that scrolls + focuses it). Declared BEFORE the
+  // early-return so the hook order is stable across the loading→loaded
+  // transition; previously useRef sat below the early-return and React
+  // logged a Rules-of-Hooks violation.
+  const composerRef = React.useRef<HTMLTextAreaElement>(null);
 
   if (loading && POSTS.length === 0) return <LoadingShell />;
 
@@ -85,12 +93,6 @@ function FeedPage() {
     ]);
     setDraft("");
   };
-
-  // Inline composer ref so the header "New post" button focuses the
-  // textarea below instead of being a no-op (the inline composer IS
-  // the new-post UI on this page; the header button just acts as an
-  // affordance that scrolls + focuses it).
-  const composerRef = React.useRef<HTMLTextAreaElement>(null);
 
   return (
     <Stack>

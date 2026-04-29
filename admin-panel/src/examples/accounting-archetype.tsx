@@ -269,10 +269,28 @@ export function AccountingArchetypeDashboard() {
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="h-4 w-4 mr-1" aria-hidden /> Refresh
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const rows = [
+                { period, refreshedAt: new Date().toISOString() },
+              ];
+              const csv = ["period,refreshedAt", `${period},${rows[0].refreshedAt}`].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `accounting-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+          >
             <Download className="h-4 w-4 mr-1" aria-hidden /> Export
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/accounting/journal-entries/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New journal
           </Button>
         </>

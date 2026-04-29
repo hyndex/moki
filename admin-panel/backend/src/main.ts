@@ -164,6 +164,7 @@ import { db } from "./db";
 async function resolveWsSession(req: Request): Promise<{
   userId: string;
   tenantId: string;
+  userRole: string | null;
 } | null> {
   const url = new URL(req.url);
   let token: string | null = null;
@@ -180,8 +181,12 @@ async function resolveWsSession(req: Request): Promise<{
     user_id: string;
     tenant_id: string | null;
     expires_at: string;
+    role: string | null;
   }>(
-    `SELECT user_id, tenant_id, expires_at FROM ${prefix}sessions WHERE token = ?`,
+    `SELECT s.user_id, s.tenant_id, s.expires_at, u.role
+       FROM ${prefix}sessions s
+       JOIN ${prefix}users u ON u.id = s.user_id
+      WHERE s.token = ?`,
     [token],
   );
   if (!row) return null;
@@ -195,7 +200,7 @@ async function resolveWsSession(req: Request): Promise<{
     pathname: url.pathname,
     sessionTenantId: row.tenant_id,
   });
-  return { userId: row.user_id, tenantId: tenant.id };
+  return { userId: row.user_id, tenantId: tenant.id, userRole: row.role };
 }
 
 /** Match `/api/yjs/<resource>/<recordId>` for the editor sync upgrade. */
@@ -234,6 +239,7 @@ async function resolveYjsSession(req: Request): Promise<
     recordId,
     userId: session.userId,
     tenantId: session.tenantId,
+    globalRole: session.userRole,
   });
   if (!role) return { ok: false, status: 403, body: "forbidden" };
 

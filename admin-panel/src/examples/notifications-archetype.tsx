@@ -144,7 +144,15 @@ export function NotificationsArchetypeInbox() {
       title="Inbox"
       subtitle={`${all.filter(n => n.unread).length} unread`}
       actions={
-        <Button size="sm">
+        <Button
+          size="sm"
+          onClick={() => {
+            // Mock-state mutation: flip every notification's unread flag.
+            // Real implementation would POST /api/notifications/mark-all-read.
+            for (const n of all) n.unread = false;
+            data.refetch();
+          }}
+        >
           <Check className="h-4 w-4 mr-1" aria-hidden /> Mark all read
         </Button>
       }
@@ -223,10 +231,31 @@ export function NotificationsArchetypeInbox() {
               >
                 <ArrowRight className="h-4 w-4 mr-1" aria-hidden /> Open record
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (!selected) return;
+                  // Mock snooze: hide for 1 hour by setting a future
+                  // remindAt and marking as read so it leaves the inbox.
+                  selected.unread = false;
+                  (selected as { remindAt?: string }).remindAt = new Date(Date.now() + 3600_000).toISOString();
+                  data.refetch();
+                }}
+              >
                 <Clock className="h-4 w-4 mr-1" aria-hidden /> Snooze
               </Button>
-              <Button size="sm" variant="ghost">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (!selected) return;
+                  const idx = all.findIndex((n) => n.id === selected.id);
+                  if (idx >= 0) all.splice(idx, 1);
+                  setParams({ sel: undefined }, true);
+                  data.refetch();
+                }}
+              >
                 Dismiss
               </Button>
             </div>

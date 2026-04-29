@@ -24,6 +24,10 @@ export interface FieldInputProps {
   record: Record<string, unknown>;
   invalid?: boolean;
   disabled?: boolean;
+  /** DOM id for the underlying control. Required for `<label htmlFor>`
+   *  pairing — FormView passes a deterministic id derived from the form
+   *  + field name. */
+  id?: string;
 }
 
 export function FieldInput({
@@ -33,8 +37,11 @@ export function FieldInput({
   record,
   invalid,
   disabled,
+  id,
 }: FieldInputProps) {
   const readOnly = disabled || field.readonly;
+  const required = !!field.required;
+  const ariaInvalid = invalid ? true : undefined;
   if (field.render) {
     return <>{field.render({ value, record, onChange, invalid, disabled: readOnly })}</>;
   }
@@ -63,6 +70,10 @@ export function FieldInput({
     case "textarea":
       return (
         <Textarea
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
@@ -74,6 +85,10 @@ export function FieldInput({
     case "currency":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="number"
           value={value == null ? "" : String(value)}
           onChange={(e) =>
@@ -87,6 +102,10 @@ export function FieldInput({
     case "email":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="email"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
@@ -98,6 +117,10 @@ export function FieldInput({
     case "url":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="url"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
@@ -109,6 +132,10 @@ export function FieldInput({
     case "phone":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="tel"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
@@ -120,6 +147,10 @@ export function FieldInput({
     case "date":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="date"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
@@ -130,6 +161,10 @@ export function FieldInput({
     case "datetime":
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="datetime-local"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
@@ -141,9 +176,11 @@ export function FieldInput({
       return (
         <div className="flex items-center gap-2 h-field-h">
           <Switch
+            id={id}
             checked={!!value}
             onCheckedChange={(v) => onChange(v)}
             disabled={readOnly}
+            aria-invalid={ariaInvalid}
           />
           <span className="text-sm text-text-secondary">
             {value ? "Enabled" : "Disabled"}
@@ -157,7 +194,7 @@ export function FieldInput({
           onValueChange={(v) => onChange(v)}
           disabled={readOnly}
         >
-          <SelectTrigger invalid={invalid}>
+          <SelectTrigger id={id} aria-invalid={ariaInvalid} invalid={invalid}>
             <SelectValue placeholder={field.placeholder ?? "Select…"} />
           </SelectTrigger>
           <SelectContent>
@@ -198,6 +235,10 @@ export function FieldInput({
     case "json":
       return (
         <Textarea
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           rows={6}
           className="font-mono text-xs"
           value={
@@ -216,6 +257,10 @@ export function FieldInput({
     default:
       return (
         <Input
+          id={id}
+          name={field.name}
+          required={required}
+          aria-invalid={ariaInvalid}
           type="text"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}

@@ -300,14 +300,22 @@ function NavLink({ hash, icon: Icon, label }: { hash: string; icon: LucideIcon; 
 
 function ConnectAccountEmpty(): React.ReactElement {
   return (
-    <div className="grid h-full place-items-center p-6">
-      <div className="max-w-md space-y-3 rounded-lg border border-border bg-surface-0 p-6 text-center">
-        <h2 className="text-lg font-semibold">Connect a mailbox</h2>
-        <p className="text-sm text-text-secondary">Sign in with Google or Microsoft, or add an IMAP/SMTP account, to start using Gutu Mail.</p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button onClick={() => connect("google")}>Connect Google</Button>
-          <Button variant="secondary" onClick={() => connect("microsoft")}>Connect Microsoft</Button>
-          <Button variant="ghost" onClick={() => { window.location.hash = "/settings/mail/connections"; }}>Use IMAP / SMTP</Button>
+    <div className="flex h-full flex-col">
+      <header className="px-6 pt-6 pb-3 border-b border-border">
+        <h1 className="text-xl font-semibold text-text-primary">Mail</h1>
+        <p className="text-sm text-text-muted mt-0.5">
+          Connect a mailbox to start sending and receiving messages.
+        </p>
+      </header>
+      <div className="grid flex-1 place-items-center p-6">
+        <div className="max-w-md space-y-3 rounded-lg border border-border bg-surface-0 p-6 text-center">
+          <h2 className="text-lg font-semibold">Connect a mailbox</h2>
+          <p className="text-sm text-text-secondary">Sign in with Google or Microsoft, or add an IMAP/SMTP account, to start using Gutu Mail.</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button onClick={() => connect("google")}>Connect Google</Button>
+            <Button variant="secondary" onClick={() => connect("microsoft")}>Connect Microsoft</Button>
+            <Button variant="ghost" onClick={() => { window.location.hash = "/settings/mail/connections"; }}>Use IMAP / SMTP</Button>
+          </div>
         </div>
       </div>
     </div>

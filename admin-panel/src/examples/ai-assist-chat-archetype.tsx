@@ -145,11 +145,11 @@ export function AiAssistChatArchetype() {
       density="comfortable"
       topBar={
         <>
-          <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+          <h1 className="flex items-center gap-2 text-sm font-semibold text-text-primary m-0">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden />
             Assistant
             <span className="text-text-muted font-normal">· scoped to your workspace</span>
-          </div>
+          </h1>
           <div className="flex items-center gap-1.5">
             <Button size="sm" variant="ghost" aria-label="Search">
               <Search className="h-4 w-4" aria-hidden />
@@ -157,7 +157,7 @@ export function AiAssistChatArchetype() {
             <Button size="sm" variant="ghost" aria-label="Settings">
               <Settings className="h-4 w-4" aria-hidden />
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => { window.location.hash = "#/ai/assist/threads/new"; }}>
               <Plus className="h-4 w-4 mr-1" aria-hidden /> New chat
             </Button>
           </div>

@@ -67,7 +67,13 @@ function IntegrationStatusPage() {
                       {r.latencyMs}ms
                     </span>
                   )}
-                  <Button size="sm" variant="ghost">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      window.location.hash = `#/integrations/connections/${encodeURIComponent(r.connector)}`;
+                    }}
+                  >
                     Test
                   </Button>
                 </li>

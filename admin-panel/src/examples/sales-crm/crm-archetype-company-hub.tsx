@@ -110,16 +110,41 @@ export function CrmArchetypeCompanyHub() {
       badge={co && <Badge intent="success">{co.tier}</Badge>}
       actions={
         <>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const primary = (contacts.data ?? []).find(
+                (c) => c.company === co?.name,
+              ) as { email?: string } | undefined;
+              if (primary?.email) window.location.href = `mailto:${primary.email}`;
+            }}
+            disabled={!co}
+          >
             <MailPlus className="h-4 w-4 mr-1" aria-hidden /> Email
           </Button>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const primary = (contacts.data ?? []).find(
+                (c) => c.company === co?.name,
+              ) as { phone?: string } | undefined;
+              if (primary?.phone) window.location.href = `tel:${primary.phone}`;
+            }}
+            disabled={!co}
+          >
             <Phone className="h-4 w-4 mr-1" aria-hidden /> Call
           </Button>
-          <Button size="sm">
+          <Button
+            size="sm"
+            onClick={() => {
+              if (id) window.location.hash = `#/contacts/${encodeURIComponent(id)}/edit`;
+            }}
+          >
             <Edit3 className="h-4 w-4 mr-1" aria-hidden /> Edit
           </Button>
-          <Button size="sm" variant="ghost" aria-label="More">
+          <Button size="sm" variant="ghost" aria-label="More" disabled>
             <MoreHorizontal className="h-4 w-4" aria-hidden />
           </Button>
         </>

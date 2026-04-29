@@ -52,6 +52,7 @@ import { Button } from "@/primitives/Button";
 import { Input } from "@/primitives/Input";
 import { Textarea } from "@/primitives/Textarea";
 import { Checkbox } from "@/primitives/Checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/primitives/Popover";
 import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { cn } from "@/lib/cn";
 import { formatCurrency, formatRelative } from "@/lib/format";
@@ -124,7 +125,44 @@ function CrmOverviewPage() {
           description="How your pipeline is moving this week."
           actions={
             <>
-              <Button variant="ghost" size="sm" iconLeft={<Download className="h-3.5 w-3.5" />}>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconLeft={<Download className="h-3.5 w-3.5" />}
+                onClick={() => {
+                  const rows = CONTACTS.map((c) => ({
+                    name: c.name,
+                    email: c.email,
+                    company: c.company,
+                    stage: c.stage,
+                    vip: c.vip ? "yes" : "no",
+                    lifetimeValue: c.lifetimeValue ?? 0,
+                    lastActivityAt: c.lastActivityAt,
+                  }));
+                  if (rows.length === 0) return;
+                  const headers = Object.keys(rows[0]);
+                  const csv = [
+                    headers.join(","),
+                    ...rows.map((r) =>
+                      headers
+                        .map((h) => {
+                          const v = String((r as Record<string, unknown>)[h] ?? "");
+                          return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+                        })
+                        .join(","),
+                    ),
+                  ].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `crm-overview-${new Date().toISOString().slice(0, 10)}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
                 Export
               </Button>
               <Button
@@ -336,11 +374,86 @@ export const crmContactsView = defineCustomView({
 
 function ContactsList() {
   const { data: CONTACTS, loading } = useContacts();
+  const runtime = useRuntime();
   const [filter, setFilter] = React.useState("all");
   const [search, setSearch] = React.useState("");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [selectedCompanies, setSelectedCompanies] = React.useState<Set<string>>(() => new Set());
+  const companyOptions = React.useMemo(
+    () => Array.from(new Set(CONTACTS.map((c) => c.company).filter(Boolean))).sort(),
+    [CONTACTS],
+  );
 
   if (loading && CONTACTS.length === 0) return <LoadingShell />;
+
+  const selectedContacts = () => CONTACTS.filter((c) => selected.has(c.id));
+  const onBulkEmail = () => {
+    const targets = selectedContacts()
+      .map((c) => c.email)
+      .filter((e) => /@/.test(e ?? ""));
+    if (targets.length === 0) {
+      runtime.actions.toast({ title: "No email addresses on selected contacts", intent: "warning" });
+      return;
+    }
+    window.location.href = `mailto:${targets.join(",")}`;
+  };
+  const onBulkTag = async () => {
+    const tag = window.prompt("Tag to add to selected contacts:");
+    if (!tag || !tag.trim()) return;
+    let updated = 0;
+    for (const c of selectedContacts()) {
+      try {
+        await runtime.actions.update("crm.contact", c.id, { tag: tag.trim() });
+        updated++;
+      } catch { /* ignore single-row failures */ }
+    }
+    runtime.actions.toast({ title: `Tagged ${updated} contact${updated === 1 ? "" : "s"}`, intent: "success" });
+  };
+  const onBulkMarkVip = async () => {
+    let updated = 0;
+    for (const c of selectedContacts()) {
+      try {
+        await runtime.actions.update("crm.contact", c.id, { vip: true });
+        updated++;
+      } catch { /* ignore */ }
+    }
+    runtime.actions.toast({ title: `Marked ${updated} contact${updated === 1 ? "" : "s"} VIP`, intent: "success" });
+  };
+  const onExport = () => {
+    const rows = filtered.map((c) => ({
+      name: c.name,
+      email: c.email,
+      company: c.company,
+      vip: c.vip ? "yes" : "no",
+      lastActivityAt: c.lastActivityAt,
+    }));
+    if (rows.length === 0) {
+      runtime.actions.toast({ title: "Nothing to export", intent: "warning" });
+      return;
+    }
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) =>
+        headers
+          .map((h) => {
+            const v = String((r as Record<string, unknown>)[h] ?? "");
+            return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    runtime.actions.toast({ title: `Exported ${rows.length} contact${rows.length === 1 ? "" : "s"}`, intent: "success" });
+  };
 
   const filters = [
     { id: "all", label: "All", count: CONTACTS.length },
@@ -375,6 +488,7 @@ function ContactsList() {
         (Date.now() - new Date(c.createdAt).getTime()) / 86400_000;
       if (days > 14) return false;
     }
+    if (selectedCompanies.size > 0 && !selectedCompanies.has(c.company)) return false;
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -401,7 +515,12 @@ function ContactsList() {
         description={`${filtered.length} of ${CONTACTS.length} contacts`}
         actions={
           <>
-            <Button variant="ghost" size="sm" iconLeft={<Download className="h-3.5 w-3.5" />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconLeft={<Download className="h-3.5 w-3.5" />}
+              onClick={onExport}
+            >
               Export
             </Button>
             <Button
@@ -426,9 +545,53 @@ function ContactsList() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="ghost" size="sm" iconLeft={<Filter className="h-3.5 w-3.5" />}>
-          Filters
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={selectedCompanies.size > 0 ? "secondary" : "ghost"}
+              size="sm"
+              iconLeft={<Filter className="h-3.5 w-3.5" />}
+            >
+              Filters{selectedCompanies.size > 0 ? ` · ${selectedCompanies.size}` : ""}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-3">
+            <Stack gap="gap-2">
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Company</span>
+              <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5">
+                {companyOptions.length === 0 ? (
+                  <span className="text-xs text-text-muted">No companies recorded.</span>
+                ) : (
+                  companyOptions.map((co) => {
+                    const id = `contacts-co-${co.replace(/\s+/g, "-")}`;
+                    return (
+                      <label key={co} htmlFor={id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          id={id}
+                          checked={selectedCompanies.has(co)}
+                          onCheckedChange={(v) =>
+                            setSelectedCompanies((prev) => {
+                              const next = new Set(prev);
+                              if (v) next.add(co);
+                              else next.delete(co);
+                              return next;
+                            })
+                          }
+                        />
+                        <span>{co}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              {selectedCompanies.size > 0 ? (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedCompanies(new Set())}>
+                  Clear filters
+                </Button>
+              ) : null}
+            </Stack>
+          </PopoverContent>
+        </Popover>
       </Inline>
 
       {selected.size > 0 && (
@@ -437,13 +600,28 @@ function ContactsList() {
             {selected.size} selected
           </span>
           <span className="flex-1" />
-          <Button size="sm" variant="secondary" iconLeft={<Mail className="h-3.5 w-3.5" />}>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<Mail className="h-3.5 w-3.5" />}
+            onClick={onBulkEmail}
+          >
             Email
           </Button>
-          <Button size="sm" variant="secondary" iconLeft={<Tag className="h-3.5 w-3.5" />}>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<Tag className="h-3.5 w-3.5" />}
+            onClick={onBulkTag}
+          >
             Tag
           </Button>
-          <Button size="sm" variant="secondary" iconLeft={<Star className="h-3.5 w-3.5" />}>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<Star className="h-3.5 w-3.5" />}
+            onClick={onBulkMarkVip}
+          >
             Mark VIP
           </Button>
           <Button
@@ -600,7 +778,12 @@ function CrmPipelinePage() {
           title="Contact pipeline"
           description="Every contact's stage + LTV."
           actions={
-            <Button variant="secondary" size="sm" iconLeft={<Filter className="h-3.5 w-3.5" />}>
+            <Button
+              variant="secondary"
+              size="sm"
+              iconLeft={<Filter className="h-3.5 w-3.5" />}
+              onClick={() => navigateTo("/contacts")}
+            >
               Filters
             </Button>
           }

@@ -326,6 +326,11 @@ function SectionFields({
           ov.options && Array.isArray(ov.options)
             ? (ov.options as Array<{ value: string; label: string; color?: string }>)
             : undefined;
+        // Deterministic dom id pairs <Label htmlFor> with the rendered
+        // input. Required for screen-reader label association and for
+        // browser autofill heuristics. Stable across renders so React
+        // doesn't churn `for`/`id` on every keystroke.
+        const fieldId = `field-${section.id}-${f.name}`;
         return (
           <div
             key={f.name}
@@ -336,6 +341,7 @@ function SectionFields({
             )}
           >
             <FormField
+              id={fieldId}
               label={effectiveLabel}
               required={required}
               help={helpText}
@@ -344,6 +350,7 @@ function SectionFields({
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <FieldInput
+                    id={fieldId}
                     field={{
                       ...f,
                       label: effectiveLabel,

@@ -42,7 +42,8 @@ auditRoutes.get("/", (c) => {
   const rows = db
     .prepare(
       `SELECT id, actor, action, resource, record_id as recordId, level, ip,
-              occurred_at as occurredAt, payload
+              occurred_at as occurredAt, payload,
+              prev_hash as prevHash, hash
          FROM audit_events
          ${whereSql}
          ORDER BY occurred_at DESC

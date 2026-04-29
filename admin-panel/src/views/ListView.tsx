@@ -291,6 +291,16 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
     view.actions?.filter((a) => a.placement?.includes("bulk")) ?? [];
   const pageActions =
     view.actions?.filter((a) => a.placement?.includes("page")) ?? [];
+  // Resources without an explicit "create" page action still need a
+  // visible "New" affordance in the toolbar — otherwise users hitting
+  // the populated list see no way to add a record. The empty-state
+  // already has this button at the bottom of the page; we mirror it
+  // into the page header for parity.
+  const hasExplicitCreateAction = pageActions.some(
+    (a) => a.id === "create" || /^new\b/i.test(a.label ?? ""),
+  );
+  const showImplicitNewButton =
+    !hasExplicitCreateAction && !(view as { readOnly?: boolean }).readOnly;
 
   /* ---------------- tanstack columns ---------------- */
   const columns = React.useMemo(() => {
@@ -303,7 +313,11 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
       .filter(Boolean);
 
     const cols: ColumnDef<Record<string, unknown>, unknown>[] = [];
-    if (bulkActions.length > 0) cols.push(selectionColumn());
+    // Always surface the selection column for writable views — even
+    // without explicit bulk actions, the implicit "Delete selected"
+    // bulk action below needs the master + per-row checkboxes to be
+    // present in the table header.
+    if (bulkActions.length > 0 || showImplicitNewButton) cols.push(selectionColumn());
 
     for (const c of ordered) {
       cols.push({
@@ -420,6 +434,16 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
                 runtime={runtime}
               />
             ))}
+            {showImplicitNewButton && (
+              <Button
+                variant="primary"
+                size="sm"
+                iconLeft={<Plus className="h-3.5 w-3.5" />}
+                onClick={() => navigateTo(`${basePath}/new`)}
+              >
+                New
+              </Button>
+            )}
           </>
         }
       />
@@ -483,7 +507,7 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
           filterValues={filters}
           onFilterChange={setFilters}
           trailing={
-            selection.size > 0 && bulkActions.length > 0 ? (
+            selection.size > 0 ? (
               <>
                 <span className="text-sm text-text-muted">
                   {selection.size} selected
@@ -498,6 +522,37 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
                     runtime={runtime}
                   />
                 ))}
+                {showImplicitNewButton && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={async () => {
+                      const ok = await runtime.actions.confirm({
+                        title: `Delete ${selection.size} record${selection.size === 1 ? "" : "s"}?`,
+                        description: "Soft-delete — restorable from the Show deleted filter.",
+                        destructive: true,
+                      });
+                      if (!ok) return;
+                      let deleted = 0;
+                      for (const id of selection) {
+                        try {
+                          await runtime.actions.delete(view.resource, id);
+                          deleted++;
+                        } catch {
+                          /* ignore single-row failures */
+                        }
+                      }
+                      setSelection(new Set());
+                      runtime.actions.refresh(view.resource);
+                      runtime.actions.toast({
+                        title: `Deleted ${deleted} record${deleted === 1 ? "" : "s"}`,
+                        intent: "success",
+                      });
+                    }}
+                  >
+                    Delete selected
+                  </Button>
+                )}
               </>
             ) : null
           }
@@ -549,6 +604,7 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
           size="sm"
           onClick={() => setShowDeleted(!showDeleted)}
           title={showDeleted ? "Hide deleted" : "Show deleted records"}
+          aria-pressed={showDeleted}
         >
           {showDeleted ? "Hide deleted" : "Show deleted"}
         </Button>

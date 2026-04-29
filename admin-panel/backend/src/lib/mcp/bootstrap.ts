@@ -20,6 +20,18 @@ import { listTools, registerResourceTools, _resetToolRegistry_forTest } from "./
 let lastBootstrapMs = 0;
 const STALE_AFTER_MS = 60_000;
 
+/** Plugin namespace convention — `<plugin>.<entity>` in lowercase
+ *  with optional hyphens. Anything that doesn't match this pattern
+ *  cannot be plugin-owned (a stray "totallymadeup" or "fake.unknown"
+ *  shaped row in `records` is treated as garbage and not promoted to
+ *  a tool). Tightens the auto-discovery surface — explicit registry
+ *  registrations bypass this check. */
+const RESOURCE_ID_RE = /^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
+
+export function isValidResourceId(id: string): boolean {
+  return RESOURCE_ID_RE.test(id);
+}
+
 export function bootstrapMcpTools(force = false): void {
   if (!force && Date.now() - lastBootstrapMs < STALE_AFTER_MS) return;
   const rows = db.prepare(`SELECT DISTINCT resource FROM records ORDER BY resource`).all() as { resource: string }[];
@@ -28,12 +40,15 @@ export function bootstrapMcpTools(force = false): void {
     if (t.resource) known.add(t.resource);
   }
   for (const row of rows) {
-    if (!known.has(row.resource)) {
-      try {
-        registerResourceTools(row.resource);
-      } catch {
-        // already registered — defensive
-      }
+    if (known.has(row.resource)) continue;
+    // Reject obviously-bogus resource names that can't have come from a
+    // plugin. Without this, a single rogue POST seeds the registry
+    // permanently.
+    if (!isValidResourceId(row.resource)) continue;
+    try {
+      registerResourceTools(row.resource);
+    } catch {
+      // already registered — defensive
     }
   }
   lastBootstrapMs = Date.now();

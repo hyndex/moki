@@ -178,7 +178,7 @@ export function InventoryArchetypeDashboard() {
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="h-4 w-4 mr-1" aria-hidden /> Refresh
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/inventory/items/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New SKU
           </Button>
         </>
@@ -387,7 +387,7 @@ export function InventoryArchetypeList() {
       title="Items"
       subtitle="Active and tracked SKUs"
       actions={
-        <Button size="sm">
+        <Button size="sm" onClick={() => { window.location.hash = "#/inventory/items/new"; }}>
           <Plus className="h-4 w-4 mr-1" aria-hidden /> New SKU
         </Button>
       }

@@ -886,19 +886,29 @@ function AgentDetailPanel({ agent, onClose }: { agent: Agent; onClose: () => voi
   }, [agent.id]);
   // Escape key dismisses the panel — standard dialog UX. Backdrop
   // click + the explicit Close button already work; Esc closes the
-  // accessibility loop.
+  // accessibility loop. Body scroll lock + initial close-button focus
+  // round out the dialog a11y promises.
+  const titleId = React.useId();
+  const closeBtnRef = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeBtnRef.current?.focus();
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = prev;
+    };
   }, [onClose]);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center md:items-center md:justify-end p-4"
       onClick={onClose}
     >
@@ -908,10 +918,10 @@ function AgentDetailPanel({ agent, onClose }: { agent: Agent; onClose: () => voi
       >
         <header className="sticky top-0 bg-surface-0 px-4 py-3 border-b border-border flex items-center justify-between">
           <div>
-            <div className="text-base font-semibold">{agent.name}</div>
+            <div id={titleId} className="text-base font-semibold">{agent.name}</div>
             <div className="text-xs text-text-muted">{agent.id}</div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+          <Button ref={closeBtnRef} variant="ghost" size="sm" onClick={onClose}>Close</Button>
         </header>
         <div className="p-4 space-y-4">
           {stats && (
@@ -1100,10 +1110,24 @@ function CreateAgentDialog({
     }
   };
 
+  // Body scroll lock + initial focus on first input — accessibility
+  // parity with Radix Dialog primitives. Without these the page
+  // scrolls behind the open modal and the focus ring stays on body.
+  const titleId = React.useId();
+  const firstInputRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    firstInputRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
   return (
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
       onClick={onClose}
     >
@@ -1111,10 +1135,16 @@ function CreateAgentDialog({
         className="bg-surface-0 rounded-lg border border-border shadow-2xl w-full max-w-2xl p-4 space-y-3"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-base font-semibold">New MCP agent</div>
+        <div id={titleId} className="text-base font-semibold">New MCP agent</div>
         <div className="space-y-2">
-          <Label className="text-xs">Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Reporting bot" />
+          <Label className="text-xs" htmlFor="mcp-agent-name">Name</Label>
+          <Input
+            ref={firstInputRef}
+            id="mcp-agent-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Reporting bot"
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Description</Label>

@@ -122,7 +122,7 @@ export function AiAssistArchetypeDashboard() {
           <Button variant="outline" size="sm" onClick={() => data.refetch()}>
             <RefreshCw className="h-4 w-4 mr-1" aria-hidden /> Refresh
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/ai/skills/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New skill
           </Button>
         </>

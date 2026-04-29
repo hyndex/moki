@@ -375,7 +375,7 @@ export default function CrmArchetypeDashboard() {
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="h-4 w-4 mr-1" aria-hidden /> Refresh
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/sales/deals/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New deal
           </Button>
         </>

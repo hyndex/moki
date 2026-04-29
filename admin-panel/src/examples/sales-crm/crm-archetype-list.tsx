@@ -186,7 +186,7 @@ export default function CrmArchetypeList() {
       actions={
         <>
           <PeriodSelector value={period} onChange={(p) => setParams({ period: p })} />
-          <Button size="sm">
+          <Button size="sm" onClick={() => { window.location.hash = "#/contacts/new"; }}>
             <Plus className="h-4 w-4 mr-1" aria-hidden /> New person
           </Button>
         </>

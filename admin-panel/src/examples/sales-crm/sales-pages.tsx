@@ -26,6 +26,8 @@ import { StatCard } from "@/admin-primitives/StatCard";
 import { PropertyList } from "@/admin-primitives/PropertyList";
 import { TabBar } from "@/admin-primitives/TabBar";
 import { QuickFilterBar } from "@/admin-primitives/QuickFilter";
+import { Popover, PopoverTrigger, PopoverContent } from "@/primitives/Popover";
+import { Checkbox } from "@/primitives/Checkbox";
 import { LiveDnDKanban } from "@/admin-primitives/LiveDnDKanban";
 import { Timeline } from "@/admin-primitives/Timeline";
 import { EmptyState } from "@/admin-primitives/EmptyState";
@@ -359,6 +361,13 @@ function DealsList() {
   const { data: DEALS, loading } = useDeals();
   const [tab, setTab] = React.useState("open");
   const [search, setSearch] = React.useState("");
+  // Owner-filter chip set drives the Filters popover. An empty set is
+  // "show all owners"; a non-empty set narrows to those owners only.
+  const [selectedOwners, setSelectedOwners] = React.useState<Set<string>>(() => new Set());
+  const ownerOptions = React.useMemo(
+    () => Array.from(new Set(DEALS.map((d) => d.owner).filter(Boolean))).sort(),
+    [DEALS],
+  );
 
   if (loading && DEALS.length === 0) return <LoadingShell />;
 
@@ -366,6 +375,7 @@ function DealsList() {
     if (tab === "open" && (d.stage === "won" || d.stage === "lost")) return false;
     if (tab === "won" && d.stage !== "won") return false;
     if (tab === "lost" && d.stage !== "lost") return false;
+    if (selectedOwners.size > 0 && !selectedOwners.has(d.owner)) return false;
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -411,9 +421,57 @@ function DealsList() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="ghost" size="sm" iconLeft={<Filter className="h-3.5 w-3.5" />}>
-          Filters
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={selectedOwners.size > 0 ? "secondary" : "ghost"}
+              size="sm"
+              iconLeft={<Filter className="h-3.5 w-3.5" />}
+            >
+              Filters{selectedOwners.size > 0 ? ` · ${selectedOwners.size}` : ""}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-3">
+            <Stack gap="gap-2">
+              <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Owner</span>
+              <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5">
+                {ownerOptions.length === 0 ? (
+                  <span className="text-xs text-text-muted">No owners assigned.</span>
+                ) : (
+                  ownerOptions.map((owner) => {
+                    const id = `deals-owner-${owner.replace(/\s+/g, "-")}`;
+                    return (
+                      <label key={owner} htmlFor={id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          id={id}
+                          checked={selectedOwners.has(owner)}
+                          onCheckedChange={(v) =>
+                            setSelectedOwners((prev) => {
+                              const next = new Set(prev);
+                              if (v) next.add(owner);
+                              else next.delete(owner);
+                              return next;
+                            })
+                          }
+                        />
+                        <span>{owner}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              {selectedOwners.size > 0 ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedOwners(new Set())}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+            </Stack>
+          </PopoverContent>
+        </Popover>
       </Inline>
 
       <Card>

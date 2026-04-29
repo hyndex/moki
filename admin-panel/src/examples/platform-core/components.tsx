@@ -33,6 +33,7 @@ import { Switch } from "@/primitives/Switch";
 import { Checkbox } from "@/primitives/Checkbox";
 import { cn } from "@/lib/cn";
 import { formatRelative } from "@/lib/format";
+import { useRuntime } from "@/runtime/context";
 import { Sparkline } from "@/admin-primitives/charts/Sparkline";
 import { useAllRecords, useList } from "@/runtime/hooks";
 import { useLiveAudit } from "@/runtime/audit";
@@ -369,30 +370,40 @@ function SettingRow({
 }
 
 function GeneralSettings() {
+  const runtime = useRuntime();
   return (
     <Card>
       <CardContent className="pt-4">
-        <SettingRow label="Workspace name">
-          <Input defaultValue="Gutu" className="w-64" />
-        </SettingRow>
-        <SettingRow label="Timezone">
-          <Input defaultValue="America/Los_Angeles" className="w-64" />
-        </SettingRow>
-        <SettingRow label="Default currency">
-          <Input defaultValue="USD" className="w-32" />
-        </SettingRow>
-        <SettingRow label="Locale">
-          <Input defaultValue="en-US" className="w-32" />
-        </SettingRow>
-        <div className="flex justify-end pt-3">
-          <Button variant="primary">Save changes</Button>
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            runtime.actions.toast({ title: "Workspace settings saved", intent: "success" });
+          }}
+        >
+          <SettingRow label="Workspace name">
+            <Input defaultValue="Gutu" className="w-64" />
+          </SettingRow>
+          <SettingRow label="Timezone">
+            <Input defaultValue="America/Los_Angeles" className="w-64" />
+          </SettingRow>
+          <SettingRow label="Default currency">
+            <Input defaultValue="USD" className="w-32" />
+          </SettingRow>
+          <SettingRow label="Locale">
+            <Input defaultValue="en-US" className="w-32" />
+          </SettingRow>
+          <div className="flex justify-end pt-3">
+            <Button variant="primary" type="submit">Save changes</Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );
 }
 
 function ProfileSettings() {
+  const runtime = useRuntime();
+  const fileRef = React.useRef<HTMLInputElement>(null);
   return (
     <Card>
       <CardContent className="pt-4">
@@ -404,30 +415,57 @@ function ProfileSettings() {
             <div className="text-sm font-medium text-text-primary">Chinmoy Bhuyan</div>
             <div className="text-xs text-text-muted">chinmoy@gutu.dev · Admin</div>
           </div>
-          <Button variant="secondary" size="sm" className="ml-auto">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                runtime.actions.toast({
+                  title: `Photo "${file.name}" ready to upload`,
+                  intent: "success",
+                });
+              }
+            }}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            className="ml-auto"
+            onClick={() => fileRef.current?.click()}
+          >
             Change photo
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-4 pb-3">
-          <FormField label="First name">
-            <Input defaultValue="Chinmoy" />
-          </FormField>
-          <FormField label="Last name">
-            <Input defaultValue="Bhuyan" />
-          </FormField>
-          <FormField label="Email" className="col-span-2">
-            <Input defaultValue="chinmoy@gutu.dev" type="email" />
-          </FormField>
-          <FormField label="Title">
-            <Input defaultValue="Founder" />
-          </FormField>
-          <FormField label="Timezone">
-            <Input defaultValue="America/Los_Angeles" />
-          </FormField>
-        </div>
-        <div className="flex justify-end pt-3">
-          <Button variant="primary">Save profile</Button>
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            runtime.actions.toast({ title: "Profile saved", intent: "success" });
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4 pb-3">
+            <FormField label="First name">
+              <Input defaultValue="Chinmoy" />
+            </FormField>
+            <FormField label="Last name">
+              <Input defaultValue="Bhuyan" />
+            </FormField>
+            <FormField label="Email" className="col-span-2">
+              <Input defaultValue="chinmoy@gutu.dev" type="email" />
+            </FormField>
+            <FormField label="Title">
+              <Input defaultValue="Founder" />
+            </FormField>
+            <FormField label="Timezone">
+              <Input defaultValue="America/Los_Angeles" />
+            </FormField>
+          </div>
+          <div className="flex justify-end pt-3">
+            <Button variant="primary" type="submit">Save profile</Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );
@@ -447,7 +485,11 @@ function TeamSettings() {
           <CardTitle>Members</CardTitle>
           <CardDescription>4 of 10 seats used on the Pro plan.</CardDescription>
         </div>
-        <Button size="sm" variant="primary">
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => { window.location.hash = "#/platform/tenants/members"; }}
+        >
           Invite member
         </Button>
       </CardHeader>
@@ -502,7 +544,12 @@ function BillingSettings() {
               <div className="text-2xl font-semibold text-text-primary mt-1">Pro</div>
               <div className="text-sm text-text-muted">$240 / month · next charge Feb 1</div>
             </div>
-            <Button variant="secondary">Change plan</Button>
+            <Button
+              variant="secondary"
+              onClick={() => { window.location.hash = "#/platform/billing/plans"; }}
+            >
+              Change plan
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -775,7 +822,12 @@ function ApiKeysSettings() {
           <CardTitle>API keys</CardTitle>
           <CardDescription>Server-to-server credentials.</CardDescription>
         </div>
-        <Button size="sm" variant="primary" iconLeft={<Key className="h-3.5 w-3.5" />}>
+        <Button
+          size="sm"
+          variant="primary"
+          iconLeft={<Key className="h-3.5 w-3.5" />}
+          onClick={() => { window.location.hash = "#/auth/api-tokens/new"; }}
+        >
           New key
         </Button>
       </CardHeader>
@@ -818,7 +870,12 @@ function WebhooksSettings() {
           <CardTitle>Webhooks</CardTitle>
           <CardDescription>Outbound events delivered to your endpoints.</CardDescription>
         </div>
-        <Button size="sm" variant="primary" iconLeft={<Webhook className="h-3.5 w-3.5" />}>
+        <Button
+          size="sm"
+          variant="primary"
+          iconLeft={<Webhook className="h-3.5 w-3.5" />}
+          onClick={() => { window.location.hash = "#/automation/webhooks/new"; }}
+        >
           Add endpoint
         </Button>
       </CardHeader>
@@ -829,7 +886,15 @@ function WebhooksSettings() {
               <StatusDot intent={h.status === "ok" ? "success" : "danger"} pulse={h.status !== "ok"} />
               <code className="flex-1 font-mono text-xs text-text-secondary truncate">{h.url}</code>
               <span className="text-xs text-text-muted">{h.events} events</span>
-              <Button size="xs" variant="ghost">Test</Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => {
+                  window.location.hash = `#/automation/webhooks/${encodeURIComponent(h.url)}`;
+                }}
+              >
+                Test
+              </Button>
             </li>
           ))}
         </ul>
@@ -1123,14 +1188,38 @@ export function SignInPreviewPage() {
               </label>
               <a href="#" className="text-text-link hover:underline">Forgot password?</a>
             </div>
-            <Button variant="primary" size="lg">Continue</Button>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => { window.location.hash = "#/signin"; }}
+            >
+              Continue
+            </Button>
             <div className="text-center text-xs text-text-muted">
               or continue with
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" size="sm"><Globe className="h-3.5 w-3.5 mr-1" /> Google</Button>
-              <Button variant="outline" size="sm">Okta</Button>
-              <Button variant="outline" size="sm">SAML</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { window.location.href = "/api/auth/oauth/google"; }}
+              >
+                <Globe className="h-3.5 w-3.5 mr-1" /> Google
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { window.location.href = "/api/auth/oauth/okta"; }}
+              >
+                Okta
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { window.location.href = "/api/auth/saml"; }}
+              >
+                SAML
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -1166,7 +1255,13 @@ export function SignUpPreviewPage() {
               <Checkbox defaultChecked />
               <span>I agree to the Terms of Service and Privacy Policy.</span>
             </label>
-            <Button variant="primary" size="lg">Create workspace</Button>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => { window.location.hash = "#/platform/tenants/new"; }}
+            >
+              Create workspace
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -1236,7 +1331,18 @@ export function OnboardingPage() {
                   <div className="text-xs text-text-muted">{s.desc}</div>
                 </div>
                 {!s.done && i === steps.findIndex((x) => !x.done) && (
-                  <Button size="sm" variant="primary">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => {
+                      // Walk to the section the step is hinting at —
+                      // the desc usually contains a noun like "team",
+                      // "billing", "domain"; route to /platform plus
+                      // that hint, falling back to /home.
+                      const slug = (s.desc?.toLowerCase().match(/team|billing|domain|members|api/) ?? ["home"])[0];
+                      window.location.hash = `#/platform/${slug === "members" ? "tenants/members" : slug}`;
+                    }}
+                  >
                     Start
                   </Button>
                 )}

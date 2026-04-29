@@ -105,14 +105,20 @@ const eventsList = defineListView({
 
 const about = defineCustomView({
   id: "audit.about",
-  title: "About",
+  title: "About audit",
   description: "How the audit plugin works.",
   resource: eventResource.id,
   render: () => (
-    <EmptyState
-      title="Read-only by design"
-      description="The audit plugin contributes a list view but no form view — the shell automatically hides the New button and inline edit. This proves the universality of the contract: plugins only declare what they choose to."
-    />
+    <div className="flex flex-col gap-4 p-6 max-w-3xl mx-auto">
+      <header>
+        <h1 className="text-xl font-semibold text-text-primary">About audit</h1>
+        <p className="text-sm text-text-muted mt-0.5">How the audit plugin works.</p>
+      </header>
+      <EmptyState
+        title="Read-only by design"
+        description="The audit plugin contributes a list view but no form view — the shell automatically hides the New button and inline edit. This proves the universality of the contract: plugins only declare what they choose to."
+      />
+    </div>
   ),
 });
 

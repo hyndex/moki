@@ -16,7 +16,14 @@
  *
  *  Authorization checks walk all matching rows and pick the highest
  *  role found, so a user who is both an explicit editor AND part of a
- *  tenant-viewer fallback ends up with editor (the higher role). */
+ *  tenant-viewer fallback ends up with editor (the higher role).
+ *
+ *  Global-role clamp: the user's tenant role (owner/admin/member/viewer)
+ *  is the *ceiling* on the ACL-derived role. A global "viewer" can
+ *  never resolve to editor or owner regardless of per-record ACL —
+ *  this defends the "viewer = read-only across the workspace" promise
+ *  even when seedDefaultAcl grants tenant-wide editor. See
+ *  globalRoleCeiling(). */
 
 import type { SQLQueryBindings } from "bun:sqlite";
 import { db, nowIso } from "../db";
@@ -32,6 +39,31 @@ const ROLE_RANK: Record<Role, number> = {
 
 export function roleAtLeast(have: Role, need: Role): boolean {
   return ROLE_RANK[have] >= ROLE_RANK[need];
+}
+
+/** Map a user's global tenant role → maximum per-record role they may
+ *  effectively hold. Anything above the ceiling is clamped down.
+ *
+ *    owner / admin   → owner   (full)
+ *    member          → editor  (no destroy, no permission grants)
+ *    viewer / *      → viewer  (read-only)
+ *
+ *  Treat unknown roles as the most restrictive (viewer). */
+export function globalRoleCeiling(globalRole: string | null | undefined): Role {
+  switch ((globalRole ?? "").toLowerCase()) {
+    case "owner":
+    case "admin":
+      return "owner";
+    case "member":
+      return "editor";
+    case "viewer":
+    default:
+      return "viewer";
+  }
+}
+
+function clampRole(have: Role, ceiling: Role): Role {
+  return ROLE_RANK[have] <= ROLE_RANK[ceiling] ? have : ceiling;
 }
 
 export interface AclRow {
@@ -145,12 +177,21 @@ export function seedDefaultAcl(args: {
 }
 
 /** Resolve the effective role a user has on a specific document.
- *  Returns null if the user has no access. */
+ *  Returns null if the user has no access.
+ *
+ *  The result is the **minimum** of:
+ *    1. The highest ACL grant matching (user, tenant, public)
+ *    2. The user's global tenant role ceiling (see globalRoleCeiling)
+ *
+ *  Without the global clamp, seedDefaultAcl's tenant-wide editor grant
+ *  would let global-viewers mutate any record in their tenant. With it,
+ *  a global viewer is held to viewer regardless of ACL. */
 export function effectiveRole(args: {
   resource: string;
   recordId: string;
   userId: string;
   tenantId: string | null;
+  globalRole?: string | null;
 }): Role | null {
   const params: SQLQueryBindings[] = [args.resource, args.recordId, "user", args.userId];
   let q =
@@ -164,10 +205,13 @@ export function effectiveRole(args: {
   q += ` OR (subject_kind = 'public'))`;
   const rows = db.prepare(q).all(...params) as { role: Role }[];
   if (rows.length === 0) return null;
-  // Pick the highest role.
   let best: Role = "viewer";
   for (const r of rows) {
     if (ROLE_RANK[r.role] > ROLE_RANK[best]) best = r.role;
+  }
+  if (args.globalRole !== undefined) {
+    const ceiling = globalRoleCeiling(args.globalRole);
+    return clampRole(best, ceiling);
   }
   return best;
 }
