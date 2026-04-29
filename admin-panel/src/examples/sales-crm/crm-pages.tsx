@@ -855,6 +855,7 @@ function CrmSegmentsPage() {
               variant="primary"
               size="sm"
               iconLeft={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => navigateTo("/contacts/segments/new")}
             >
               New segment
             </Button>
@@ -1013,7 +1014,19 @@ function ContactDetailPage() {
               </Section>
               <Section
                 title="Tags"
-                actions={<Button size="xs" variant="ghost" iconLeft={<Plus className="h-3 w-3" />}>Add tag</Button>}
+                actions={
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    iconLeft={<Plus className="h-3 w-3" />}
+                    onClick={() => {
+                      const tag = window.prompt("Tag name?")?.trim();
+                      if (tag) navigateTo(`/contacts/${contact.id}/edit?addTag=${encodeURIComponent(tag)}`);
+                    }}
+                  >
+                    Add tag
+                  </Button>
+                }
               >
                 <Inline wrap gap="gap-1.5">
                   {(contact.tags ?? []).map((t) => (

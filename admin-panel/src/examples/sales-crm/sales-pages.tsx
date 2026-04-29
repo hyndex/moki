@@ -1144,7 +1144,12 @@ function SalesQuotesPage() {
           title="Quotes"
           description="Proposals, sent and in-flight."
           actions={
-            <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />}>
+            <Button
+              variant="primary"
+              size="sm"
+              iconLeft={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => navigateTo("/sales/quotes/new")}
+            >
               New quote
             </Button>
           }

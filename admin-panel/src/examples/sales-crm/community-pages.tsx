@@ -86,13 +86,27 @@ function FeedPage() {
     setDraft("");
   };
 
+  // Inline composer ref so the header "New post" button focuses the
+  // textarea below instead of being a no-op (the inline composer IS
+  // the new-post UI on this page; the header button just acts as an
+  // affordance that scrolls + focuses it).
+  const composerRef = React.useRef<HTMLTextAreaElement>(null);
+
   return (
     <Stack>
       <PageHeader
         title="Community feed"
         description="The pulse of your workspace."
         actions={
-          <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />}>
+          <Button
+            variant="primary"
+            size="sm"
+            iconLeft={<Plus className="h-3.5 w-3.5" />}
+            onClick={() => {
+              composerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+              composerRef.current?.focus();
+            }}
+          >
             New post
           </Button>
         }
@@ -104,6 +118,7 @@ function FeedPage() {
             <Avatar name="You" size="md" />
             <Stack gap="gap-2" className="flex-1">
               <Textarea
+                ref={composerRef}
                 placeholder={`What's on your mind${space !== "all" ? ` in ${space}` : ""}?`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -224,7 +239,12 @@ function SpacesPage() {
           title="Spaces"
           description={`${SPACES.length} spaces · ${SPACES.reduce((a, s) => a + s.members, 0).toLocaleString()} members`}
           actions={
-            <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />}>
+            <Button
+              variant="primary"
+              size="sm"
+              iconLeft={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => navigateTo("/community/spaces/new")}
+            >
               New space
             </Button>
           }
@@ -375,8 +395,19 @@ function SpaceDetailPage() {
           </Inline>
         </Stack>
         <Inline gap="gap-2" className="shrink-0">
-          <Button variant="secondary" size="sm">Invite</Button>
-          <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigateTo(`/community/spaces/${space.id}/invite`)}
+          >
+            Invite
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            iconLeft={<Plus className="h-3.5 w-3.5" />}
+            onClick={() => navigateTo("/community/feed")}
+          >
             New post
           </Button>
         </Inline>
