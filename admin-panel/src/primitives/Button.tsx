@@ -57,14 +57,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       iconLeft,
       iconRight,
       children,
+      type,
       ...props
     },
     ref,
   ) => {
     const Comp = asChild ? Slot : "button";
+    // Default to type="button" to match real-world button-library
+    // conventions. HTML's `<button>` defaults to `type="submit"` when
+    // nested in a `<form>`, which causes every styled action button
+    // (e.g. "New", "Filter", a row's kebab) to accidentally submit
+    // the form when clicked. Callers that genuinely need a submit
+    // button still pass `type="submit"` explicitly. Skip the default
+    // when `asChild` is set — Slot renders the consumer's element
+    // (e.g. <a>), and forcing type="button" on a non-button element
+    // is invalid markup.
+    const resolvedType = asChild ? type : (type ?? "button");
     return (
       <Comp
         ref={ref}
+        type={resolvedType}
         className={cn(buttonVariants({ variant, size, className }))}
         disabled={disabled || loading}
         data-loading={loading || undefined}
